@@ -1,0 +1,179 @@
+.section-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  transition: box-shadow var(--duration-base) var(--ease-default),
+    border-color var(--duration-base) var(--ease-default);
+  overflow: hidden;
+}
+
+.section-card:hover {
+  border-color: var(--color-border-strong);
+}
+
+.section-card--dragging {
+  opacity: 0.6;
+  box-shadow: var(--shadow-3);
+  border-color: var(--color-brand);
+}
+
+.section-card--hidden {
+  opacity: 0.75;
+  background-color: var(--color-surface-inset);
+}
+
+.section-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.section-card--collapsed .section-card__header {
+  border-bottom: none;
+}
+
+.section-card__drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  cursor: grab;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  background: none;
+  border: none;
+  touch-action: none;
+}
+
+.section-card__drag-handle:active {
+  cursor: grabbing;
+}
+
+.section-card__drag-handle:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.section-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-brand);
+  background-color: var(--color-brand-subtle);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.section-card__title-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.section-card__title-input {
+  font-family: var(--font-display);
+  font-weight: var(--font-display-weight);
+  font-size: 16px;
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  width: 100%;
+  max-width: 280px;
+  transition: border-color var(--duration-fast) var(--ease-default),
+    background-color var(--duration-fast) var(--ease-default);
+}
+
+.section-card__title-input:hover,
+.section-card__title-input:focus {
+  border-color: var(--color-border);
+  background-color: var(--color-surface-inset);
+}
+
+.section-card__title-input:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.section-card__count-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-inset);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.section-card__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.section-card__icon-btn {
+  background: none;
+  border: none;
+  padding: var(--space-1);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--duration-fast) var(--ease-default),
+    background-color var(--duration-fast) var(--ease-default);
+}
+
+.section-card__icon-btn:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-surface-inset);
+}
+
+.section-card__icon-btn--danger:hover {
+  color: var(--color-danger);
+  background-color: var(--color-danger-subtle);
+}
+
+.section-card__icon-btn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.section-card__body {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.section-card__footer {
+  display: flex;
+  justify-content: flex-start;
+}
+
+@media (max-width: 640px) {
+  .section-card__header {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .section-card__title-area {
+    order: 2;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .section-card__actions {
+    margin-left: auto;
+  }
+}

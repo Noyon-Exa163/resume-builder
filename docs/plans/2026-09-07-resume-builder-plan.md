@@ -1,12 +1,38 @@
 # Exabyting Resume Builder — Implementation Plan
 
+## Update — 2026-09-07 (pivot: real auth + Neon Postgres)
+
+The "no accounts, no database" decisions below (Context bullet 2 and the
+"Recap of settled decisions" entry) are **superseded**. New direction,
+decided by the user mid-Phase-1:
+
+- **Auth is now real, not a no-op.** Custom email + password login (not
+  Google OAuth). There is no self-serve signup — an admin creates accounts
+  and sets each user's initial password (see `lib/auth/index.ts`,
+  `lib/auth/userSession.ts`, `lib/auth/password.ts`).
+- **Storage is now Neon Postgres, not IndexedDB-only.** Resumes are saved
+  server-side, scoped to the logged-in user, who can list/edit/delete their
+  own resumes. A Neon project **"Exabyting Resume Builder"** was created
+  under the **"Zibon Exa"** org (via the Neon MCP tools — the `neon`/
+  `neonctl` CLI isn't installed on this machine, so MCP was used to reach
+  the same result the user asked for). Schema: `db/migrations/0001_init.sql`
+  (`users`, `resumes` with a `jsonb` `data` column holding the full
+  `ResumeData`). Connection string lives in `.env.local` /
+  `DATABASE_URL` (see `.env.example`).
+- `StorageAdapter<T>` (`lib/storage/types.ts`) is unchanged — the point of
+  that abstraction was exactly this swap. IndexedDB code may be retired
+  once the Postgres-backed adapter lands; check before deleting in case it
+  ends up kept as an offline cache.
+- New dependency: `@neondatabase/serverless` (HTTP-based driver, fits
+  Netlify's serverless functions better than a persistent `pg` socket).
+
 ## Context
 
 Exabyting needs an internal resume builder where the top priority is **company-branded design fidelity and PDF export quality**. It must be shareable with non-technical staff (fill out a form, no jargon), support importing existing resumes (PDF/DOCX/Markdown, with and without AI), export to PDF/PNG/Markdown/DOCX, let an admin configure shared AI API keys (Gemini, Anthropic, OpenRouter, DeepSeek, plus a generic OpenAI-compatible slot), and be code-extensible for future resume templates without needing a visual template builder.
 
 This is a from-scratch build (repo was empty at project start). Key constraints locked in during planning:
 - **Hosting**: Netlify, single Next.js (App Router, TypeScript) app for UI + backend.
-- **Auth**: none for now, but every persistence/auth touchpoint is built behind an abstraction so real Google OAuth (restricted to `@exabyting.com`) and a real DB (Neon/Supabase) can be dropped in later without rework.
+- **Auth**: ~~none for now~~ **superseded, see "Update — 2026-09-07" above** — real email/password login, admin-provisioned accounts, Neon Postgres.
 - **Design fidelity is non-negotiable for PDF/PNG**: rendering goes through `@react-pdf/renderer` (real PDF component tree, real vector/selectable text — matters for ATS parsing), not client-side canvas screenshotting of HTML. We evaluated a headless-Chrome (Puppeteer) approach and OSS alternatives (Reactive Resume, JSON Resume) before deciding — see "Architecture decision log" below.
 - **Styling stack**: per the existing Exabyting **ExaDesign** system (`AGENTS.md`), the app chrome (editor/settings UI) uses **plain CSS with CSS custom properties, CSS Modules for scoping, no Tailwind**, Base UI for headless primitives, lucide-react icons. Resume *templates* are a separate concern styled with `@react-pdf/renderer`'s own `StyleSheet`/flexbox primitives (not CSS) — see Rendering Architecture below.
 

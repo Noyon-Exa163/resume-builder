@@ -1,9 +1,5 @@
 export type AIProviderId =
-  | "gemini"
-  | "anthropic"
-  | "openrouter"
-  | "deepseek"
-  | "customOpenAICompatible";
+  "gemini" | "anthropic" | "openrouter" | "deepseek" | "customOpenAICompatible";
 
 export interface AIExtractResumeInput {
   rawText: string;

@@ -1,0 +1,140 @@
+/* ExportButtons — single Export trigger with popover format picker
+   Popover panel: --color-surface-raised + --shadow-3 (AGENTS.md §6.10)
+*/
+
+.export-buttons__trigger {
+  /* The Button component handles its own sizing */
+}
+
+/* Popover panel */
+.export-buttons__popup {
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  padding: var(--space-1);
+  min-width: 220px;
+}
+
+.export-buttons__title {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text-primary);
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Each format option is a clickable row */
+.export-buttons__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-default);
+}
+
+.export-buttons__option:hover:not(:disabled) {
+  background-color: var(--color-surface-inset);
+}
+
+.export-buttons__option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.export-buttons__option:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: -2px;
+}
+
+.export-buttons__option-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-inset);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.export-buttons__option-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  text-align: left;
+}
+
+.export-buttons__option-label {
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--color-text-primary);
+}
+
+.export-buttons__option-desc {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+/* Scale control inline next to the PNG option */
+.export-buttons__option-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+}
+
+.export-buttons__scale {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.export-buttons__scale-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.export-buttons__scale-input {
+  width: 44px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-align: center;
+  padding: 0 var(--space-1);
+  outline: none;
+}
+
+.export-buttons__scale-input:focus-visible {
+  border-color: var(--color-border-focus);
+}
+
+/* Separator between options */
+.export-buttons__separator {
+  height: 1px;
+  background-color: var(--color-border);
+  margin: var(--space-1) var(--space-3);
+}

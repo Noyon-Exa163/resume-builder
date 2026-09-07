@@ -1,0 +1,109 @@
+/* Button — ExaDesign §6.10
+   Variants: primary, secondary, tertiary
+   Sizes: l (48px), m (40px), s (32px)
+*/
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-weight: 500;
+  line-height: 1.25;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition:
+    background-color var(--duration-base) var(--ease-default),
+    color var(--duration-base) var(--ease-default),
+    border-color var(--duration-base) var(--ease-default),
+    box-shadow var(--duration-base) var(--ease-default);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Sizes */
+.button--l {
+  height: 48px;
+  padding: 0 var(--space-5);
+  font-size: 16px;
+}
+
+.button--m {
+  height: 40px;
+  padding: 0 var(--space-4);
+  font-size: 14px;
+}
+
+.button--s {
+  height: 32px;
+  padding: 0 var(--space-3);
+  font-size: 13px;
+}
+
+/* Primary — brand bg, white text */
+.button--primary {
+  background-color: var(--color-brand);
+  color: var(--color-text-on-brand);
+}
+
+.button--primary:hover:not(:disabled) {
+  background-color: var(--color-brand-hover);
+}
+
+.button--primary:active:not(:disabled) {
+  background-color: var(--color-brand-active);
+}
+
+/* Secondary — transparent bg, brand text/border */
+.button--secondary {
+  background-color: transparent;
+  color: var(--color-brand);
+  border-color: var(--color-brand);
+}
+
+.button--secondary:hover:not(:disabled) {
+  background-color: var(--color-brand-subtle);
+}
+
+.button--secondary:active:not(:disabled) {
+  background-color: var(--color-brand-muted);
+}
+
+/* Tertiary — transparent, primary text */
+.button--tertiary {
+  background-color: transparent;
+  color: var(--color-text-primary);
+}
+
+.button--tertiary:hover:not(:disabled) {
+  background-color: var(--color-surface-inset);
+}
+
+.button--tertiary:active:not(:disabled) {
+  background-color: var(--color-border);
+}
+
+/* Icon-only buttons need a square aspect ratio */
+.button--icon-only {
+  padding: 0;
+  aspect-ratio: 1;
+}
+
+.button--icon-only.button--l {
+  width: 48px;
+}
+
+.button--icon-only.button--m {
+  width: 40px;
+}
+
+.button--icon-only.button--s {
+  width: 32px;
+}

@@ -1,0 +1,13 @@
+.live-preview-pane {
+  height: 100%;
+  width: 100%;
+  background: var(--color-surface-inset);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.live-preview-pane__viewer {
+  height: 100%;
+  width: 100%;
+  border: none;
+}

@@ -1,24 +1,121 @@
-.home {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-4);
-  min-height: 100vh;
-  padding: var(--space-6);
-  text-align: center;
+.dashboard {
+  max-width: 1280px;
+  padding: var(--space-8) var(--space-6);
 }
 
-.home__title {
+.dashboard__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.dashboard__title {
   font-family: var(--font-display);
   font-weight: var(--font-display-weight);
   font-size: 32px;
   color: var(--color-text-primary);
 }
 
-.home__subtitle {
+.dashboard__create-button {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--color-text-on-brand);
+  background: var(--color-brand);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-6);
+  height: 40px;
+  cursor: pointer;
+  transition: background var(--duration-base) var(--ease-default);
+}
+
+.dashboard__create-button:hover {
+  background: var(--color-brand-hover);
+}
+
+.dashboard__create-button:active {
+  background: var(--color-brand-active);
+}
+
+.dashboard__create-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.dashboard__create-button:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.dashboard__hint {
   font-family: var(--font-body);
   font-size: 14px;
   color: var(--color-text-secondary);
-  max-width: 480px;
+}
+
+.dashboard__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-6);
+  list-style: none;
+}
+
+.resume-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  padding: var(--space-5);
+  transition: box-shadow var(--duration-base) var(--ease-default);
+}
+
+.resume-card:hover {
+  box-shadow: var(--shadow-2);
+}
+
+.resume-card__link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  text-decoration: none;
+}
+
+.resume-card__link:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.resume-card__title {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--color-text-primary);
+}
+
+.resume-card__meta {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+}
+
+.resume-card__delete {
+  align-self: flex-start;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-danger);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.resume-card__delete:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }

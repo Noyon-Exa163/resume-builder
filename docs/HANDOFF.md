@@ -132,11 +132,12 @@ No tests have been written yet (`test/`, `e2e/` are empty).
   This was a deliberate switch from an earlier plan (see the decision log in
   the plan doc) after researching how Reactive Resume (the most popular OSS
   resume builder) itself moved off headless Chrome for the same reasons.
-- No database, no accounts — `lib/storage`/`lib/auth` are already shaped so
-  a real DB (Neon/Supabase, both available as MCP tools in this
-  environment) and real Google OAuth (`@exabyting.com`-restricted) can be
-  dropped in later by changing implementations behind the existing
-  interfaces, not by rewriting callers.
+- ~~No database, no accounts~~ **Superseded 2026-09-07** — see the "Update"
+  section at the top of `docs/plans/2026-09-07-resume-builder-plan.md`.
+  Real email/password login (admin-provisioned) and Neon Postgres storage
+  landed by changing implementations behind the existing `StorageAdapter`/
+  auth interfaces exactly as this bullet anticipated, not by rewriting
+  callers.
 - Admin AI keys are shared for everyone, stored server-side via Netlify
   Blobs, entered through an in-app Settings page — never per-user, never in
   the browser.

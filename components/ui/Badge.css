@@ -1,0 +1,48 @@
+/* Badge — ExaDesign §6.10
+   Variants: default, secondary, destructive, outline, ghost
+   --radius-full
+*/
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  padding: 2px var(--space-2);
+}
+
+/* Default — brand subtle bg, brand text */
+.badge--default {
+  background-color: var(--color-brand-subtle);
+  color: var(--color-brand);
+}
+
+/* Secondary — surface inset bg, secondary text */
+.badge--secondary {
+  background-color: var(--color-surface-inset);
+  color: var(--color-text-secondary);
+}
+
+/* Destructive — danger subtle bg, danger text */
+.badge--destructive {
+  background-color: var(--color-danger-subtle);
+  color: var(--color-danger-text);
+}
+
+/* Outline — transparent bg, border, secondary text */
+.badge--outline {
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+/* Ghost — transparent, secondary text, no border */
+.badge--ghost {
+  background-color: transparent;
+  color: var(--color-text-secondary);
+}

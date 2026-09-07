@@ -1,0 +1,176 @@
+/* Admin user management page */
+
+.users-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-6);
+}
+
+.users-page__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-6);
+}
+
+.users-page__error {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.57;
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+/* Create user form */
+.users-page__create {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  padding: var(--space-5);
+  margin-bottom: var(--space-6);
+}
+
+.users-page__create-title {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-4);
+}
+
+.users-page__create-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.users-page__create-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-end;
+}
+
+.users-page__create-row > * {
+  flex: 1;
+}
+
+.users-page__create-row > .users-page__create-checkbox {
+  flex: 0 0 auto;
+  align-self: flex-end;
+  padding-bottom: var(--space-2);
+}
+
+.users-page__create-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.users-page__create-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-brand);
+  cursor: pointer;
+}
+
+/* User list */
+.users-page__list {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+}
+
+.users-page__list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.users-page__list-title {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.users-page__list-count {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+}
+
+.users-page__user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.users-page__user:last-child {
+  border-bottom: none;
+}
+
+.users-page__user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.users-page__user-email {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.users-page__user-badge {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+}
+
+.users-page__user-badge--admin {
+  background-color: var(--color-brand-subtle);
+  color: var(--color-brand);
+}
+
+.users-page__user-badge--user {
+  background-color: var(--color-surface-inset);
+  color: var(--color-text-secondary);
+}
+
+.users-page__user-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.users-page__user-protected {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+}
