@@ -1,6 +1,7 @@
 import { createId } from "@/lib/utils/ids";
 import {
   CURRENT_SCHEMA_VERSION,
+  defaultLayoutForKind,
   ResumeDataSchema,
   type ResumeData,
   type ResumeEntry,
@@ -22,14 +23,19 @@ export function normalizeAndValidate(
 ): ResumeData {
   const now = new Date().toISOString();
 
-  const sections: ResumeSection[] = (partial.sections ?? []).map((section) => ({
-    id: section?.id ?? createId(),
-    kind: (section?.kind as ResumeSection["kind"]) ?? "custom",
-    title: section?.title ?? "",
-    visible: section?.visible ?? true,
-    layout: (section?.layout as ResumeSection["layout"]) ?? "list",
-    entries: (section?.entries ?? []).map(
-      (entry): ResumeEntry => ({
+  const sections: ResumeSection[] = (partial.sections ?? []).map((section) => {
+    const kind = (section?.kind as ResumeSection["kind"]) ?? "custom";
+    return {
+      id: section?.id ?? createId(),
+      kind,
+      title: section?.title ?? "",
+      visible: section?.visible ?? true,
+      // How a section is arranged follows from what it holds, so importers
+      // don't each get to pick — see DEFAULT_SECTION_LAYOUT.
+      layout:
+        (section?.layout as ResumeSection["layout"]) ??
+        defaultLayoutForKind(kind),
+      entries: (section?.entries ?? []).map((entry): ResumeEntry => ({
         id: entry?.id ?? createId(),
         title: entry?.title ?? "",
         subtitle: entry?.subtitle,
@@ -45,9 +51,9 @@ export function normalizeAndValidate(
         ),
         description: entry?.description,
         link: entry?.link,
-      }),
-    ),
-  }));
+      })),
+    };
+  });
 
   const candidate: ResumeData = {
     schemaVersion: CURRENT_SCHEMA_VERSION,

@@ -1,4 +1,5 @@
 import type { ResumeData, ResumeEntry, ResumeSection, SectionKind } from "@/lib/schema/resume";
+import { defaultLayoutForKind } from "@/lib/schema/resume";
 import type { DeepPartial } from "@/lib/schema/normalize";
 
 export type HeuristicSourceFormat = "pdf" | "docx" | "markdown" | "text";
@@ -30,34 +31,28 @@ const PERSONAL_INFO_WINDOW = 10;
 const SECTION_KEYWORDS: Array<{
   pattern: RegExp;
   kind: SectionKind;
-  layout: "list" | "tags";
 }> = [
   {
     pattern: /^(work\s+|professional\s+|relevant\s+)?(experience|employment( history)?|work history)$/i,
     kind: "experience",
-    layout: "list",
   },
   {
     pattern: /^(education|educational background|academic background|academics?)$/i,
     kind: "education",
-    layout: "list",
   },
   {
     pattern: /^(technical\s+|core\s+|key\s+)?skills$/i,
     kind: "skills",
-    layout: "tags",
   },
-  { pattern: /^(key\s+|personal\s+)?projects?$/i, kind: "projects", layout: "list" },
+  { pattern: /^(key\s+|personal\s+)?projects?$/i, kind: "projects" },
   {
     pattern: /^certifications?( (and|&) licenses)?$|^licenses?( (and|&) certifications?)?$/i,
     kind: "certifications",
-    layout: "list",
   },
-  { pattern: /^languages?$/i, kind: "languages", layout: "tags" },
+  { pattern: /^languages?$/i, kind: "languages" },
   {
     pattern: /^(awards( (and|&) honors)?|honors( (and|&) awards)?)$/i,
     kind: "awards",
-    layout: "list",
   },
 ];
 
@@ -103,7 +98,7 @@ export function parseResumeHeuristically(
   const preambleEnd = headingIndexes[0] ?? lines.length;
   const preambleLines = lines.slice(PERSONAL_INFO_WINDOW, preambleEnd);
   if (preambleLines.some((line) => line.text.trim())) {
-    sections.push(buildSection("Other", "custom", "list", preambleLines));
+    sections.push(buildSection("Other", "custom", preambleLines));
   }
 
   for (let i = 0; i < headingIndexes.length; i += 1) {
@@ -112,13 +107,8 @@ export function parseResumeHeuristically(
     const end = headingIndexes[i + 1] ?? lines.length;
     const heading = lines[headingIndex].text;
     const segmentLines = lines.slice(start, end);
-    const classification = classifyHeading(heading) ?? {
-      kind: "custom" as SectionKind,
-      layout: "list" as const,
-    };
-    sections.push(
-      buildSection(heading, classification.kind, classification.layout, segmentLines),
-    );
+    const kind = classifyHeading(heading) ?? ("custom" as SectionKind);
+    sections.push(buildSection(heading, kind, segmentLines));
   }
 
   return { personalInfo, sections };
@@ -127,9 +117,9 @@ export function parseResumeHeuristically(
 function buildSection(
   title: string,
   kind: SectionKind,
-  layout: "list" | "tags",
   lines: ParsedLine[],
 ): DeepPartial<ResumeSection> {
+  const layout = defaultLayoutForKind(kind);
   return {
     kind,
     title,
@@ -138,13 +128,9 @@ function buildSection(
   };
 }
 
-function classifyHeading(
-  heading: string,
-): { kind: SectionKind; layout: "list" | "tags" } | null {
+function classifyHeading(heading: string): SectionKind | null {
   for (const entry of SECTION_KEYWORDS) {
-    if (entry.pattern.test(heading)) {
-      return { kind: entry.kind, layout: entry.layout };
-    }
+    if (entry.pattern.test(heading)) return entry.kind;
   }
   return null;
 }

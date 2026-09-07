@@ -82,3 +82,50 @@ describe("editorStore.load", () => {
     expect(state.isDirty).toBe(false);
   });
 });
+
+describe("editorStore.importInto", () => {
+  beforeEach(() => {
+    const existing = createBlankResume();
+    existing.meta.title = "Untitled Resume";
+    useEditorStore.setState({
+      resume: existing,
+      isLoading: false,
+      isSaving: false,
+      isDirty: false,
+      lastSavedAt: null,
+      hasLoaded: true,
+    });
+  });
+
+  it("renames the resume after the imported person's name", () => {
+    useEditorStore.getState().importInto({
+      personalInfo: { fullName: "Ada Lovelace" },
+      sections: [],
+    });
+
+    const state = useEditorStore.getState();
+    expect(state.resume?.meta.title).toBe("Ada Lovelace");
+    expect(state.resume?.personalInfo.fullName).toBe("Ada Lovelace");
+    expect(state.isDirty).toBe(true);
+  });
+
+  it("keeps the id and createdAt of the resume being edited", () => {
+    const before = useEditorStore.getState().resume!;
+
+    useEditorStore.getState().importInto({
+      personalInfo: { fullName: "Ada Lovelace" },
+    });
+
+    const after = useEditorStore.getState().resume!;
+    expect(after.meta.id).toBe(before.meta.id);
+    expect(after.meta.createdAt).toBe(before.meta.createdAt);
+  });
+
+  it("falls back to the existing title when no name was extracted", () => {
+    useEditorStore.getState().importInto({ summary: "No name in this one" });
+
+    expect(useEditorStore.getState().resume?.meta.title).toBe(
+      "Untitled Resume",
+    );
+  });
+});

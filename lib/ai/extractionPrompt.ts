@@ -28,7 +28,6 @@ export const RESUME_SCHEMA_DESCRIPTION = `{
           | "certifications" | "languages" | "awards" | "custom",
       title: string,                // section heading as it should appear
       visible: true,
-      layout: "list" | "grid" | "tags",   // tags for skills/languages; list otherwise
       entries: [
         {
           title: string,            // job title, degree, project name, skill group, …

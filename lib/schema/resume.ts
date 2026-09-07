@@ -39,6 +39,29 @@ export type SectionKind = z.infer<typeof SectionKind>;
 export const SectionLayout = z.enum(["list", "grid", "tags"]);
 export type SectionLayout = z.infer<typeof SectionLayout>;
 
+/**
+ * How each kind of section is laid out unless something says otherwise.
+ * Short, repetitive entries pair up into two columns; skill-style sections
+ * run as category rows; everything else stacks.
+ *
+ * Both import paths and the editor read this, so a section added by hand
+ * looks the same as the equivalent one lifted off an uploaded resume.
+ */
+export const DEFAULT_SECTION_LAYOUT: Record<SectionKind, SectionLayout> = {
+  experience: "list",
+  education: "list",
+  skills: "tags",
+  projects: "list",
+  certifications: "grid",
+  languages: "tags",
+  awards: "grid",
+  custom: "list",
+};
+
+export function defaultLayoutForKind(kind: SectionKind): SectionLayout {
+  return DEFAULT_SECTION_LAYOUT[kind] ?? "list";
+}
+
 export const SectionSchema = z.object({
   id: z.string(),
   kind: SectionKind,

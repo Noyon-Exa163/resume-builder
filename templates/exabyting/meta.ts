@@ -11,5 +11,5 @@ export const exabytingMeta: TemplateMeta = {
   thumbnailSrc: "/thumbnails/exabyting.png",
   pageSize: "A4",
   description:
-    "Company resume template. Colors, logo, and fonts are placeholders until the real Exabyting brand tokens arrive.",
+    "Company resume template with Exabyting brand header, logo, and section styling.",
 };

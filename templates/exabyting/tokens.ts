@@ -5,38 +5,35 @@
  * plain JS constants and must never import `styles/tokens.css` (or any CSS).
  * App-chrome ExaDesign tokens and these print tokens are separate systems.
  *
- * The logomark is inlined as react-pdf Svg/Path in Logo.tsx (copied from
- * public/assets/Logos/Exabyting-Logomark.svg). Palette and fonts below are
- * still placeholders until the rest of the print brand kit arrives — swapping
- * those later should stay a this-file-only change.
+ * The vertical full logo is inlined as react-pdf Svg/Path in Logo.tsx (copied
+ * from public/assets/Logos/Exa-Logo-Full_Vertical.svg).
  */
 
 export const colors = {
-  /** PLACEHOLDER — generic professional blue, not Exabyting brand. */
-  brand: "#2B6CB0",
-  /** PLACEHOLDER — near-black body text. */
-  text: "#1A202C",
-  /** PLACEHOLDER — secondary line (headline, subtitle). */
-  textSecondary: "#4A5568",
-  /** PLACEHOLDER — dates, contact, captions. */
-  textMuted: "#718096",
-  /** PLACEHOLDER — section rules and tag outlines. */
-  border: "#E2E8F0",
-  /** PLACEHOLDER — page background. */
+  /** exa.5 — top accent bar and section accents. */
+  brand: "#0072ED",
+  /** exa.1 — logo container background. */
+  brandSubtle: "#f0f5fe",
+  /** Logo mark paths from Exa-Logo-Full_Vertical.svg. */
+  logoMark: "#008DFF",
+  /** Logo wordmark paths from Exa-Logo-Full_Vertical.svg. */
+  logoWordmark: "#08061D",
+  text: "#010515",
+  textSecondary: "#45556c",
+  textMuted: "#8697ad",
+  border: "#e4e4e4",
   surface: "#FFFFFF",
-  /** PLACEHOLDER — tag / chip fill. */
-  tagBackground: "#EDF2F7",
-  /** PLACEHOLDER — tag / chip label. */
-  tagText: "#2D3748",
+  tagBackground: "#f0f5fe",
+  tagText: "#032468",
 } as const;
 
 /**
- * PLACEHOLDER typography. Helvetica is a built-in PDF font, so no
- * `Font.register()` is required. When licensed brand font files arrive,
- * change `family` (and register the font where the Document is loaded).
+ * Registered in ../fonts.ts (Inter isn't one of react-pdf's built-in fonts,
+ * unlike Helvetica). Swapping to a different licensed brand font later is a
+ * two-file change: register it there, then update `family` here.
  */
 export const fonts = {
-  family: "Helvetica",
+  family: "Inter",
   sizeName: 20,
   sizeHeadline: 11,
   sizeSection: 10,
@@ -46,6 +43,11 @@ export const fonts = {
   letterSpacingSection: 1.2,
   lineHeightBody: 1.45,
   lineHeightName: 1.2,
+  /**
+   * Chips size their box from the line height, so body leading would hang as
+   * dead space under the label. 1 keeps the padding even top and bottom.
+   */
+  lineHeightTag: 1,
 } as const;
 
 /** PLACEHOLDER 4pt spacing scale (react-pdf uses numeric point values). */
@@ -61,15 +63,36 @@ export const space = {
 export const layout = {
   pagePaddingX: 48,
   pagePaddingY: 44,
+  /** Full-bleed top accent bar — edge to edge, flush with page top. */
+  topBarHeight: 4,
+  /** Inset from page top to name/body — below the fixed bar. */
+  contentInsetBelowTopBar: 40,
   photoSize: 56,
   photoRadius: 4,
-  /** Header logomark size (square). Keep small — resume, not a poster. */
-  logoSize: 22,
+  /** Vertical full logo render height in the header container. */
+  logoHeight: 32,
+  logoContainerPadX: 24,
+  logoContainerPadY: 24,
   bulletMarkWidth: 10,
-  sectionHeaderMinPresence: 56,
+  /**
+   * Keep an entry title with the first line of its body. Used on flattened
+   * entry heads, not on section headings — headings stay with their first
+   * item via a short wrap={false} lead group instead, so a two-line section
+   * like Languages can still sit in leftover space.
+   *
+   * wrap={false} on a block taller than the page paints it on top of
+   * whatever precedes it; only use it on groups that are always short
+   * (heading + first title, one bullet, one chip).
+   */
+  entryHeadMinPresence: 36,
+  compactRowMinPresence: 28,
   sectionRuleHeight: 1,
   tagRadius: 2,
   tagPadX: 6,
   tagPadY: 3,
+  /** Horizontal padding inside each grid cell; doubled is the column gutter. */
+  gridGutter: 16,
   gridCellWidth: "50%",
+  /** Category column in a tags section; the skills fill the rest of the row. */
+  skillLabelWidth: "26%",
 } as const;

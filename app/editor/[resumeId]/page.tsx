@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FilePlus, Loader2 } from "lucide-react";
 import { useEditorStore } from "@/lib/store/editorStore";
 import { formatLastSavedLabel } from "@/lib/utils/formatLastSaved";
+import { createBlankResume, type DeepPartial } from "@/lib/schema/normalize";
+import type { ResumeData } from "@/lib/schema/resume";
+import { resumeRepository } from "@/lib/storage/api/resumeRepository";
 import { Button, CollapsibleSection } from "@/components/ui";
 import { SplitPane } from "@/components/common/SplitPane";
 import {
@@ -77,9 +80,51 @@ export default function EditorPage() {
     };
   }, []);
 
+  // Controlled rather than Collapsible's `defaultOpen` — that prop only sets
+  // the *initial* state of an uncontrolled component, and recomputing
+  // "does this resume have content" on every render (it must, to react to an
+  // import) makes it look like the default itself is changing after mount,
+  // which Base UI warns about. Seed it once from the freshly loaded resume,
+  // then drive it explicitly (e.g. auto-expanding after an import below).
+  const [isManualEditOpen, setIsManualEditOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const hasInitializedManualEditOpen = useRef(false);
+
+  useEffect(() => {
+    if (hasInitializedManualEditOpen.current || !hasLoaded || !resume) return;
+    hasInitializedManualEditOpen.current = true;
+    setIsManualEditOpen(
+      Boolean(resume.personalInfo.fullName?.trim()) ||
+        Boolean(resume.summary?.trim()) ||
+        resume.sections.length > 0,
+    );
+  }, [hasLoaded, resume]);
+
   async function handleBack() {
     await save();
     router.push("/");
+  }
+
+  async function handleNewResume() {
+    setIsCreating(true);
+    try {
+      await save();
+      const blank = createBlankResume();
+      await resumeRepository.set(blank.meta.id, blank);
+      router.push(`/editor/${blank.meta.id}`);
+    } finally {
+      setIsCreating(false);
+    }
+  }
+
+  // A completed AI/heuristic extraction is a deliberate, commit-worthy
+  // moment — persist right away rather than waiting out the normal
+  // keystroke-debounced autosave. Also expand the manual-edit section so
+  // the newly filled-in fields are actually visible.
+  function handleImport(partial: DeepPartial<ResumeData>) {
+    importInto(partial);
+    setIsManualEditOpen(true);
+    void save();
   }
 
   if (isLoading || !hasLoaded) {
@@ -137,7 +182,24 @@ export default function EditorPage() {
           lastSavedAt={lastSavedAt}
           isSaving={isSaving}
         />
-        <ExportButtons data={resume} />
+        <div className="editor-page__actions">
+          <ExportButtons data={resume} />
+          <Button
+            type="button"
+            variant="secondary"
+            size="m"
+            iconOnly
+            aria-label="New Resume"
+            disabled={isCreating}
+            onClick={() => void handleNewResume()}
+          >
+            {isCreating ? (
+              <Loader2 size={18} className="button__icon--spin" />
+            ) : (
+              <FilePlus size={18} />
+            )}
+          </Button>
+        </div>
       </header>
 
       <div className="editor-page__body">
@@ -148,11 +210,12 @@ export default function EditorPage() {
             <div className="editor-page__form-pane">
               <ImportResumeCard
                 hasExistingContent={hasContent}
-                onImport={importInto}
+                onImport={handleImport}
               />
               <CollapsibleSection
                 label="Edit Manually"
-                defaultOpen={hasContent}
+                open={isManualEditOpen}
+                onOpenChange={setIsManualEditOpen}
               >
                 <PersonalInfoForm
                   value={resume.personalInfo}

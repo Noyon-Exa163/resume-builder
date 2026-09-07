@@ -150,7 +150,7 @@ function EntryBody({ entry }: { entry: ResumeEntry }) {
 
   return (
     <View>
-      <View style={styles.entryHeader} wrap={false}>
+      <View style={styles.entryHeader}>
         {hasText(entry.title) ? (
           <Text style={styles.entryTitle}>{entry.title}</Text>
         ) : (

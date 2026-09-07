@@ -5,6 +5,7 @@ import type {
   ResumeSection,
   SectionKind,
 } from "@/lib/schema/resume";
+import { defaultLayoutForKind } from "@/lib/schema/resume";
 import {
   createBlankResume,
   normalizeAndValidate,
@@ -138,6 +139,10 @@ export const useEditorStore = create<EditorState>((set, get) => {
     importInto(partial) {
       const { resume } = get();
       if (!resume) return;
+      // The imported person's name is a better resume title than whatever
+      // this draft was called before (usually still "Untitled Resume") or
+      // the AI's own guess at a document title — prefer it when present.
+      const importedName = partial.personalInfo?.fullName?.trim();
       const merged = normalizeAndValidate({
         ...partial,
         meta: {
@@ -146,7 +151,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
           createdAt: resume.meta.createdAt,
           templateId: partial.meta?.templateId ?? resume.meta.templateId,
           pageSize: partial.meta?.pageSize ?? resume.meta.pageSize,
-          title: partial.meta?.title ?? resume.meta.title,
+          title: importedName || partial.meta?.title || resume.meta.title,
         },
       });
       set({ resume: touch(merged), isDirty: true });
@@ -205,7 +210,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
         kind,
         title,
         visible: true,
-        layout: "list",
+        layout: defaultLayoutForKind(kind),
         entries: [],
       };
       set({

@@ -57,7 +57,6 @@ export const anthropicResumeInputSchema = {
           },
           title: { type: "string" },
           visible: { type: "boolean" },
-          layout: { type: "string", enum: ["list", "grid", "tags"] },
           entries: {
             type: "array",
             items: {
@@ -134,7 +133,6 @@ export const geminiResumeResponseSchema = {
           },
           title: { type: "STRING" },
           visible: { type: "BOOLEAN" },
-          layout: { type: "STRING", enum: ["list", "grid", "tags"] },
           entries: {
             type: "ARRAY",
             items: {

@@ -43,8 +43,10 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization)
      * - favicon.ico (favicon)
-     * - public folder assets
+     * - public folder assets, including the resume-template fonts
+     *   (public/fonts/*.ttf) that react-pdf fetches while rendering a PDF —
+     *   these must never redirect to /login, cookie or no cookie.
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|ttf|otf|woff|woff2)$).*)",
   ],
 };

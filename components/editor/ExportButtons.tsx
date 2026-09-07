@@ -39,7 +39,7 @@ export function ExportButtons({ data }: ExportButtonsProps) {
     setIsExporting(true);
     try {
       const blob = await toPdfBlob(data);
-      const name = sanitizeFilename(data.meta.title);
+      const name = buildExportFilename(data);
       triggerDownload(blob, `${name}.pdf`);
     } catch (err) {
       console.error("PDF export failed:", err);
@@ -52,7 +52,7 @@ export function ExportButtons({ data }: ExportButtonsProps) {
     setIsExporting(true);
     try {
       const blob = await toPngBlob(data, pngScale);
-      const name = sanitizeFilename(data.meta.title);
+      const name = buildExportFilename(data);
       triggerDownload(blob, `${name}.png`);
     } catch (err) {
       console.error("PNG export failed:", err);
@@ -173,12 +173,22 @@ export function ExportButtons({ data }: ExportButtonsProps) {
   );
 }
 
-function sanitizeFilename(title: string): string {
-  return (
-    title
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "") || "resume"
-  );
+const INVALID_FILENAME_CHARS = /[\\/:*?"<>|]/g;
+
+/** e.g. "ada lovelace" -> "Exabyting-Ada-Lovelace-Resume" */
+export function buildExportFilename(data: ResumeData): string {
+  const rawName =
+    data.personalInfo.fullName?.trim() || data.meta.title?.trim() || "Resume";
+  const cleaned = rawName.replace(INVALID_FILENAME_CHARS, "").trim();
+  const titleCased = toTitleCase(cleaned) || "Resume";
+  const slug = titleCased.replace(/\s+/g, "-");
+  return `Exabyting-${slug}-Resume`;
+}
+
+function toTitleCase(value: string): string {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
 }
