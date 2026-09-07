@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { Input, Button } from "@/components/ui";
+import { KeyRound, Loader2 } from "lucide-react";
 import "./page.css";
 
 export default function AccountPageClient() {
@@ -92,6 +93,11 @@ export default function AccountPageClient() {
 
           <div>
             <Button type="submit" variant="primary" size="m" disabled={isLoading}>
+              {isLoading ? (
+                <Loader2 size={16} className="button__icon--spin" />
+              ) : (
+                <KeyRound size={16} />
+              )}
               {isLoading ? "Updating..." : "Update Password"}
             </Button>
           </div>

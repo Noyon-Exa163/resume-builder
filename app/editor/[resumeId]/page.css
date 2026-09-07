@@ -30,20 +30,6 @@
   box-shadow: var(--shadow-1);
 }
 
-.editor-page__back {
-  font-family: var(--font-body);
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-.editor-page__back:focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 2px;
-}
-
 .editor-page__title-input {
   flex: 1;
   font-family: var(--font-body);
@@ -66,27 +52,12 @@
   outline-offset: 2px;
 }
 
-.editor-page__save {
+.editor-page__save-status {
   font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 14px;
-  color: var(--color-text-on-brand);
-  background: var(--color-brand);
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 0 var(--space-6);
-  height: 40px;
-  cursor: pointer;
-}
-
-.editor-page__save:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.editor-page__save:focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 2px;
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .editor-page__body {

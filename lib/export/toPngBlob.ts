@@ -1,4 +1,5 @@
 import type { ResumeData } from "@/lib/schema/resume";
+import { getPdfjs } from "@/lib/pdf/pdfjs";
 import { toPdfBlob } from "./toPdfBlob";
 
 /**
@@ -9,7 +10,7 @@ import { toPdfBlob } from "./toPdfBlob";
  * 4. Exporting canvas.toBlob('image/png').
  *
  * @param data  The resume data.
- * @param scale  Device-pixel scale factor (2–5). Higher = sharper but larger.
+ * @param scale  Device-pixel scale factor (1–5). Higher = sharper but larger.
  *
  * Runs entirely client-side. No API routes needed.
  */
@@ -17,31 +18,13 @@ export async function toPngBlob(
   data: ResumeData,
   scale: number = 2,
 ): Promise<Blob> {
-  const clampedScale = Math.max(2, Math.min(5, scale));
+  const clampedScale = Math.max(1, Math.min(5, scale));
 
   // Generate the PDF using the same path as export and preview.
   const pdfBlob = await toPdfBlob(data);
   const pdfArrayBuffer = await pdfArrayBufferFromBlob(pdfBlob);
 
-  // Dynamically import pdfjs-dist — keeps it out of the SSR bundle and
-  // avoids worker-setup issues during module evaluation.
-  const pdfjs = await import("pdfjs-dist");
-
-  // Configure the worker. In a Next.js/webpack context, `new URL()` with
-  // import.meta.url tells webpack to bundle the worker as an asset. If that
-  // fails at runtime (e.g. Turbopack doesn't support this yet), we fall back
-  // to the CDN worker.
-  if (!pdfjs.GlobalWorkerOptions.workerSrc) {
-    try {
-      pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-        "pdfjs-dist/build/pdf.worker.min.mjs",
-        import.meta.url,
-      ).toString();
-    } catch {
-      // Fallback: CDN worker matching the installed version.
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-    }
-  }
+  const pdfjs = await getPdfjs();
 
   // Load the PDF document.
   const loadingTask = pdfjs.getDocument({ data: pdfArrayBuffer });

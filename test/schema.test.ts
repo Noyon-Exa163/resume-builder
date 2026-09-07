@@ -54,7 +54,7 @@ describe("EntrySchema", () => {
     expectParseFail(EntrySchema, { title: "Engineer" });
   });
 
-  it("accepts a valid url, an empty string, or a missing link", () => {
+  it("accepts a url, an empty string, or a missing link", () => {
     expect(
       EntrySchema.parse({ id: "e1", link: "https://example.com" }).link,
     ).toBe("https://example.com");
@@ -62,8 +62,10 @@ describe("EntrySchema", () => {
     expect(EntrySchema.parse({ id: "e1" }).link).toBeUndefined();
   });
 
-  it("rejects a non-url link", () => {
-    expectParseFail(EntrySchema, { id: "e1", link: "not-a-url" });
+  it("keeps a half-typed link so an in-progress draft stays saveable", () => {
+    expect(EntrySchema.parse({ id: "e1", link: "example.c" }).link).toBe(
+      "example.c",
+    );
   });
 });
 
@@ -110,7 +112,7 @@ describe("PersonalInfoSchema", () => {
     expect(PersonalInfoSchema.parse({}).fullName).toBe("");
   });
 
-  it("accepts a valid email, an empty string, or a missing email", () => {
+  it("accepts an email, an empty string, or a missing email", () => {
     expect(PersonalInfoSchema.parse({ email: "ada@example.com" }).email).toBe(
       "ada@example.com",
     );
@@ -118,11 +120,7 @@ describe("PersonalInfoSchema", () => {
     expect(PersonalInfoSchema.parse({}).email).toBeUndefined();
   });
 
-  it("rejects an invalid email", () => {
-    expectParseFail(PersonalInfoSchema, { email: "not-an-email" });
-  });
-
-  it("accepts a valid url, an empty string, or a missing website", () => {
+  it("accepts a url, an empty string, or a missing website", () => {
     expect(
       PersonalInfoSchema.parse({ website: "https://ada.dev" }).website,
     ).toBe("https://ada.dev");
@@ -130,8 +128,13 @@ describe("PersonalInfoSchema", () => {
     expect(PersonalInfoSchema.parse({}).website).toBeUndefined();
   });
 
-  it("rejects a non-url website", () => {
-    expectParseFail(PersonalInfoSchema, { website: "not-a-url" });
+  // The editor autosaves mid-keystroke, so contact fields must survive being
+  // half-typed. Format is reported in the form, not enforced on save.
+  it("keeps half-typed contact details rather than rejecting the draft", () => {
+    expect(PersonalInfoSchema.parse({ email: "ada@" }).email).toBe("ada@");
+    expect(PersonalInfoSchema.parse({ website: "ada.d" }).website).toBe(
+      "ada.d",
+    );
   });
 });
 
@@ -251,13 +254,19 @@ describe("normalizeAndValidate", () => {
     expect(ResumeDataSchema.safeParse(resume).success).toBe(true);
   });
 
-  it("still validates email and url fields after filling defaults", () => {
-    expect(() =>
-      normalizeAndValidate({ personalInfo: { email: "not-an-email" } }),
-    ).toThrow();
-    expect(() =>
-      normalizeAndValidate({ personalInfo: { website: "not-a-url" } }),
-    ).toThrow();
+  it("does not throw on contact details that are still being typed", () => {
+    const draft = normalizeAndValidate({
+      personalInfo: { email: "ada@", website: "ada.d" },
+      sections: [
+        { id: "s1", kind: "projects", title: "Projects", entries: [
+          { id: "e1", title: "Portfolio", link: "ada.d" },
+        ] },
+      ],
+    });
+
+    expect(draft.personalInfo.email).toBe("ada@");
+    expect(draft.personalInfo.website).toBe("ada.d");
+    expect(draft.sections[0].entries[0].link).toBe("ada.d");
   });
 });
 

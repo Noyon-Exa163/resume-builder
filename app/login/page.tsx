@@ -3,6 +3,7 @@
 import { Suspense, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input, Button } from "@/components/ui";
+import { Loader2, LogIn } from "lucide-react";
 import "./page.css";
 
 export default function LoginPage() {
@@ -95,6 +96,11 @@ function LoginForm() {
             className="login-form__submit"
             disabled={isLoading}
           >
+            {isLoading ? (
+              <Loader2 size={16} className="button__icon--spin" />
+            ) : (
+              <LogIn size={16} />
+            )}
             {isLoading ? "Signing In..." : "Sign In"}
           </Button>
         </form>

@@ -91,9 +91,9 @@ export function AddSectionMenu({
         <Menu.Trigger
           render={
             <Button type="button" variant="secondary">
-              <Plus size={16} style={{ marginRight: 6 }} />
+              <Plus size={16} />
               Add Section
-              <ChevronDown size={14} style={{ marginLeft: 6 }} />
+              <ChevronDown size={14} />
             </Button>
           }
         />

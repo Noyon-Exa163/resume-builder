@@ -2,7 +2,13 @@
 
 import { useState, type KeyboardEvent } from "react";
 import type { ResumeEntry, SectionKind } from "@/lib/schema/resume";
-import { Input, Textarea, Button, SwitchField } from "@/components/ui";
+import {
+  Input,
+  DateInput,
+  Textarea,
+  Button,
+  SwitchField,
+} from "@/components/ui";
 import { Plus, Trash2, X } from "lucide-react";
 import "./EntryForm.css";
 
@@ -123,36 +129,36 @@ export function EntryForm({
 
         {showDates && (
           <div className="entry-form__dates-row">
-            <div className="entry-form__dates-inputs">
-              <div className="entry-form__date-field">
-                <Input
-                  label="Start Date"
-                  placeholder="MM/YYYY or YYYY"
-                  value={value.startDate || ""}
-                  onChange={(e) => handleFieldChange("startDate", e.target.value)}
-                />
-              </div>
-              <span className="entry-form__date-separator">–</span>
-              <div className="entry-form__date-field">
-                <Input
-                  label="End Date"
-                  placeholder={value.isCurrent ? "Present" : "MM/YYYY or YYYY"}
-                  value={value.isCurrent ? "" : value.endDate || ""}
-                  disabled={value.isCurrent}
-                  onChange={(e) => handleFieldChange("endDate", e.target.value)}
-                />
-              </div>
+            <div className="entry-form__date-field">
+              <DateInput
+                label="Start Date"
+                helperText="Type DD/MM/YYYY, or stop at MM/YYYY or YYYY."
+                value={value.startDate}
+                onChange={(next) => handleFieldChange("startDate", next)}
+              />
             </div>
 
-            <div className="entry-form__current-toggle">
-              <SwitchField
-                checked={value.isCurrent ?? false}
-                onCheckedChange={(checked) => {
-                  handleFieldChange("isCurrent", checked);
-                  if (checked) handleFieldChange("endDate", undefined);
-                }}
-                label="Current / Present"
-              />
+            <div className="entry-form__end-date-group">
+              <div className="entry-form__date-field">
+                <DateInput
+                  label="End Date"
+                  placeholder={value.isCurrent ? "Present" : "DD/MM/YYYY"}
+                  value={value.isCurrent ? "" : value.endDate}
+                  disabled={value.isCurrent}
+                  onChange={(next) => handleFieldChange("endDate", next)}
+                />
+              </div>
+
+              <div className="entry-form__current-toggle">
+                <SwitchField
+                  checked={value.isCurrent ?? false}
+                  onCheckedChange={(checked) => {
+                    handleFieldChange("isCurrent", checked);
+                    if (checked) handleFieldChange("endDate", undefined);
+                  }}
+                  label="Current / Present"
+                />
+              </div>
             </div>
           </div>
         )}
@@ -188,7 +194,7 @@ export function EntryForm({
               size="s"
               onClick={handleAddBullet}
             >
-              <Plus size={14} style={{ marginRight: 4 }} />
+              <Plus size={14} />
               Add Bullet
             </Button>
           </div>
@@ -265,6 +271,7 @@ export function EntryForm({
               onClick={handleAddTag}
               disabled={!newTagText.trim()}
             >
+              <Plus size={14} />
               Add
             </Button>
           </div>

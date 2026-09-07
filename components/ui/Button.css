@@ -92,6 +92,7 @@
 
 /* Icon-only buttons need a square aspect ratio */
 .button--icon-only {
+  flex-shrink: 0;
   padding: 0;
   aspect-ratio: 1;
 }
@@ -106,4 +107,24 @@
 
 .button--icon-only.button--s {
   width: 32px;
+}
+
+.button__icon--spin {
+  animation: button-icon-spin var(--duration-slower) linear infinite;
+}
+
+@keyframes button-icon-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button__icon--spin {
+    animation: none;
+  }
 }

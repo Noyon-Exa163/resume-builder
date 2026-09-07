@@ -34,8 +34,8 @@ export const RESUME_SCHEMA_DESCRIPTION = `{
           title: string,            // job title, degree, project name, skill group, …
           subtitle?: string,        // company, school, issuer
           location?: string,
-          startDate?: string,       // prefer YYYY-MM or YYYY
-          endDate?: string,
+          startDate?: string,       // YYYY-MM-DD, YYYY-MM, or YYYY — never guess
+          endDate?: string,         //   a precision the source doesn't state
           isCurrent?: boolean,
           bullets?: string[],
           tags?: string[],          // skill keywords, tech stack

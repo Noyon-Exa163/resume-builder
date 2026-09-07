@@ -11,7 +11,7 @@
 .entry-form__grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-3);
+  gap: var(--space-6);
 }
 
 .entry-form__full-width {
@@ -20,33 +20,32 @@
 
 .entry-form__dates-row {
   display: flex;
-  align-items: flex-end;
-  gap: var(--space-3);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-6);
   grid-column: 1 / -1;
+  width: 100%;
 }
 
-.entry-form__dates-inputs {
+.entry-form__end-date-group {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex: 1;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
 }
 
 .entry-form__date-field {
-  flex: 1;
+  width: 100%;
+  min-width: 0;
 }
 
-.entry-form__date-separator {
-  color: var(--color-text-tertiary);
-  font-family: var(--font-body);
-  font-size: 14px;
-  padding-bottom: var(--space-2);
+.entry-form__date-field .input-field {
+  width: 100%;
 }
 
 .entry-form__current-toggle {
   display: flex;
   align-items: center;
-  padding-bottom: var(--space-2);
   white-space: nowrap;
 }
 
@@ -156,14 +155,5 @@
 @media (max-width: 640px) {
   .entry-form__grid {
     grid-template-columns: 1fr;
-  }
-
-  .entry-form__dates-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .entry-form__dates-inputs {
-    flex-direction: column;
   }
 }

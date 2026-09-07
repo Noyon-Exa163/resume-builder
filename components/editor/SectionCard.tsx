@@ -152,7 +152,7 @@ export function SectionCard({
               size="s"
               onClick={onAddEntry}
             >
-              <Plus size={14} style={{ marginRight: 4 }} />
+              <Plus size={14} />
               Add Entry
             </Button>
           </div>

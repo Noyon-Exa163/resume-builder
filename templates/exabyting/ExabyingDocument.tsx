@@ -6,8 +6,8 @@ import {
   Text,
   View,
 } from "@react-pdf/renderer";
-import { format, isValid, parseISO } from "date-fns";
 
+import { formatDateRange } from "@/lib/date";
 import type { PageSize, ResumeEntry, ResumeSection } from "@/lib/schema/resume";
 import type { ResumeTemplateProps } from "../types";
 import { ExabytingLogomark } from "./Logo";
@@ -360,22 +360,6 @@ function contactLine(
   ].filter(hasText);
 
   return parts.join("  ·  ");
-}
-
-function formatDateRange(entry: ResumeEntry): string {
-  const start = formatResumeDate(entry.startDate);
-  const end = entry.isCurrent ? "Present" : formatResumeDate(entry.endDate);
-  if (start && end) return `${start} - ${end}`;
-  return start || end || "";
-}
-
-function formatResumeDate(value: string | undefined): string {
-  if (!hasText(value)) return "";
-  const trimmed = value.trim();
-  if (/^\d{4}$/.test(trimmed)) return trimmed;
-  const parsed = parseISO(trimmed);
-  if (isValid(parsed)) return format(parsed, "MMM yyyy");
-  return trimmed;
 }
 
 function displayLink(value: string): string {

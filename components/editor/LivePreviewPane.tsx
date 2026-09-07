@@ -1,15 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 import type { ResumeData } from "@/lib/schema/resume";
-import { getTemplate } from "@/templates";
+import { toPdfBlob } from "@/lib/export/toPdfBlob";
+import { PdfCanvasViewer } from "./PdfCanvasViewer";
 import "./LivePreviewPane.css";
-
-const PDFViewer = dynamic(
-  () => import("@react-pdf/renderer").then((mod) => mod.PDFViewer),
-  { ssr: false },
-);
 
 const DEBOUNCE_MS = 400;
 
@@ -18,25 +13,47 @@ interface LivePreviewPaneProps {
 }
 
 /**
- * Renders the draft through its template's `Document` component — the same
- * component export.toPdfBlob() uses — so the preview never drifts from the
- * download. Debounced so typing doesn't re-render the whole PDF per keystroke.
+ * Renders the draft through toPdfBlob() — the same path the download uses —
+ * so the preview never drifts from the exported file. Debounced so typing
+ * doesn't rebuild the whole PDF per keystroke.
  */
 export function LivePreviewPane({ data }: LivePreviewPaneProps) {
-  const [debounced, setDebounced] = useState(data);
+  const [draft, setDraft] = useState(() => ({ key: previewKey(data), data }));
+  const [blob, setBlob] = useState<Blob | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebounced(data), DEBOUNCE_MS);
-    return () => clearTimeout(timer);
+    const timer = window.setTimeout(() => {
+      const key = previewKey(data);
+      setDraft((prev) => (prev.key === key ? prev : { key, data }));
+    }, DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
   }, [data]);
 
-  const { Document } = getTemplate(debounced.meta.templateId);
+  useEffect(() => {
+    let isStale = false;
+    toPdfBlob(draft.data)
+      .then((next) => {
+        if (!isStale) setBlob(next);
+      })
+      .catch((error) => console.error("Preview render failed:", error));
+    return () => {
+      isStale = true;
+    };
+  }, [draft]);
 
   return (
     <div className="live-preview-pane">
-      <PDFViewer className="live-preview-pane__viewer" showToolbar={false}>
-        <Document data={debounced} />
-      </PDFViewer>
+      <PdfCanvasViewer blob={blob} className="live-preview-pane__viewer" />
     </div>
   );
+}
+
+/**
+ * Identifies the draft by the content that actually reaches the page. Autosave
+ * swaps in a fresh, deep-equal object and every edit bumps `meta.updatedAt`,
+ * so comparing by reference or including the timestamp would rebuild a PDF
+ * that is already on screen.
+ */
+function previewKey(data: ResumeData): string {
+  return JSON.stringify({ ...data, meta: { ...data.meta, updatedAt: null } });
 }

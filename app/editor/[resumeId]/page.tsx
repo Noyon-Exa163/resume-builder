@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { useEditorStore } from "@/lib/store/editorStore";
+import { formatLastSavedLabel } from "@/lib/utils/formatLastSaved";
+import { Button } from "@/components/ui";
 import { SplitPane } from "@/components/common/SplitPane";
 import {
   PersonalInfoForm,
@@ -14,6 +17,9 @@ import {
 } from "@/components/editor";
 import "./page.css";
 
+const AUTOSAVE_DELAY_MS = 5_000;
+const SAVE_STATUS_TICK_MS = 30_000;
+
 export default function EditorPage() {
   const params = useParams<{ resumeId: string }>();
   const router = useRouter();
@@ -23,6 +29,7 @@ export default function EditorPage() {
     hasLoaded,
     isDirty,
     isSaving,
+    lastSavedAt,
     load,
     save,
     setTitle,
@@ -42,6 +49,37 @@ export default function EditorPage() {
     if (params.resumeId) void load(params.resumeId);
   }, [params.resumeId, load]);
 
+  useEffect(() => {
+    if (!isDirty) return;
+    const timeoutId = window.setTimeout(() => {
+      void save();
+    }, AUTOSAVE_DELAY_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [resume, isDirty, save]);
+
+  useEffect(() => {
+    const flush = () => {
+      if (useEditorStore.getState().isDirty) {
+        void useEditorStore.getState().save();
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+      flush();
+    };
+  }, []);
+
+  async function handleBack() {
+    await save();
+    router.push("/");
+  }
+
   if (isLoading || !hasLoaded) {
     return <main className="editor-page__loading">Loading…</main>;
   }
@@ -50,14 +88,17 @@ export default function EditorPage() {
     return (
       <main className="editor-page__loading">
         <div className="editor-page__not-found">
-          <p>This resume doesn&apos;t exist, or you don&apos;t have access to it.</p>
-          <button
+          <p>
+            This resume doesn&apos;t exist, or you don&apos;t have access to it.
+          </p>
+          <Button
             type="button"
-            className="editor-page__back"
+            variant="tertiary"
+            size="m"
             onClick={() => router.push("/")}
           >
             ← Back to My Resumes
-          </button>
+          </Button>
         </div>
       </main>
     );
@@ -66,27 +107,29 @@ export default function EditorPage() {
   return (
     <main className="editor-page">
       <header className="editor-page__header">
-        <button
+        <Button
           type="button"
-          className="editor-page__back"
-          onClick={() => router.push("/")}
+          variant="secondary"
+          size="m"
+          iconOnly
+          aria-label="Back to My Resumes"
+          onClick={() => void handleBack()}
         >
-          ← My Resumes
-        </button>
+          <ArrowLeft size={18} />
+        </Button>
         <input
           className="editor-page__title-input"
           value={resume.meta.title}
           onChange={(e) => setTitle(e.target.value)}
           aria-label="Resume title"
         />
-        <button
-          type="button"
-          className="editor-page__save"
-          onClick={() => void save()}
-          disabled={isSaving || !isDirty}
-        >
-          {isSaving ? "Saving…" : isDirty ? "Save" : "Saved"}
-        </button>
+        {/* Keyed so a new save restarts the elapsed-time clock immediately
+            rather than waiting out the current tick. */}
+        <LastSavedStatus
+          key={lastSavedAt}
+          lastSavedAt={lastSavedAt}
+          isSaving={isSaving}
+        />
         <ExportButtons data={resume} />
       </header>
 
@@ -118,5 +161,36 @@ export default function EditorPage() {
         />
       </div>
     </main>
+  );
+}
+
+function LastSavedStatus({
+  lastSavedAt,
+  isSaving,
+}: {
+  lastSavedAt: string | null;
+  isSaving: boolean;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNow(Date.now());
+    }, SAVE_STATUS_TICK_MS);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  const label = isSaving
+    ? "Saving…"
+    : lastSavedAt
+      ? formatLastSavedLabel(lastSavedAt, new Date(now))
+      : null;
+
+  if (!label) return null;
+
+  return (
+    <p className="editor-page__save-status" aria-live="polite">
+      {label}
+    </p>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, type FormEvent } from "react";
-import { Users } from "lucide-react";
+import { Users, Loader2, Trash2, UserPlus } from "lucide-react";
 import { Input, Button, EmptyState, ConfirmDialog } from "@/components/ui";
 import { PROTECTED_ADMIN_EMAIL } from "@/lib/auth/constants";
 import "./page.css";
@@ -167,6 +167,11 @@ export default function UsersPageClient() {
               size="s"
               disabled={isCreating}
             >
+              {isCreating ? (
+                <Loader2 size={14} className="button__icon--spin" />
+              ) : (
+                <UserPlus size={14} />
+              )}
               {isCreating ? "Creating..." : "Create User"}
             </Button>
           </div>
@@ -205,6 +210,7 @@ export default function UsersPageClient() {
                     size="s"
                     onClick={() => setDeleteTarget(u)}
                   >
+                    <Trash2 size={14} />
                     Delete
                   </Button>
                 )}

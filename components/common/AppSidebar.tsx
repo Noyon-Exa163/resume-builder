@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FileText, LogOut, User, Users, type LucideIcon } from "lucide-react";
+import {
+  FileText,
+  LogOut,
+  Sparkles,
+  User,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import "./AppSidebar.css";
 
 export interface AppSidebarProps {
@@ -33,7 +40,10 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
     { href: "/", label: "My Resumes", icon: FileText },
     { href: "/settings/account", label: "Account", icon: User },
     ...(isAdmin
-      ? [{ href: "/settings/users", label: "Manage Users", icon: Users }]
+      ? [
+          { href: "/settings/users", label: "Manage Users", icon: Users },
+          { href: "/settings/ai", label: "AI Settings", icon: Sparkles },
+        ]
       : []),
   ];
 

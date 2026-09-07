@@ -1,0 +1,146 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { getPdfjs } from "@/lib/pdf/pdfjs";
+import "./PdfCanvasViewer.css";
+
+interface PdfCanvasViewerProps {
+  blob: Blob | null;
+  className?: string;
+}
+
+/** Cap the raster resolution — a 3x display would quadruple render cost for
+ *  detail nobody can see at preview size. */
+const MAX_PIXEL_RATIO = 2;
+
+/** Resizing fires continuously while the split pane is dragged. */
+const RESIZE_DEBOUNCE_MS = 120;
+
+/**
+ * Rasterises a PDF to canvases with pdfjs and swaps the whole set into the
+ * DOM in a single mutation, so the previously rendered pages stay on screen
+ * right up until the new ones are ready to paint.
+ *
+ * An `<iframe>` pointed at a blob URL can't do this: changing its `src` tears
+ * the old document down before the new one loads, which is what made the
+ * preview flash on every edit.
+ */
+export function PdfCanvasViewer({ blob, className }: PdfCanvasViewerProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const pagesRef = useRef<HTMLDivElement>(null);
+  const [pageWidth, setPageWidth] = useState(0);
+  const [hasRendered, setHasRendered] = useState(false);
+
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    if (!scroller) return;
+
+    let timer = 0;
+    let hasMeasured = false;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = Math.floor(entry.contentRect.width);
+      window.clearTimeout(timer);
+      // Take the first measurement straight away so nothing delays first paint;
+      // only debounce the resizes that follow.
+      if (!hasMeasured) {
+        hasMeasured = true;
+        setPageWidth(width);
+        return;
+      }
+      timer = window.setTimeout(() => setPageWidth(width), RESIZE_DEBOUNCE_MS);
+    });
+    observer.observe(scroller);
+
+    return () => {
+      window.clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!blob || pageWidth <= 0) return;
+    let isStale = false;
+
+    void (async () => {
+      try {
+        const canvases = await renderPages(blob, pageWidth, () => isStale);
+        const host = pagesRef.current;
+        if (isStale || !host) return;
+
+        // One mutation, one paint. Restoring scroll afterwards keeps the
+        // reader where they were instead of jumping to page one on every edit.
+        const scroller = scrollRef.current;
+        const scrollTop = scroller?.scrollTop ?? 0;
+        host.replaceChildren(...canvases);
+        if (scroller) scroller.scrollTop = scrollTop;
+        setHasRendered(true);
+      } catch (error) {
+        if (!isStale) console.error("Preview render failed:", error);
+      }
+    })();
+
+    return () => {
+      isStale = true;
+    };
+  }, [blob, pageWidth]);
+
+  return (
+    <div
+      className={["pdf-canvas-viewer", className].filter(Boolean).join(" ")}
+      ref={scrollRef}
+    >
+      {/* Populated imperatively above — React must not own these children. */}
+      <div className="pdf-canvas-viewer__pages" ref={pagesRef} />
+      {!hasRendered && (
+        <p className="pdf-canvas-viewer__status">Rendering preview…</p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Draws every page off-screen at `pageWidth` CSS pixels. Returns detached
+ * canvases; nothing reaches the DOM until the caller decides to swap.
+ */
+async function renderPages(
+  blob: Blob,
+  pageWidth: number,
+  isStale: () => boolean,
+): Promise<HTMLCanvasElement[]> {
+  const pdfjs = await getPdfjs();
+  const data = await blob.arrayBuffer();
+  const loadingTask = pdfjs.getDocument({ data });
+
+  try {
+    const pdfDoc = await loadingTask.promise;
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
+    const canvases: HTMLCanvasElement[] = [];
+
+    for (let pageNumber = 1; pageNumber <= pdfDoc.numPages; pageNumber += 1) {
+      if (isStale()) return [];
+
+      const page = await pdfDoc.getPage(pageNumber);
+      const unscaled = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({
+        scale: (pageWidth / unscaled.width) * pixelRatio,
+      });
+
+      const canvas = document.createElement("canvas");
+      canvas.className = "pdf-canvas-viewer__page";
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      canvas.style.width = `${pageWidth}px`;
+      canvas.style.height = `${Math.floor(viewport.height / pixelRatio)}px`;
+
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Could not get a 2D canvas context.");
+
+      await page.render({ canvas, canvasContext: context, viewport }).promise;
+      canvases.push(canvas);
+    }
+
+    return canvases;
+  } finally {
+    void loadingTask.destroy();
+  }
+}

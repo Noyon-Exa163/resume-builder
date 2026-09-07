@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type ChangeEvent } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import type { PersonalInfo } from "@/lib/schema/resume";
 import { Input, Button } from "@/components/ui";
 import { User, Upload, Trash2 } from "lucide-react";
@@ -18,10 +18,23 @@ export function PersonalInfoForm({
   className,
 }: PersonalInfoFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Format problems are only worth raising once someone has left the field —
+  // flagging "j" as a bad email address while they type is just noise.
+  const [visited, setVisited] = useState({ email: false, website: false });
 
   const handleFieldChange = (field: keyof PersonalInfo, val: string) => {
     onChange({ [field]: val });
   };
+
+  const emailError =
+    visited.email && !isEmailLike(value.email)
+      ? "Enter an email address like jane@example.com."
+      : undefined;
+
+  const websiteError =
+    visited.website && !isWebAddressLike(value.website)
+      ? "Enter a web address like https://janedoe.dev."
+      : undefined;
 
   const handlePhotoUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,7 +93,7 @@ export function PersonalInfoForm({
               size="s"
               onClick={() => fileInputRef.current?.click()}
             >
-              <Upload size={14} style={{ marginRight: 6 }} />
+              <Upload size={14} />
               {value.photoDataUrl ? "Change Photo" : "Upload Photo"}
             </Button>
             {value.photoDataUrl && (
@@ -91,7 +104,7 @@ export function PersonalInfoForm({
                 onClick={handleRemovePhoto}
                 aria-label="Remove photo"
               >
-                <Trash2 size={14} style={{ marginRight: 4 }} />
+                <Trash2 size={14} />
                 Remove
               </Button>
             )}
@@ -128,6 +141,8 @@ export function PersonalInfoForm({
           placeholder="e.g. jane@example.com"
           value={value.email || ""}
           onChange={(e) => handleFieldChange("email", e.target.value)}
+          onBlur={() => setVisited((prev) => ({ ...prev, email: true }))}
+          error={emailError}
         />
 
         <Input
@@ -153,6 +168,8 @@ export function PersonalInfoForm({
           placeholder="e.g. https://janedoe.dev"
           value={value.website || ""}
           onChange={(e) => handleFieldChange("website", e.target.value)}
+          onBlur={() => setVisited((prev) => ({ ...prev, website: true }))}
+          error={websiteError}
         />
 
         <Input
@@ -173,6 +190,27 @@ export function PersonalInfoForm({
       </div>
     </div>
   );
+}
+
+/** Empty is always acceptable — these fields are optional. */
+function isEmailLike(value: string | undefined): boolean {
+  const trimmed = value?.trim() ?? "";
+  return trimmed === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+}
+
+/** Accepts a bare host too, since the LinkedIn and GitHub fields alongside
+ *  this one are written without a scheme. */
+function isWebAddressLike(value: string | undefined): boolean {
+  const trimmed = value?.trim() ?? "";
+  if (trimmed === "") return true;
+  try {
+    const url = new URL(
+      /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`,
+    );
+    return url.hostname.includes(".");
+  } catch {
+    return false;
+  }
 }
 
 export default PersonalInfoForm;

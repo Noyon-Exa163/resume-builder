@@ -19,11 +19,8 @@ export const EntrySchema = z.object({
   bullets: z.array(z.string()).default([]),
   tags: z.array(z.string()).default([]),
   description: z.string().optional(),
-  link: z
-    .string()
-    .url()
-    .optional()
-    .or(z.literal("")),
+  /** Free text, not a strict URL — see PersonalInfoSchema. */
+  link: z.string().optional(),
 });
 export type ResumeEntry = z.infer<typeof EntrySchema>;
 
@@ -52,21 +49,20 @@ export const SectionSchema = z.object({
 });
 export type ResumeSection = z.infer<typeof SectionSchema>;
 
+/**
+ * Contact details are stored as free text rather than strictly formatted
+ * values. The editor autosaves a draft while the user is still typing, so a
+ * half-written address ("jane@", "janedoe.d") must not make the draft
+ * unsaveable. Format is checked in the form UI, where it can be shown to the
+ * person who can fix it, instead of throwing on the persistence path.
+ */
 export const PersonalInfoSchema = z.object({
   fullName: z.string().default(""),
   headline: z.string().optional(),
-  email: z
-    .string()
-    .email()
-    .optional()
-    .or(z.literal("")),
+  email: z.string().optional(),
   phone: z.string().optional(),
   location: z.string().optional(),
-  website: z
-    .string()
-    .url()
-    .optional()
-    .or(z.literal("")),
+  website: z.string().optional(),
   linkedin: z.string().optional(),
   github: z.string().optional(),
   /** Optional headshot as a data URL. Templates decide whether to render it. */

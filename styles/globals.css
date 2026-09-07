@@ -41,3 +41,22 @@ a {
   outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
 }
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--neutral-1) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--neutral-1);
+  border-radius: var(--radius-full);
+}

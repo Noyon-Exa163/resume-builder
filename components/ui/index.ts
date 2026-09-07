@@ -4,6 +4,9 @@ export type { ButtonProps } from "./Button";
 export { default as Input } from "./Input";
 export type { InputProps } from "./Input";
 
+export { default as DateInput } from "./DateInput";
+export type { DateInputProps } from "./DateInput";
+
 export { default as Textarea } from "./Textarea";
 export type { TextareaProps } from "./Textarea";
 

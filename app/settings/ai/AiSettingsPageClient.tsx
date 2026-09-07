@@ -1,0 +1,505 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Loader2, PlugZap, Save, Trash2 } from "lucide-react";
+import { Input, Button, SelectField, Badge, type SelectOption } from "@/components/ui";
+import type { AIProviderId } from "@/lib/ai/types";
+import { templateRegistry } from "@/templates";
+import "./page.css";
+
+interface ProviderFormState {
+  apiKey: string;
+  model: string;
+  baseUrl: string;
+}
+
+type ProvidersState = Record<AIProviderId, ProviderFormState>;
+
+interface AdminSettingsResponse {
+  providers: Partial<
+    Record<AIProviderId, { apiKey: string; model?: string; baseUrl?: string }>
+  >;
+  defaultProviderId?: AIProviderId;
+  defaultTemplateId: string;
+}
+
+interface TestStatus {
+  state: "idle" | "testing" | "ok" | "error";
+  message?: string;
+}
+
+const PROVIDER_ORDER: AIProviderId[] = [
+  "openrouter",
+  "gemini",
+  "anthropic",
+  "deepseek",
+  "customOpenAICompatible",
+];
+
+const PROVIDER_LABELS: Record<AIProviderId, string> = {
+  gemini: "Google Gemini",
+  anthropic: "Anthropic",
+  openrouter: "OpenRouter",
+  deepseek: "DeepSeek",
+  customOpenAICompatible: "Custom (OpenAI-compatible)",
+};
+
+/** One-line, per-provider guidance shown under its Model field. */
+const PROVIDER_HINTS: Record<AIProviderId, string> = {
+  openrouter:
+    "Leave Model empty to let OpenRouter route each request automatically.",
+  gemini:
+    "Model is required — check Google AI Studio for current model ids (e.g. gemini-2.5-flash).",
+  anthropic:
+    "Model is required — check Anthropic's docs for current model ids (e.g. claude-sonnet-4-5).",
+  deepseek:
+    "Model is required — check DeepSeek's docs for current model ids (e.g. deepseek-chat).",
+  customOpenAICompatible:
+    "Base URL and Model are both required — point this at any OpenAI-compatible chat completions API.",
+};
+
+function emptyProviders(): ProvidersState {
+  return PROVIDER_ORDER.reduce((acc, id) => {
+    acc[id] = { apiKey: "", model: "", baseUrl: "" };
+    return acc;
+  }, {} as ProvidersState);
+}
+
+export default function AiSettingsPageClient() {
+  const [providers, setProviders] = useState<ProvidersState>(emptyProviders);
+  // Snapshot of what's actually persisted server-side. Per-provider save/
+  // remove reads other rows from here (not from `providers`) so saving one
+  // row can never accidentally persist some other row's half-typed edits.
+  const [savedProviders, setSavedProviders] =
+    useState<ProvidersState>(emptyProviders);
+  const [defaultProviderId, setDefaultProviderId] = useState<string | null>(
+    null,
+  );
+  const [defaultTemplateId, setDefaultTemplateId] = useState<string | null>(
+    null,
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savingProviderId, setSavingProviderId] = useState<AIProviderId | null>(
+    null,
+  );
+  const [dirtyProviders, setDirtyProviders] = useState<Set<AIProviderId>>(
+    new Set(),
+  );
+  const [defaultsDirty, setDefaultsDirty] = useState(false);
+  const isDirty = dirtyProviders.size > 0 || defaultsDirty;
+  const [error, setError] = useState("");
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [testStatus, setTestStatus] = useState<
+    Partial<Record<AIProviderId, TestStatus>>
+  >({});
+
+  useEffect(() => {
+    let ignore = false;
+
+    fetch("/api/settings")
+      .then(async (res) => {
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          throw new Error(data?.error || "Could not load AI settings.");
+        }
+        return res.json();
+      })
+      .then((data: AdminSettingsResponse) => {
+        if (ignore) return;
+        const loaded = emptyProviders();
+        for (const id of PROVIDER_ORDER) {
+          const config = data.providers[id];
+          if (config) {
+            loaded[id] = {
+              apiKey: config.apiKey,
+              model: config.model ?? "",
+              baseUrl: config.baseUrl ?? "",
+            };
+          }
+        }
+        setProviders(loaded);
+        setSavedProviders(loaded);
+        setDefaultProviderId(data.defaultProviderId ?? null);
+        setDefaultTemplateId(data.defaultTemplateId ?? "exabyting");
+      })
+      .catch((err: Error) => {
+        if (!ignore) setError(err.message);
+      })
+      .finally(() => {
+        if (!ignore) setIsLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  // Reloading/closing the tab with an unsaved key typed in (e.g. right after
+  // a successful Test Connection, which only tests — it never saves) would
+  // otherwise silently discard it. Warn before that happens.
+  useEffect(() => {
+    if (!isDirty) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  function updateProvider(
+    id: AIProviderId,
+    patch: Partial<ProviderFormState>,
+  ) {
+    setProviders((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+    setDirtyProviders((prev) => new Set(prev).add(id));
+    setTestStatus((prev) => ({ ...prev, [id]: { state: "idle" } }));
+  }
+
+  async function handleTestConnection(id: AIProviderId) {
+    const config = providers[id];
+    setTestStatus((prev) => ({ ...prev, [id]: { state: "testing" } }));
+    try {
+      const res = await fetch("/api/settings/test-connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          providerId: id,
+          apiKey: config.apiKey,
+          model: config.model,
+          baseUrl: config.baseUrl.trim() || undefined,
+        }),
+      });
+      const data: { ok: boolean; error?: string } = await res.json();
+      setTestStatus((prev) => ({
+        ...prev,
+        [id]: data.ok
+          ? { state: "ok" }
+          : { state: "error", message: data.error || "Connection failed." },
+      }));
+    } catch {
+      setTestStatus((prev) => ({
+        ...prev,
+        [id]: { state: "error", message: "Something went wrong." },
+      }));
+    }
+  }
+
+  const configuredProviderOptions: SelectOption[] = PROVIDER_ORDER.filter(
+    (id) => providers[id].apiKey.trim(),
+  ).map((id) => ({ value: id, label: PROVIDER_LABELS[id] }));
+
+  const templateOptions: SelectOption[] = Object.values(templateRegistry).map(
+    (t) => ({ value: t.meta.id, label: t.meta.name }),
+  );
+
+  /**
+   * Shared "which providers actually have an API key" builder — takes an
+   * explicit snapshot rather than always reading `providers`, so a
+   * per-provider save/remove can build its payload from `savedProviders`
+   * (merged with just the one row being changed) instead of accidentally
+   * persisting some other row's in-progress, not-yet-saved edits.
+   */
+  function buildProvidersPayloadFrom(
+    source: ProvidersState,
+  ): AdminSettingsResponse["providers"] {
+    const payload: AdminSettingsResponse["providers"] = {};
+    for (const id of PROVIDER_ORDER) {
+      const config = source[id];
+      if (!config.apiKey.trim()) continue;
+      payload[id] = {
+        apiKey: config.apiKey.trim(),
+        ...(config.model.trim() ? { model: config.model.trim() } : {}),
+        ...(id === "customOpenAICompatible" && config.baseUrl.trim()
+          ? { baseUrl: config.baseUrl.trim() }
+          : {}),
+      };
+    }
+    return payload;
+  }
+
+  async function persistSettings(
+    providersPayload: AdminSettingsResponse["providers"],
+    nextDefaultProviderId: AIProviderId | null,
+  ): Promise<boolean> {
+    const res = await fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        providers: providersPayload,
+        defaultProviderId: nextDefaultProviderId ?? undefined,
+        defaultTemplateId: defaultTemplateId ?? "exabyting",
+      }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setError(data?.error || "Could not save settings.");
+      return false;
+    }
+    setSavedAt(Date.now());
+    return true;
+  }
+
+  /** Saves everything currently typed — every provider row plus the defaults. */
+  async function handleSave() {
+    setError("");
+    setIsSaving(true);
+    try {
+      const ok = await persistSettings(
+        buildProvidersPayloadFrom(providers),
+        defaultProviderId as AIProviderId | null,
+      );
+      if (!ok) return;
+      setSavedProviders(providers);
+      setDirtyProviders(new Set());
+      setDefaultsDirty(false);
+    } catch {
+      setError("Something went wrong saving settings.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  /**
+   * Saves just one provider's fields — other rows are sent as their last
+   * saved values (not whatever's currently typed but unsaved in them), so
+   * this can't leak a half-finished edit in a different row.
+   */
+  async function handleSaveProvider(id: AIProviderId) {
+    setError("");
+    setSavingProviderId(id);
+    try {
+      const merged: ProvidersState = { ...savedProviders, [id]: providers[id] };
+      const ok = await persistSettings(
+        buildProvidersPayloadFrom(merged),
+        defaultProviderId as AIProviderId | null,
+      );
+      if (!ok) return;
+      setSavedProviders(merged);
+      setDirtyProviders((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      setDefaultsDirty(false);
+    } catch {
+      setError("Something went wrong saving this provider.");
+    } finally {
+      setSavingProviderId(null);
+    }
+  }
+
+  /** Immediately deletes a provider's saved API key/model/base URL. */
+  async function handleRemoveProvider(id: AIProviderId) {
+    setError("");
+    setSavingProviderId(id);
+    try {
+      const nextDefault =
+        defaultProviderId === id
+          ? null
+          : (defaultProviderId as AIProviderId | null);
+      const cleared: ProviderFormState = { apiKey: "", model: "", baseUrl: "" };
+      const merged: ProvidersState = { ...savedProviders, [id]: cleared };
+      const ok = await persistSettings(
+        buildProvidersPayloadFrom(merged),
+        nextDefault,
+      );
+      if (!ok) return;
+      setProviders((prev) => ({ ...prev, [id]: cleared }));
+      setSavedProviders(merged);
+      setDirtyProviders((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      if (defaultProviderId === id) setDefaultProviderId(null);
+      setDefaultsDirty(false);
+      setTestStatus((prev) => ({ ...prev, [id]: { state: "idle" } }));
+    } catch {
+      setError("Something went wrong removing the provider.");
+    } finally {
+      setSavingProviderId(null);
+    }
+  }
+
+  if (isLoading) {
+    return <main className="ai-settings-page">Loading…</main>;
+  }
+
+  return (
+    <div className="ai-settings-page">
+      <h1 className="ai-settings-page__title">AI Settings</h1>
+      <p className="ai-settings-page__intro">
+        Configure the AI providers used for AI-assisted resume import. Keys
+        are stored server-side and are never sent to the browser.
+        Test Connection only checks a key — it doesn&apos;t save it. Click
+        Save Settings below to keep your changes.
+      </p>
+
+      {error && <div className="ai-settings-page__error">{error}</div>}
+
+      <div className="ai-settings-page__providers">
+        {PROVIDER_ORDER.map((id) => {
+          const config = providers[id];
+          const status = testStatus[id];
+          const isProviderDirty = dirtyProviders.has(id);
+          const isSavingThisProvider = savingProviderId === id;
+          return (
+            <div key={id} className="ai-settings-page__provider">
+              <h2 className="ai-settings-page__provider-title">
+                {PROVIDER_LABELS[id]}
+              </h2>
+              <div className="ai-settings-page__provider-row">
+                <Input
+                  label="API Key"
+                  type="password"
+                  size="s"
+                  value={config.apiKey}
+                  onChange={(e) =>
+                    updateProvider(id, { apiKey: e.target.value })
+                  }
+                  placeholder="sk-…"
+                />
+                <Input
+                  label="Model"
+                  size="s"
+                  value={config.model}
+                  onChange={(e) =>
+                    updateProvider(id, { model: e.target.value })
+                  }
+                  placeholder="e.g. gpt-4o-mini"
+                  helperText={PROVIDER_HINTS[id]}
+                />
+                {id === "customOpenAICompatible" && (
+                  <Input
+                    label="Base URL"
+                    size="s"
+                    value={config.baseUrl}
+                    onChange={(e) =>
+                      updateProvider(id, { baseUrl: e.target.value })
+                    }
+                    placeholder="https://api.example.com/v1"
+                  />
+                )}
+              </div>
+              <div className="ai-settings-page__provider-footer">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="s"
+                  disabled={!config.apiKey.trim() || isSavingThisProvider}
+                  onClick={() => void handleSaveProvider(id)}
+                >
+                  {isSavingThisProvider ? (
+                    <Loader2 size={14} className="button__icon--spin" />
+                  ) : (
+                    <Save size={14} />
+                  )}
+                  {isSavingThisProvider ? "Saving…" : "Save"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="s"
+                  disabled={
+                    !config.apiKey.trim() ||
+                    status?.state === "testing" ||
+                    isSavingThisProvider
+                  }
+                  onClick={() => void handleTestConnection(id)}
+                >
+                  {status?.state === "testing" ? (
+                    <Loader2 size={14} className="button__icon--spin" />
+                  ) : (
+                    <PlugZap size={14} />
+                  )}
+                  {status?.state === "testing"
+                    ? "Testing…"
+                    : "Test Connection"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="tertiary"
+                  size="s"
+                  disabled={!config.apiKey.trim() || isSavingThisProvider}
+                  onClick={() => void handleRemoveProvider(id)}
+                >
+                  <Trash2 size={14} />
+                  Remove
+                </Button>
+                {isProviderDirty && !isSavingThisProvider && (
+                  <span className="ai-settings-page__unsaved-label">
+                    Unsaved
+                  </span>
+                )}
+                {status?.state === "ok" && (
+                  <Badge variant="default">Connected</Badge>
+                )}
+                {status?.state === "error" && (
+                  <span className="ai-settings-page__provider-error">
+                    {status.message}
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="ai-settings-page__defaults">
+        <SelectField
+          label="Default Provider"
+          placeholder="Choose a configured provider"
+          options={configuredProviderOptions}
+          value={defaultProviderId ?? undefined}
+          onValueChange={(value) => {
+            setDefaultProviderId(value);
+            setDefaultsDirty(true);
+          }}
+          disabled={configuredProviderOptions.length === 0}
+          helperText={
+            configuredProviderOptions.length === 0
+              ? "Add an API key for a provider above before choosing a default."
+              : "Used for every AI-assisted import — users don't pick a provider themselves."
+          }
+        />
+        <SelectField
+          label="Default Template"
+          options={templateOptions}
+          value={defaultTemplateId ?? undefined}
+          onValueChange={(value) => {
+            setDefaultTemplateId(value);
+            setDefaultsDirty(true);
+          }}
+        />
+      </div>
+
+      <div className="ai-settings-page__save">
+        <Button
+          type="button"
+          variant="primary"
+          size="m"
+          disabled={isSaving}
+          onClick={() => void handleSave()}
+        >
+          {isSaving ? (
+            <Loader2 size={16} className="button__icon--spin" />
+          ) : (
+            <Save size={16} />
+          )}
+          {isSaving ? "Saving…" : "Save Settings"}
+        </Button>
+        {isDirty && (
+          <span className="ai-settings-page__unsaved-label">
+            Unsaved changes
+          </span>
+        )}
+        {!isDirty && savedAt && (
+          <span className="ai-settings-page__saved-label">Saved.</span>
+        )}
+      </div>
+    </div>
+  );
+}

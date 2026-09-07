@@ -26,6 +26,8 @@ interface OpenAICompatibleOptions {
   label: string;
   /** Used when the caller does not pass `baseUrl`. */
   defaultBaseUrl?: string;
+  /** Used when the caller does not pass `model` (or passes an empty one). */
+  defaultModel?: string;
   extraHeaders?: Record<string, string>;
 }
 
@@ -56,6 +58,14 @@ export function createOpenAICompatibleProvider(
     return resolved;
   };
 
+  const resolveModel = (model: string): string => {
+    const resolved = model.trim() || options.defaultModel?.trim();
+    if (!resolved) {
+      throw new Error(`${options.label} requires a model.`);
+    }
+    return resolved;
+  };
+
   const request = async (args: {
     apiKey: string;
     model: string;
@@ -68,7 +78,7 @@ export function createOpenAICompatibleProvider(
     requireApiKey(args.apiKey, options.label);
     const url = chatCompletionsUrl(resolveBaseUrl(args.baseUrl));
     const body: Record<string, unknown> = {
-      model: args.model,
+      model: resolveModel(args.model),
       messages: args.messages,
       max_tokens: args.maxTokens,
     };

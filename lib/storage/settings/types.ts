@@ -1,10 +1,12 @@
+import { z } from "zod";
 import type { AIProviderId } from "@/lib/ai/types";
 
 export type { AIProviderId };
 
 export interface AIProviderConfig {
   apiKey: string;
-  model: string;
+  /** May be blank — some providers (e.g. OpenRouter) can auto-select a model. */
+  model?: string;
   /** Only set for customOpenAICompatible. */
   baseUrl?: string;
 }
@@ -24,6 +26,35 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
   providers: {},
   defaultTemplateId: "exabyting",
 };
+
+const AI_PROVIDER_IDS = [
+  "gemini",
+  "anthropic",
+  "openrouter",
+  "deepseek",
+  "customOpenAICompatible",
+] as const;
+
+const AIProviderConfigSchema = z.object({
+  apiKey: z.string().min(1),
+  // Optional at this layer — not every provider needs one (OpenRouter can
+  // auto-select), and requiring it here would be duplicating a rule the
+  // provider adapters (lib/ai/providers/*) already enforce at call time.
+  model: z.string().optional(),
+  baseUrl: z.string().url().optional(),
+});
+
+/**
+ * Runtime guard for what gets written to the settings store — the
+ * interfaces above are compile-time only. Every write path (the settings
+ * API route today) should validate through this rather than trusting the
+ * request body's shape.
+ */
+export const AdminSettingsInputSchema = z.object({
+  providers: z.record(z.enum(AI_PROVIDER_IDS), AIProviderConfigSchema),
+  defaultProviderId: z.enum(AI_PROVIDER_IDS).optional(),
+  defaultTemplateId: z.string().min(1),
+});
 
 /**
  * Depend on this, never on a concrete implementation (Netlify Blobs today,

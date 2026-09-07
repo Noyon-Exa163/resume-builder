@@ -21,6 +21,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, ChevronDown, ChevronUp, Trash2, ListOrdered } from "lucide-react";
 import { EmptyState, ConfirmDialog } from "@/components/ui";
+import { formatDateRange } from "@/lib/date";
 import "./EntryList.css";
 
 export interface EntryListProps {
@@ -66,12 +67,7 @@ function SortableEntryItem({
   };
 
   const displayTitle = entry.title || "Untitled Entry";
-  const displaySubtitle = [
-    entry.subtitle,
-    entry.startDate || entry.endDate
-      ? `${entry.startDate || ""} - ${entry.isCurrent ? "Present" : entry.endDate || ""}`
-      : null,
-  ]
+  const displaySubtitle = [entry.subtitle, formatDateRange(entry) || null]
     .filter(Boolean)
     .join(" • ");
 

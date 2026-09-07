@@ -2,12 +2,15 @@
 
 import { useState, useCallback } from "react";
 import { Popover } from "@base-ui/react/popover";
-import { Download, FileImage, FileText } from "lucide-react";
+import { Slider } from "@base-ui/react/slider";
+import { ChevronDown, Download, FileImage, FileText } from "lucide-react";
 import { Button } from "@/components/ui";
 import { toPdfBlob } from "@/lib/export/toPdfBlob";
 import { toPngBlob } from "@/lib/export/toPngBlob";
 import type { ResumeData } from "@/lib/schema/resume";
 import "./ExportButtons.css";
+
+const PNG_SCALES = [1, 2, 3, 4, 5] as const;
 
 interface ExportButtonsProps {
   data: ResumeData;
@@ -62,9 +65,14 @@ export function ExportButtons({ data }: ExportButtonsProps) {
     <Popover.Root>
       <Popover.Trigger
         render={
-          <Button variant="secondary" size="s" className="export-buttons__trigger">
+          <Button
+            variant="secondary"
+            size="m"
+            className="export-buttons__trigger"
+          >
             <Download size={14} />
             Export
+            <ChevronDown size={14} className="export-buttons__chevron" />
           </Button>
         }
       />
@@ -92,43 +100,72 @@ export function ExportButtons({ data }: ExportButtonsProps) {
 
             <div className="export-buttons__separator" />
 
-            <button
-              type="button"
-              className="export-buttons__option"
-              onClick={handleExportPng}
-              disabled={isExporting}
-            >
-              <span className="export-buttons__option-icon">
-                <FileImage size={16} />
-              </span>
-              <span className="export-buttons__option-body">
-                <div className="export-buttons__option-row">
-                  <span className="export-buttons__option-label">PNG</span>
-                  <div className="export-buttons__scale">
-                    <label
-                      className="export-buttons__scale-label"
-                      htmlFor="export-png-scale"
-                    >
-                      Scale
-                    </label>
-                    <input
-                      id="export-png-scale"
-                      className="export-buttons__scale-input"
-                      type="number"
-                      min={2}
-                      max={5}
-                      step={1}
-                      value={pngScale}
-                      onChange={(e) => setPngScale(Number(e.target.value))}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                </div>
-                <span className="export-buttons__option-desc">
-                  High-res image, {pngScale}x resolution
+            <div className="export-buttons__png">
+              <button
+                type="button"
+                className="export-buttons__option"
+                onClick={handleExportPng}
+                disabled={isExporting}
+              >
+                <span className="export-buttons__option-icon">
+                  <FileImage size={16} />
                 </span>
-              </span>
-            </button>
+                <span className="export-buttons__option-body">
+                  <span className="export-buttons__option-label">PNG</span>
+                  <span className="export-buttons__option-desc">
+                    High-res image, {pngScale}x resolution
+                  </span>
+                </span>
+              </button>
+
+              <Slider.Root
+                className="export-buttons__scale"
+                value={pngScale}
+                min={1}
+                max={5}
+                step={1}
+                disabled={isExporting}
+                thumbAlignment="edge"
+                onValueChange={setPngScale}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="export-buttons__scale-header">
+                  <Slider.Label className="export-buttons__scale-label">
+                    Scale
+                  </Slider.Label>
+                  <Slider.Value className="export-buttons__scale-value">
+                    {(_formatted, values) => `${values[0]}x`}
+                  </Slider.Value>
+                </div>
+                <Slider.Control className="export-buttons__scale-control">
+                  <Slider.Track className="export-buttons__scale-track">
+                    <Slider.Indicator className="export-buttons__scale-indicator" />
+                    <Slider.Thumb className="export-buttons__scale-thumb" />
+                  </Slider.Track>
+                  <div className="export-buttons__scale-stops" aria-hidden="true">
+                    {PNG_SCALES.map((scale) => (
+                      <span
+                        key={scale}
+                        className="export-buttons__scale-stop"
+                        data-reached={scale < pngScale ? "" : undefined}
+                      />
+                    ))}
+                  </div>
+                </Slider.Control>
+                <div className="export-buttons__scale-marks" aria-hidden="true">
+                  {PNG_SCALES.map((scale) => (
+                    <span
+                      key={scale}
+                      className="export-buttons__scale-mark"
+                      data-current={scale === pngScale ? "" : undefined}
+                    >
+                      {scale}
+                    </span>
+                  ))}
+                </div>
+              </Slider.Root>
+            </div>
           </Popover.Popup>
         </Popover.Positioner>
       </Popover.Portal>

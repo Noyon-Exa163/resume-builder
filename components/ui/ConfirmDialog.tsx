@@ -2,6 +2,7 @@
 
 import { DialogRoot, DialogPopup } from "./Dialog";
 import Button from "./Button";
+import { Trash2 } from "lucide-react";
 import "./ConfirmDialog.css";
 
 export interface ConfirmDialogProps {
@@ -50,6 +51,7 @@ export default function ConfirmDialog({
                 onOpenChange(false);
               }}
             >
+              {isDestructive && <Trash2 size={14} />}
               {confirmLabel}
             </Button>
           </>

@@ -1,0 +1,5 @@
+/* Digits sit in fixed-width cells so the text doesn't shift as the mask
+   inserts each slash. */
+.date-input .input-field__input {
+  font-variant-numeric: tabular-nums;
+}

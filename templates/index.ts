@@ -1,5 +1,7 @@
 import { ExabyingDocument } from "./exabyting/ExabyingDocument";
 import { exabytingMeta } from "./exabyting/meta";
+import { MinimalDocument } from "./minimal/MinimalDocument";
+import { minimalMeta } from "./minimal/meta";
 import type { TemplateModule } from "./types";
 
 /**
@@ -10,6 +12,10 @@ export const templateRegistry: Record<string, TemplateModule> = {
   exabyting: {
     meta: exabytingMeta,
     Document: ExabyingDocument,
+  },
+  minimal: {
+    meta: minimalMeta,
+    Document: MinimalDocument,
   },
 };
 
