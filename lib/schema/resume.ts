@@ -62,6 +62,24 @@ export function defaultLayoutForKind(kind: SectionKind): SectionLayout {
   return DEFAULT_SECTION_LAYOUT[kind] ?? "list";
 }
 
+/** Referee blocks are short and pair naturally — even a custom section
+ * titled "References" should use the two-column grid. */
+export function isReferencesSectionTitle(title: string): boolean {
+  return /^(references?|referees?)$/i.test(title.trim());
+}
+
+export function layoutForSection(kind: SectionKind, title: string): SectionLayout {
+  if (isReferencesSectionTitle(title)) return "grid";
+  return defaultLayoutForKind(kind);
+}
+
+export function sectionUsesGrid(section: {
+  layout: SectionLayout;
+  title: string;
+}): boolean {
+  return section.layout === "grid" || isReferencesSectionTitle(section.title);
+}
+
 export const SectionSchema = z.object({
   id: z.string(),
   kind: SectionKind,

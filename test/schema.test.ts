@@ -10,6 +10,8 @@ import {
   PersonalInfoSchema,
   ResumeDataSchema,
   SectionSchema,
+  isReferencesSectionTitle,
+  sectionUsesGrid,
   type ResumeData,
 } from "@/lib/schema/resume";
 
@@ -309,5 +311,35 @@ describe("re-normalizing a valid resume", () => {
     expect(again.sections[0].entries[0].id).toBe("keep-entry");
     expect(again.personalInfo.fullName).toBe("Ada Lovelace");
     expect(ResumeDataSchema.safeParse(again).success).toBe(true);
+  });
+});
+
+describe("references layout", () => {
+  it("treats reference headings as a two-column grid", () => {
+    expect(isReferencesSectionTitle("REFERENCES")).toBe(true);
+    expect(isReferencesSectionTitle("Reference")).toBe(true);
+    expect(isReferencesSectionTitle("Referees")).toBe(true);
+    expect(isReferencesSectionTitle("Publications")).toBe(false);
+
+    expect(
+      sectionUsesGrid({ layout: "list", title: "References" }),
+    ).toBe(true);
+    expect(
+      sectionUsesGrid({ layout: "list", title: "Experience" }),
+    ).toBe(false);
+  });
+
+  it("normalizes a References section onto the grid even if it arrived as a list", () => {
+    const resume = normalizeAndValidate({
+      sections: [
+        {
+          kind: "custom",
+          title: "REFERENCES",
+          layout: "list",
+          entries: [{ title: "Matiur Rahman" }],
+        },
+      ],
+    });
+    expect(resume.sections[0].layout).toBe("grid");
   });
 });

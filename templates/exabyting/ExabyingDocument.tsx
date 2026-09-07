@@ -20,6 +20,7 @@ import {
 import { formatDateRange } from "@/lib/date";
 import { normalizeHeadline } from "@/lib/schema/headline";
 import type { PageSize, ResumeEntry, ResumeSection } from "@/lib/schema/resume";
+import { sectionUsesGrid } from "@/lib/schema/resume";
 import type { ResumeTemplateProps } from "../types";
 import { ExabytingLogoFullVertical } from "./Logo";
 import {
@@ -537,7 +538,7 @@ function sectionNodes(section: ResumeSection): ReactElement[] {
 
   if (entries.length === 0) return [heading];
 
-  if (section.layout === "grid") {
+  if (sectionUsesGrid(section)) {
     const leadCells = entries.slice(0, 2);
     const restCells = entries.slice(2);
     const nodes: ReactElement[] = [
@@ -584,6 +585,7 @@ function gridCells(entries: ResumeEntry[]): ReactElement[] {
     <View
       key={entry.id}
       style={styles.gridCell}
+      wrap={false}
       minPresenceAhead={layout.compactRowMinPresence}
     >
       <CompactEntryBody entry={entry} />
@@ -712,6 +714,7 @@ function entryNodes(entry: ResumeEntry, spaced: boolean): ReactElement[] {
 /** Grid cells stay nested — they are cells of a wrapping flex row. */
 function CompactEntryBody({ entry }: { entry: ResumeEntry }) {
   const { dates, metaLine } = entryFollowLines(entry);
+  const bullets = entry.bullets.filter(hasText);
   const tags = entry.tags.filter(hasText);
 
   return (
@@ -722,6 +725,12 @@ function CompactEntryBody({ entry }: { entry: ResumeEntry }) {
         metaLine={metaLine}
         description
       />
+      {bullets.map((bullet, index) => (
+        <View key={`${entry.id}-b-${index}`} style={styles.bulletRow}>
+          <Text style={styles.bulletMark}>•</Text>
+          <Text style={styles.bulletText}>{bullet}</Text>
+        </View>
+      ))}
       {tags.length > 0 ? <TagRow tags={tags} /> : null}
       {hasText(entry.link) ? (
         <Link src={normalizeHref(entry.link)} style={styles.link}>

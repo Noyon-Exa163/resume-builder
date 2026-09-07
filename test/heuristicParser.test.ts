@@ -76,6 +76,16 @@ describe("parseResumeHeuristically (plain text)", () => {
     expect(custom).toBeDefined();
     expect(custom?.kind).toBe("custom");
   });
+
+  it("lays out a references section in two columns", () => {
+    const draft2 = parseResumeHeuristically(
+      "Jane Doe\n\nREFERENCES\nMatiur Rahman\nAssistant Manager",
+      "text",
+    );
+    const section = draft2.sections?.find((s) => s?.title === "REFERENCES");
+    expect(section?.kind).toBe("custom");
+    expect(section?.layout).toBe("grid");
+  });
 });
 
 describe("parseResumeHeuristically (docx html)", () => {

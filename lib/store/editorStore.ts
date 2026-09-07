@@ -5,7 +5,7 @@ import type {
   ResumeSection,
   SectionKind,
 } from "@/lib/schema/resume";
-import { defaultLayoutForKind } from "@/lib/schema/resume";
+import { layoutForSection } from "@/lib/schema/resume";
 import {
   createBlankResume,
   normalizeAndValidate,
@@ -215,7 +215,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
         kind,
         title,
         visible: true,
-        layout: defaultLayoutForKind(kind),
+        layout: layoutForSection(kind, title),
         entries: [],
       };
       set({

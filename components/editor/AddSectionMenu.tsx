@@ -11,6 +11,7 @@ import {
   Award,
   Languages,
   Trophy,
+  Users,
   LayoutGrid,
   Plus,
   ChevronDown,
@@ -75,6 +76,12 @@ const SECTION_OPTIONS: SectionOption[] = [
   },
   {
     kind: "custom",
+    label: "References",
+    defaultTitle: "References",
+    icon: Users,
+  },
+  {
+    kind: "custom",
     label: "Custom Section",
     defaultTitle: "Custom Section",
     icon: LayoutGrid,
@@ -111,7 +118,7 @@ export function AddSectionMenu({
                 const Icon = opt.icon;
                 return (
                   <Menu.Item
-                    key={opt.kind}
+                    key={`${opt.kind}-${opt.defaultTitle}`}
                     className="add-section-menu__item"
                     onClick={() => onAddSection(opt.kind, opt.defaultTitle)}
                   >

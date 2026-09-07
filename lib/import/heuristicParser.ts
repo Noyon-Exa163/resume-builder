@@ -1,5 +1,10 @@
-import type { ResumeData, ResumeEntry, ResumeSection, SectionKind } from "@/lib/schema/resume";
-import { defaultLayoutForKind } from "@/lib/schema/resume";
+import {
+  layoutForSection,
+  type ResumeData,
+  type ResumeEntry,
+  type ResumeSection,
+  type SectionKind,
+} from "@/lib/schema/resume";
 import type { DeepPartial } from "@/lib/schema/normalize";
 
 export type HeuristicSourceFormat = "pdf" | "docx" | "markdown" | "text";
@@ -54,6 +59,7 @@ const SECTION_KEYWORDS: Array<{
     pattern: /^(awards( (and|&) honors)?|honors( (and|&) awards)?)$/i,
     kind: "awards",
   },
+  { pattern: /^(references?|referees?)$/i, kind: "custom" },
 ];
 
 /**
@@ -119,7 +125,7 @@ function buildSection(
   kind: SectionKind,
   lines: ParsedLine[],
 ): DeepPartial<ResumeSection> {
-  const layout = defaultLayoutForKind(kind);
+  const layout = layoutForSection(kind, title);
   return {
     kind,
     title,

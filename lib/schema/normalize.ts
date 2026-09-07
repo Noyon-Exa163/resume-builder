@@ -2,7 +2,7 @@ import { createId } from "@/lib/utils/ids";
 import { normalizeHeadline } from "./headline";
 import {
   CURRENT_SCHEMA_VERSION,
-  defaultLayoutForKind,
+  layoutForSection,
   ResumeDataSchema,
   type ResumeData,
   type ResumeEntry,
@@ -26,16 +26,13 @@ export function normalizeAndValidate(
 
   const sections: ResumeSection[] = (partial.sections ?? []).map((section) => {
     const kind = (section?.kind as ResumeSection["kind"]) ?? "custom";
+    const title = section?.title ?? "";
     return {
       id: section?.id ?? createId(),
       kind,
-      title: section?.title ?? "",
+      title,
       visible: section?.visible ?? true,
-      // How a section is arranged follows from what it holds, so importers
-      // don't each get to pick — see DEFAULT_SECTION_LAYOUT.
-      layout:
-        (section?.layout as ResumeSection["layout"]) ??
-        defaultLayoutForKind(kind),
+      layout: layoutForSection(kind, title),
       entries: (section?.entries ?? []).map((entry): ResumeEntry => ({
         id: entry?.id ?? createId(),
         title: entry?.title ?? "",
