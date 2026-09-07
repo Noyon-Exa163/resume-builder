@@ -1,6 +1,8 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
+import { phonesForDisplay } from "@/lib/contact";
 import { formatDateRange } from "@/lib/date";
+import { normalizeHeadline } from "@/lib/schema/headline";
 import type { PageSize, ResumeEntry, ResumeSection } from "@/lib/schema/resume";
 import type { ResumeTemplateProps } from "../types";
 import { colors, fonts, layout, space } from "./tokens";
@@ -85,6 +87,7 @@ const styles = StyleSheet.create({
  */
 export function MinimalDocument({ data }: ResumeTemplateProps) {
   const { personalInfo, summary, sections, meta } = data;
+  const headline = normalizeHeadline(personalInfo.headline);
   const visibleSections = sections.filter(
     (section) => section.visible && sectionHasContent(section),
   );
@@ -96,8 +99,8 @@ export function MinimalDocument({ data }: ResumeTemplateProps) {
           {hasText(personalInfo.fullName) ? (
             <Text style={styles.name}>{personalInfo.fullName}</Text>
           ) : null}
-          {hasText(personalInfo.headline) ? (
-            <Text style={styles.headline}>{personalInfo.headline}</Text>
+          {hasText(headline) ? (
+            <Text style={styles.headline}>{headline}</Text>
           ) : null}
           {contactLine(personalInfo) ? (
             <Text style={styles.contact}>{contactLine(personalInfo)}</Text>
@@ -177,7 +180,7 @@ function EntryBody({ entry }: { entry: ResumeEntry }) {
 function contactLine(info: ResumeTemplateProps["data"]["personalInfo"]): string {
   return [
     info.email,
-    info.phone,
+    ...phonesForDisplay(info.phone),
     info.location,
     info.website ? displayLink(info.website) : undefined,
     info.linkedin ? displayLink(info.linkedin) : undefined,

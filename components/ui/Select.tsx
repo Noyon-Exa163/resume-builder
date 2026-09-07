@@ -47,10 +47,11 @@ const SelectField = forwardRef<HTMLButtonElement, SelectFieldProps>(
   ) => {
     return (
       <Select.Root
-        value={value}
+        value={value ?? null}
         defaultValue={defaultValue}
-        onValueChange={onValueChange}
+        onValueChange={(next) => onValueChange?.(next)}
         disabled={disabled}
+        items={options}
       >
         <div className={["select", className].filter(Boolean).join(" ")}>
           {label && (
@@ -61,7 +62,14 @@ const SelectField = forwardRef<HTMLButtonElement, SelectFieldProps>(
             id={id}
             className={`select__trigger select__trigger--${size}`}
           >
-            <Select.Value className="select__value" placeholder={placeholder} />
+            <Select.Value className="select__value" placeholder={placeholder}>
+              {(selected: string | null) =>
+                selected
+                  ? (options.find((opt) => opt.value === selected)?.label ??
+                    selected)
+                  : placeholder
+              }
+            </Select.Value>
             <Select.Icon className="select__icon">
               <ChevronDown size={16} />
             </Select.Icon>

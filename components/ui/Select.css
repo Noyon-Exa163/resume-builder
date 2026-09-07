@@ -87,9 +87,12 @@
   flex-shrink: 0;
 }
 
-/* Positioner + Popup */
+/* Positioner + Popup. Uses --z-floating (above --z-modal) rather than a
+   lower one-off value, so a Select's dropdown still renders on top when
+   the Select itself is used inside a Dialog (e.g. the PNG export modal's
+   page picker) instead of getting stuck behind the dialog's own backdrop. */
 .select__positioner {
-  z-index: 50;
+  z-index: var(--z-floating);
 }
 
 .select__popup {
@@ -98,6 +101,9 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-3);
   padding: var(--space-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
   max-height: 300px;
   overflow-y: auto;
 }

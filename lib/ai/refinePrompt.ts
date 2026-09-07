@@ -12,6 +12,7 @@ export function buildRefinePrompt(resume: ResumeData, instruction: string): stri
   return [
     "You are helping refine an existing resume. Apply ONLY the change requested below — do not rewrite, reorder, or reword anything the instruction doesn't ask you to touch.",
     "Return a single JSON object matching the shape below, containing the FULL updated resume (not just the changed fields). Do not invent employers, dates, degrees, or skills that aren't already present or explicitly requested.",
+    'personalInfo.headline should join titles with " • ", never "|".',
     "",
     "JSON shape:",
     RESUME_SCHEMA_DESCRIPTION,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildExportFilename } from "@/components/editor/ExportButtons";
+import { buildExportFilename } from "@/lib/export/filename";
 import { normalizeAndValidate } from "@/lib/schema/normalize";
 
 describe("buildExportFilename", () => {

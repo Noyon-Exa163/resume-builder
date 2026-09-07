@@ -10,8 +10,9 @@
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 28px;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
+  line-height: var(--leading-title);
+  letter-spacing: var(--tracking-heading);
+  text-wrap: balance;
   color: var(--color-text-primary);
   margin: 0 0 var(--space-2);
 }
@@ -39,7 +40,7 @@
 .ai-settings-page__providers {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-5);
   margin-bottom: var(--space-6);
 }
 
@@ -51,10 +52,11 @@
 }
 
 .ai-settings-page__provider-title {
-  font-family: var(--font-body);
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: var(--leading-ui);
+  letter-spacing: var(--tracking-none);
   color: var(--color-text-primary);
   margin: 0 0 var(--space-4);
 }
@@ -91,13 +93,6 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-2);
   padding: var(--space-5);
-  margin-bottom: var(--space-6);
-}
-
-.ai-settings-page__save {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
 }
 
 .ai-settings-page__saved-label {

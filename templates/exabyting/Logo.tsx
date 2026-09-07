@@ -30,14 +30,10 @@ const MARK_PATHS = [
 ] as const;
 
 export function ExabytingLogoFullVertical() {
-  const height = layout.logoHeight;
-  const width =
-    (LOGO_VIEWBOX_WIDTH / LOGO_VIEWBOX_HEIGHT) * layout.logoHeight;
-
   return (
     <Svg
-      width={width}
-      height={height}
+      width={layout.logoWidth}
+      height={layout.logoHeight}
       viewBox={`0 0 ${LOGO_VIEWBOX_WIDTH} ${LOGO_VIEWBOX_HEIGHT}`}
     >
       {MARK_PATHS.map((d, index) => (

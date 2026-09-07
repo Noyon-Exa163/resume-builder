@@ -65,7 +65,10 @@ export function PersonalInfoForm({
         </p>
       </div>
 
-      <div className="personal-info-form__photo-section">
+      <div
+        className="personal-info-form__photo-section"
+        onClick={() => fileInputRef.current?.click()}
+      >
         <div className="personal-info-form__photo-preview">
           {value.photoDataUrl ? (
             <img
@@ -86,10 +89,16 @@ export function PersonalInfoForm({
             onChange={handlePhotoUpload}
             aria-label="Upload photo"
           />
-          <div className="personal-info-form__photo-btn-row">
+          <span className="personal-info-form__photo-help">
+            Recommended: square image, PNG or JPG
+          </span>
+          <div
+            className="personal-info-form__photo-btn-row"
+            onClick={(event) => event.stopPropagation()}
+          >
             <Button
               type="button"
-              variant="secondary"
+              variant="tertiary"
               size="s"
               onClick={() => fileInputRef.current?.click()}
             >
@@ -109,31 +118,24 @@ export function PersonalInfoForm({
               </Button>
             )}
           </div>
-          <span className="personal-info-form__photo-help">
-            Recommended: square image, PNG or JPG
-          </span>
         </div>
       </div>
 
       <div className="personal-info-form__grid">
-        <div className="personal-info-form__full-width">
-          <Input
-            label="Full Name"
-            placeholder="e.g. Jane Doe"
-            value={value.fullName || ""}
-            onChange={(e) => handleFieldChange("fullName", e.target.value)}
-            required
-          />
-        </div>
+        <Input
+          label="Full Name"
+          placeholder="e.g. Jane Doe"
+          value={value.fullName || ""}
+          onChange={(e) => handleFieldChange("fullName", e.target.value)}
+          required
+        />
 
-        <div className="personal-info-form__full-width">
-          <Input
-            label="Professional Headline"
-            placeholder="e.g. Senior Software Engineer"
-            value={value.headline || ""}
-            onChange={(e) => handleFieldChange("headline", e.target.value)}
-          />
-        </div>
+        <Input
+          label="Professional Headline"
+          placeholder="e.g. Senior Software Engineer"
+          value={value.headline || ""}
+          onChange={(e) => handleFieldChange("headline", e.target.value)}
+        />
 
         <Input
           label="Email Address"
@@ -153,14 +155,12 @@ export function PersonalInfoForm({
           onChange={(e) => handleFieldChange("phone", e.target.value)}
         />
 
-        <div className="personal-info-form__full-width">
-          <Input
-            label="Location"
-            placeholder="e.g. San Francisco, CA"
-            value={value.location || ""}
-            onChange={(e) => handleFieldChange("location", e.target.value)}
-          />
-        </div>
+        <Input
+          label="Location"
+          placeholder="e.g. San Francisco, CA"
+          value={value.location || ""}
+          onChange={(e) => handleFieldChange("location", e.target.value)}
+        />
 
         <Input
           label="Portfolio / Website"
@@ -179,14 +179,12 @@ export function PersonalInfoForm({
           onChange={(e) => handleFieldChange("linkedin", e.target.value)}
         />
 
-        <div className="personal-info-form__full-width">
-          <Input
-            label="GitHub Profile"
-            placeholder="e.g. github.com/janedoe"
-            value={value.github || ""}
-            onChange={(e) => handleFieldChange("github", e.target.value)}
-          />
-        </div>
+        <Input
+          label="GitHub Profile"
+          placeholder="e.g. github.com/janedoe"
+          value={value.github || ""}
+          onChange={(e) => handleFieldChange("github", e.target.value)}
+        />
       </div>
     </div>
   );

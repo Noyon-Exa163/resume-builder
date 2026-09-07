@@ -8,13 +8,25 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, FilePlus, Loader2, Pencil, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  FilePlus,
+  Loader2,
+  Pencil,
+  Share2,
+  Sparkles,
+} from "lucide-react";
 import { useEditorStore } from "@/lib/store/editorStore";
 import { formatLastSavedLabel } from "@/lib/utils/formatLastSaved";
 import { createBlankResume, type DeepPartial } from "@/lib/schema/normalize";
 import type { ResumeData } from "@/lib/schema/resume";
 import { resumeRepository } from "@/lib/storage/api/resumeRepository";
+import {
+  getResumeAccess,
+  type ResumeAccessLevel,
+} from "@/lib/storage/api/resumeAccess";
 import { Button, TabsField } from "@/components/ui";
+import { ShareDialog } from "@/components/common/ShareDialog";
 import {
   AiResumeBar,
   PersonalInfoForm,
@@ -61,6 +73,29 @@ export default function EditorPage() {
   useEffect(() => {
     if (params.resumeId) void load(params.resumeId);
   }, [params.resumeId, load]);
+
+  const [access, setAccess] = useState<ResumeAccessLevel | null>(null);
+  const [ownerEmail, setOwnerEmail] = useState("");
+  const [isShareOpen, setIsShareOpen] = useState(false);
+
+  useEffect(() => {
+    if (!params.resumeId) return;
+    let cancelled = false;
+    getResumeAccess(params.resumeId)
+      .then(({ access, ownerEmail }) => {
+        if (cancelled) return;
+        setAccess(access);
+        setOwnerEmail(ownerEmail);
+      })
+      .catch((err) => {
+        console.error("Failed to load resume access:", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [params.resumeId]);
+
+  const isReadOnly = access === "viewer";
 
   useEffect(() => {
     if (!isDirty) return;
@@ -232,6 +267,7 @@ export default function EditorPage() {
           className="editor-page__title-input"
           value={resume.meta.title}
           onChange={(e) => setTitle(e.target.value)}
+          readOnly={isReadOnly}
           aria-label="Resume title"
         />
         {/* Keyed so a new save restarts the elapsed-time clock immediately
@@ -243,6 +279,18 @@ export default function EditorPage() {
         />
         <div className="editor-page__actions">
           <ExportButtons data={resume} />
+          {access === "owner" && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="m"
+              iconOnly
+              aria-label="Share resume"
+              onClick={() => setIsShareOpen(true)}
+            >
+              <Share2 size={18} />
+            </Button>
+          )}
           <Button
             type="button"
             variant="secondary"
@@ -293,50 +341,65 @@ export default function EditorPage() {
           style={{ width: sidebarWidth }}
           aria-label="Resume editor"
         >
-          <TabsField
-            value={activeTab}
-            onValueChange={setActiveTab}
-            tabs={[
-              {
-                value: "ai",
-                label: "AI",
-                icon: Sparkles,
-                content: (
-                  <AiResumeBar resume={resume} onApply={handleImport} />
-                ),
-              },
-              {
-                value: "manual",
-                label: "Manual Edit",
-                icon: Pencil,
-                content: (
-                  <div className="editor-page__manual-edit">
-                    <PersonalInfoForm
-                      value={resume.personalInfo}
-                      onChange={setPersonalInfo}
-                    />
-                    <SummaryForm
-                      value={resume.summary ?? ""}
-                      onChange={setSummary}
-                    />
-                    <SectionList
-                      sections={resume.sections}
-                      onUpdateSection={updateSection}
-                      onRemoveSection={removeSection}
-                      onReorderSections={reorderSections}
-                      onAddEntry={addEntry}
-                      onUpdateEntry={updateEntry}
-                      onRemoveEntry={removeEntry}
-                      onReorderEntries={reorderEntries}
-                    />
-                    <AddSectionMenu onAddSection={addSection} />
-                  </div>
-                ),
-              },
-            ]}
-          />
+          {isReadOnly ? (
+            <p className="editor-page__readonly-notice">
+              Shared by {ownerEmail} — view only.
+            </p>
+          ) : (
+            <TabsField
+              value={activeTab}
+              onValueChange={setActiveTab}
+              tabs={[
+                {
+                  value: "ai",
+                  label: "AI",
+                  icon: Sparkles,
+                  content: (
+                    <AiResumeBar resume={resume} onApply={handleImport} />
+                  ),
+                },
+                {
+                  value: "manual",
+                  label: "Manual Edit",
+                  icon: Pencil,
+                  content: (
+                    <div className="editor-page__manual-edit">
+                      <PersonalInfoForm
+                        value={resume.personalInfo}
+                        onChange={setPersonalInfo}
+                      />
+                      <SummaryForm
+                        value={resume.summary ?? ""}
+                        onChange={setSummary}
+                      />
+                      <SectionList
+                        sections={resume.sections}
+                        onUpdateSection={updateSection}
+                        onRemoveSection={removeSection}
+                        onReorderSections={reorderSections}
+                        onAddEntry={addEntry}
+                        onUpdateEntry={updateEntry}
+                        onRemoveEntry={removeEntry}
+                        onReorderEntries={reorderEntries}
+                      />
+                      <AddSectionMenu onAddSection={addSection} />
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          )}
         </aside>
       </div>
+
+      {access === "owner" && (
+        <ShareDialog
+          resumeId={resume.meta.id}
+          resumeTitle={resume.meta.title}
+          open={isShareOpen}
+          onOpenChange={setIsShareOpen}
+        />
+      )}
     </main>
   );
 }

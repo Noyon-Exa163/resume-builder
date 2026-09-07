@@ -18,10 +18,12 @@
 }
 
 .empty-state__title {
-  font-family: var(--font-body);
+  font-family: var(--font-display);
   font-weight: 600;
   font-size: 16px;
-  line-height: 1.4;
+  line-height: var(--leading-ui);
+  letter-spacing: var(--tracking-none);
+  text-wrap: balance;
   color: var(--color-text-primary);
   margin: 0;
 }

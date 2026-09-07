@@ -18,7 +18,8 @@ interface ResumeRow {
 /**
  * GET /api/resumes/[id]
  * Returns 401 if unauthenticated.
- * Returns 404 if not found OR not owned by the current user (don't leak existence).
+ * Returns 404 if not found, or the caller is neither the owner nor a user
+ * the resume has been shared with (see db/migrations/0003_resume_shares.sql).
  */
 export async function GET(_request: Request, { params }: RouteParams) {
   const user = await getCurrentUser();
@@ -29,9 +30,11 @@ export async function GET(_request: Request, { params }: RouteParams) {
   const { id } = await params;
 
   const rows = (await sql`
-    SELECT id, user_id, data, created_at, updated_at
-    FROM resumes
-    WHERE id = ${id} AND user_id = ${user.id}
+    SELECT r.id, r.user_id, r.data, r.created_at, r.updated_at
+    FROM resumes r
+    LEFT JOIN resume_shares rs
+      ON rs.resume_id = r.id AND rs.shared_with_user_id = ${user.id}
+    WHERE r.id = ${id} AND (r.user_id = ${user.id} OR rs.shared_with_user_id = ${user.id})
   `) as ResumeRow[];
 
   if (rows.length === 0) {
@@ -51,9 +54,10 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
 /**
  * PUT /api/resumes/[id]
- * Updates an existing resume. Must belong to current user.
+ * Updates an existing resume. Must belong to the current user, or the
+ * current user must have "editor" access via resume_shares.
  * Returns 401 if unauthenticated.
- * Returns 404 if not found or not owned by current user.
+ * Returns 404 if not found or not writable by the current user.
  */
 export async function PUT(request: Request, { params }: RouteParams) {
   const user = await getCurrentUser();
@@ -80,10 +84,14 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
   const resume = parsed.data;
 
-  // Confirm ownership and existence
+  // Confirm the caller may write to this resume (owner or editor share)
   const existing = (await sql`
-    SELECT id, user_id FROM resumes WHERE id = ${id} AND user_id = ${user.id}
-  `) as Array<{ id: string; user_id: string }>;
+    SELECT r.id
+    FROM resumes r
+    LEFT JOIN resume_shares rs
+      ON rs.resume_id = r.id AND rs.shared_with_user_id = ${user.id} AND rs.permission = 'editor'
+    WHERE r.id = ${id} AND (r.user_id = ${user.id} OR rs.shared_with_user_id = ${user.id})
+  `) as Array<{ id: string }>;
 
   if (existing.length === 0) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -95,7 +103,14 @@ export async function PUT(request: Request, { params }: RouteParams) {
     UPDATE resumes
     SET data = ${resumeJson}::jsonb,
         updated_at = now()
-    WHERE id = ${id} AND user_id = ${user.id}
+    WHERE id = ${id}
+      AND (
+        user_id = ${user.id}
+        OR EXISTS (
+          SELECT 1 FROM resume_shares
+          WHERE resume_id = resumes.id AND shared_with_user_id = ${user.id} AND permission = 'editor'
+        )
+      )
   `;
 
   return NextResponse.json(resume);
@@ -103,7 +118,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
 /**
  * DELETE /api/resumes/[id]
- * Deletes a resume. Must belong to current user.
+ * Deletes a resume. Must belong to current user — owner-only, even for
+ * users with editor access via resume_shares.
  * Returns 401 if unauthenticated.
  * Returns 404 if not found or not owned by current user.
  */

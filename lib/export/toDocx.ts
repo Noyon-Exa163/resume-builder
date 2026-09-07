@@ -7,6 +7,7 @@ import {
   visibleSections,
 } from "./shared";
 import { formatDateRange } from "@/lib/date";
+import { normalizeHeadline } from "@/lib/schema/headline";
 
 /**
  * Renders a resume as a .docx file — best-effort formatting via the same
@@ -25,8 +26,9 @@ export async function toDocx(data: ResumeData): Promise<Blob> {
       }),
     );
   }
-  if (hasText(personalInfo.headline)) {
-    children.push(new Paragraph({ children: [new TextRun(personalInfo.headline.trim())] }));
+  const headline = normalizeHeadline(personalInfo.headline);
+  if (hasText(headline)) {
+    children.push(new Paragraph({ children: [new TextRun(headline)] }));
   }
   const contact = contactLine(personalInfo);
   if (contact) {

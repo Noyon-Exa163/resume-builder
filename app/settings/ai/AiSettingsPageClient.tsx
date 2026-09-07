@@ -79,17 +79,16 @@ export default function AiSettingsPageClient() {
     null,
   );
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [savingProviderId, setSavingProviderId] = useState<AIProviderId | null>(
     null,
   );
   const [dirtyProviders, setDirtyProviders] = useState<Set<AIProviderId>>(
     new Set(),
   );
-  const [defaultsDirty, setDefaultsDirty] = useState(false);
-  const isDirty = dirtyProviders.size > 0 || defaultsDirty;
+  const isDirty = dirtyProviders.size > 0;
+  const [savingDefaults, setSavingDefaults] = useState(false);
+  const [defaultsSavedAt, setDefaultsSavedAt] = useState<number | null>(null);
   const [error, setError] = useState("");
-  const [savedAt, setSavedAt] = useState<number | null>(null);
   const [testStatus, setTestStatus] = useState<
     Partial<Record<AIProviderId, TestStatus>>
   >({});
@@ -237,6 +236,7 @@ export default function AiSettingsPageClient() {
   async function persistSettings(
     providersPayload: AdminSettingsResponse["providers"],
     nextDefaultProviderId: AIProviderId | null,
+    nextDefaultTemplateId: string,
   ): Promise<boolean> {
     const res = await fetch("/api/settings", {
       method: "PUT",
@@ -244,7 +244,7 @@ export default function AiSettingsPageClient() {
       body: JSON.stringify({
         providers: providersPayload,
         defaultProviderId: nextDefaultProviderId ?? undefined,
-        defaultTemplateId: defaultTemplateId ?? "exabyting",
+        defaultTemplateId: nextDefaultTemplateId,
       }),
     });
 
@@ -253,30 +253,38 @@ export default function AiSettingsPageClient() {
       setError(data?.error || "Could not save settings.");
       return false;
     }
-    setSavedAt(Date.now());
     return true;
   }
 
-  /** Saves everything currently typed — every provider row plus the defaults. */
-  async function handleSave() {
+  /**
+   * Persists default provider / template immediately. Uses last-saved
+   * provider rows so picking a dropdown can't leak an unsaved API key.
+   */
+  async function persistDefaults(
+    nextDefaultProviderId: AIProviderId | null,
+    nextDefaultTemplateId: string,
+  ) {
     setError("");
-    setIsSaving(true);
+    setSavingDefaults(true);
     try {
-      const payload = buildProvidersPayloadFrom(providers);
+      const payload = buildProvidersPayloadFrom(savedProviders);
       const resolvedDefault = resolveDefaultProviderId(
         payload,
-        defaultProviderId as AIProviderId | null,
+        nextDefaultProviderId,
       );
-      const ok = await persistSettings(payload, resolvedDefault);
+      const ok = await persistSettings(
+        payload,
+        resolvedDefault,
+        nextDefaultTemplateId,
+      );
       if (!ok) return;
-      setSavedProviders(providers);
       setDefaultProviderId(resolvedDefault);
-      setDirtyProviders(new Set());
-      setDefaultsDirty(false);
+      setDefaultTemplateId(nextDefaultTemplateId);
+      setDefaultsSavedAt(Date.now());
     } catch {
-      setError("Something went wrong saving settings.");
+      setError("Something went wrong saving defaults.");
     } finally {
-      setIsSaving(false);
+      setSavingDefaults(false);
     }
   }
 
@@ -295,7 +303,11 @@ export default function AiSettingsPageClient() {
         payload,
         defaultProviderId as AIProviderId | null,
       );
-      const ok = await persistSettings(payload, resolvedDefault);
+      const ok = await persistSettings(
+        payload,
+        resolvedDefault,
+        defaultTemplateId ?? "exabyting",
+      );
       if (!ok) return;
       setSavedProviders(merged);
       setDefaultProviderId(resolvedDefault);
@@ -304,7 +316,6 @@ export default function AiSettingsPageClient() {
         next.delete(id);
         return next;
       });
-      setDefaultsDirty(false);
     } catch {
       setError("Something went wrong saving this provider.");
     } finally {
@@ -325,7 +336,11 @@ export default function AiSettingsPageClient() {
       const merged: ProvidersState = { ...savedProviders, [id]: cleared };
       const payload = buildProvidersPayloadFrom(merged);
       const resolvedDefault = resolveDefaultProviderId(payload, currentDefault);
-      const ok = await persistSettings(payload, resolvedDefault);
+      const ok = await persistSettings(
+        payload,
+        resolvedDefault,
+        defaultTemplateId ?? "exabyting",
+      );
       if (!ok) return;
       setProviders((prev) => ({ ...prev, [id]: cleared }));
       setSavedProviders(merged);
@@ -335,7 +350,6 @@ export default function AiSettingsPageClient() {
         return next;
       });
       setDefaultProviderId(resolvedDefault);
-      setDefaultsDirty(false);
       setTestStatus((prev) => ({ ...prev, [id]: { state: "idle" } }));
     } catch {
       setError("Something went wrong removing the provider.");
@@ -353,9 +367,9 @@ export default function AiSettingsPageClient() {
       <h1 className="ai-settings-page__title">AI Settings</h1>
       <p className="ai-settings-page__intro">
         Configure the AI providers used for AI-assisted resume import. Keys
-        are stored server-side and are never sent to the browser.
-        Test Connection only checks a key — it doesn&apos;t save it. Click
-        Save Settings below to keep your changes.
+        are stored server-side and are never sent to the browser. Test
+        Connection only checks a key — click Save on a provider to keep it.
+        Default provider and template save as soon as you pick them.
       </p>
 
       {error && <div className="ai-settings-page__error">{error}</div>}
@@ -476,9 +490,12 @@ export default function AiSettingsPageClient() {
           value={defaultProviderId ?? undefined}
           onValueChange={(value) => {
             setDefaultProviderId(value);
-            setDefaultsDirty(true);
+            void persistDefaults(
+              value as AIProviderId | null,
+              defaultTemplateId ?? "exabyting",
+            );
           }}
-          disabled={configuredProviderOptions.length === 0}
+          disabled={configuredProviderOptions.length === 0 || savingDefaults}
           helperText={
             configuredProviderOptions.length === 0
               ? "Add an API key for a provider above before choosing a default."
@@ -490,33 +507,19 @@ export default function AiSettingsPageClient() {
           options={templateOptions}
           value={defaultTemplateId ?? undefined}
           onValueChange={(value) => {
+            if (!value) return;
             setDefaultTemplateId(value);
-            setDefaultsDirty(true);
+            void persistDefaults(
+              defaultProviderId as AIProviderId | null,
+              value,
+            );
           }}
+          disabled={savingDefaults}
         />
-      </div>
-
-      <div className="ai-settings-page__save">
-        <Button
-          type="button"
-          variant="primary"
-          size="m"
-          disabled={isSaving}
-          onClick={() => void handleSave()}
-        >
-          {isSaving ? (
-            <Loader2 size={16} className="button__icon--spin" />
-          ) : (
-            <Save size={16} />
-          )}
-          {isSaving ? "Saving…" : "Save Settings"}
-        </Button>
-        {isDirty && (
-          <span className="ai-settings-page__unsaved-label">
-            Unsaved changes
-          </span>
+        {savingDefaults && (
+          <span className="ai-settings-page__saved-label">Saving…</span>
         )}
-        {!isDirty && savedAt && (
+        {!savingDefaults && defaultsSavedAt && (
           <span className="ai-settings-page__saved-label">Saved.</span>
         )}
       </div>

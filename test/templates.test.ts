@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { getTemplate, templateRegistry } from "@/templates";
+import { layout } from "@/templates/exabyting/tokens";
 import type { TemplateMeta } from "@/templates/types";
 
 describe("template registry", () => {
@@ -36,5 +37,20 @@ describe("template registry", () => {
 
     expect(meta.id).toBe("exabyting");
     expect(meta.pageSize).toBe("A4");
+  });
+});
+
+describe("exabyting header layout", () => {
+  it("reserves a logo column equal to the mark plus its padding", () => {
+    expect(layout.logoColumnWidth).toBe(
+      layout.logoWidth + layout.logoContainerPadX * 2,
+    );
+  });
+
+  it("gives the phone column less than a third of the contact table", () => {
+    expect(layout.contactPhoneColumnShare).toBeLessThan(1 / 3);
+    expect(
+      layout.contactPhoneColumnShare + (1 - layout.contactPhoneColumnShare) / 2 * 2,
+    ).toBeCloseTo(1);
   });
 });

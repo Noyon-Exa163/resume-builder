@@ -22,27 +22,36 @@ export const colors = {
   textSecondary: "#45556c",
   textMuted: "#8697ad",
   border: "#e4e4e4",
+  /** grey.4 — quieter rules, e.g. contact column dividers. */
+  borderMuted: "#f2f2f2",
   surface: "#FFFFFF",
   tagBackground: "#f0f5fe",
   tagText: "#032468",
 } as const;
 
 /**
- * Registered in ../fonts.ts (Inter isn't one of react-pdf's built-in fonts,
- * unlike Helvetica). Swapping to a different licensed brand font later is a
- * two-file change: register it there, then update `family` here.
+ * Registered in ../fonts.ts. Gilroy is titles (name, section, entry, skill
+ * labels); Inter is everything else. letterSpacing is in points — react-pdf
+ * cannot read CSS `em` tokens — mapped from the app-chrome tracking scale:
+ * name −0.015em at 20pt, section labels keep overline-style open tracking.
  */
 export const fonts = {
   family: "Inter",
+  display: "Gilroy",
   sizeName: 20,
   sizeHeadline: 11,
   sizeSection: 10,
   sizeBody: 10,
   sizeSmall: 9,
   sizeTag: 8,
+  letterSpacingName: -0.3,
+  letterSpacingHeadline: 0,
   letterSpacingSection: 1.2,
+  letterSpacingEntryTitle: 0,
   lineHeightBody: 1.45,
   lineHeightName: 1.2,
+  lineHeightHeadline: 1.3,
+  lineHeightSection: 1.25,
   /**
    * Chips size their box from the line height, so body leading would hang as
    * dead space under the label. 1 keeps the padding even top and bottom.
@@ -71,8 +80,22 @@ export const layout = {
   photoRadius: 4,
   /** Vertical full logo render height in the header container. */
   logoHeight: 32,
+  /** SVG width at `logoHeight` (viewBox 75×40). */
+  logoWidth: 60,
   logoContainerPadX: 24,
   logoContainerPadY: 24,
+  /** Reserved header column so contact text cannot paint over the logo. */
+  logoColumnWidth: 108,
+  /** Gap between the contact table and the logo column. */
+  headerLogoGap: 16,
+  /** Filled exa.1 circle around each brand-blue contact glyph. */
+  contactBadgeSize: 18,
+  contactGlyphSize: 9,
+  /**
+   * Share of the contact table given to the phone column when one exists.
+   * Remaining width is split among however many other columns the grid used.
+   */
+  contactPhoneColumnShare: 0.28,
   bulletMarkWidth: 10,
   /**
    * Keep an entry title with the first line of its body. Used on flattened

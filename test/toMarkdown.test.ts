@@ -40,6 +40,7 @@ describe("toMarkdown", () => {
     expect(markdown).toContain("# Ada Lovelace");
     expect(markdown).toContain("Mathematician");
     expect(markdown).toContain("ada@example.com");
+    expect(markdown).toContain("+8801676095674");
   });
 
   it("renders the summary under its own heading", () => {

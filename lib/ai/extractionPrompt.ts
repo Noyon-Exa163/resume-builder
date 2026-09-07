@@ -12,7 +12,7 @@ export const RESUME_SCHEMA_DESCRIPTION = `{
   },
   personalInfo: {
     fullName: string,
-    headline?: string,
+    headline?: string,              // join titles with " • ", never "|"
     email?: string,                 // valid email or omit / ""
     phone?: string,
     location?: string,
@@ -72,9 +72,11 @@ export function buildExtractionPrompt(
 export function formatExtractionPrompt(input: AIExtractResumeInput): string {
   const parts = [
     "Extract a structured resume from the source text and return a JSON object matching the shape below.",
+    "If you find any typos or formatting errors in the source text, correct them before extracting the resume. But beware of technical terms and abbreviations that might look like typos.",
     "Omit fields you cannot support from the source. Do not invent employers, dates, degrees, or skills.",
     "Omit ids, createdAt, updatedAt, and photoDataUrl — those are assigned later.",
     "schemaVersion must be 1 when present.",
+    'If personalInfo.headline lists multiple titles or specialties separated by "|" (or a similar bar), join them with a spaced bullet " • " instead. Example: "DevOps Engineer • Cloud Infrastructure".',
     "",
     "JSON shape:",
     input.schemaDescription,

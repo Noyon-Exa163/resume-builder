@@ -1,0 +1,57 @@
+/* Content inside the "Share resume" modal (see components/ui/Dialog.css
+   for the shared popup/backdrop chrome). */
+
+.share-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.share-dialog__loading {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+}
+
+.share-dialog__list {
+  max-height: 320px;
+  overflow-y: auto;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-inset);
+}
+
+.share-dialog__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.share-dialog__row + .share-dialog__row {
+  border-top: 1px solid var(--color-border);
+}
+
+.share-dialog__email {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.share-dialog__row .select {
+  flex-shrink: 0;
+  min-width: 130px;
+}
+
+.share-dialog__error {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}

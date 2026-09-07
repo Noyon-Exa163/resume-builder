@@ -1,4 +1,5 @@
 import { createId } from "@/lib/utils/ids";
+import { normalizeHeadline } from "./headline";
 import {
   CURRENT_SCHEMA_VERSION,
   defaultLayoutForKind,
@@ -67,7 +68,7 @@ export function normalizeAndValidate(
     },
     personalInfo: {
       fullName: partial.personalInfo?.fullName ?? "",
-      headline: partial.personalInfo?.headline,
+      headline: normalizeHeadline(partial.personalInfo?.headline),
       email: partial.personalInfo?.email,
       phone: partial.personalInfo?.phone,
       location: partial.personalInfo?.location,

@@ -1,7 +1,7 @@
 .entry-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .entry-list__item {
@@ -63,9 +63,11 @@
 }
 
 .entry-list__title {
-  font-family: var(--font-body);
+  font-family: var(--font-display);
   font-size: 14px;
   font-weight: 600;
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-none);
   color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;

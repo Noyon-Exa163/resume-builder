@@ -151,7 +151,7 @@ export default function UsersPageClient() {
               required
               minLength={6}
             />
-            <label className="users-page__create-checkbox users-page__create-checkbox">
+            <label className="users-page__create-checkbox">
               <input
                 type="checkbox"
                 checked={newIsAdmin}

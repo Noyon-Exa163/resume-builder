@@ -1,5 +1,6 @@
 import type { ResumeData } from "@/lib/schema/resume";
 import type { StorageAdapter } from "@/lib/storage/types";
+import type { ResumeAccessEntry } from "./resumeAccess";
 
 /**
  * Client-side resume storage adapter backed by server-side Postgres API routes.
@@ -38,7 +39,8 @@ export const resumeRepository: StorageAdapter<ResumeData> = {
       );
     }
 
-    return (await res.json()) as ResumeData[];
+    const entries = (await res.json()) as ResumeAccessEntry[];
+    return entries.map((entry) => entry.resume);
   },
 
   async set(id: string, value: ResumeData): Promise<void> {

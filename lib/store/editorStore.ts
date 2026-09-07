@@ -13,6 +13,7 @@ import {
 } from "@/lib/schema/normalize";
 import { resumeRepository } from "@/lib/storage/api/resumeRepository";
 import { createId } from "@/lib/utils/ids";
+import { normalizeHeadline } from "@/lib/schema/headline";
 
 /**
  * Editor draft state. This is the one place editor UI reads/writes the
@@ -187,10 +188,14 @@ export const useEditorStore = create<EditorState>((set, get) => {
     setPersonalInfo(patch) {
       const { resume } = get();
       if (!resume) return;
+      const next =
+        patch.headline !== undefined
+          ? { ...patch, headline: normalizeHeadline(patch.headline) }
+          : patch;
       set({
         resume: touch({
           ...resume,
-          personalInfo: { ...resume.personalInfo, ...patch },
+          personalInfo: { ...resume.personalInfo, ...next },
         }),
         isDirty: true,
       });

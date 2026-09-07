@@ -1,4 +1,5 @@
 import type { ResumeData, ResumeEntry, ResumeSection } from "@/lib/schema/resume";
+import { phonesForDisplay } from "@/lib/contact";
 
 /**
  * Formatting decisions shared by the plain-text exporters (Markdown, DOCX)
@@ -33,7 +34,14 @@ export function visibleSections(data: ResumeData): ResumeSection[] {
 }
 
 export function contactLine(info: ResumeData["personalInfo"]): string {
-  return [info.email, info.phone, info.location, info.website, info.linkedin, info.github]
+  return [
+    info.email,
+    ...phonesForDisplay(info.phone),
+    info.location,
+    info.website,
+    info.linkedin,
+    info.github,
+  ]
     .filter(hasText)
     .join(" · ");
 }

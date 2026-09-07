@@ -10,7 +10,16 @@ import {
 } from "@react-pdf/renderer";
 
 import "../fonts";
+import {
+  breakContactValue,
+  compactProfileLabel,
+  isSystemAlternatePhone,
+  maxCharsForWidth,
+  packContactGrid,
+  phonesForDisplay,
+} from "@/lib/contact";
 import { formatDateRange } from "@/lib/date";
+import { normalizeHeadline } from "@/lib/schema/headline";
 import type { PageSize, ResumeEntry, ResumeSection } from "@/lib/schema/resume";
 import type { ResumeTemplateProps } from "../types";
 import { ExabytingLogoFullVertical } from "./Logo";
@@ -18,6 +27,7 @@ import {
   MailIcon,
   MapPinIcon,
   PhoneIcon,
+  detectLinkKind,
   linkKindIcon,
 } from "./icons";
 import { colors, fonts, layout, space } from "./tokens";
@@ -27,11 +37,17 @@ const PDF_PAGE_SIZE: Record<PageSize, "A4" | "LETTER"> = {
   Letter: "LETTER",
 };
 
+/** react-pdf page widths in pt — used to size contact cells in real units. */
+const PDF_PAGE_WIDTH: Record<PageSize, number> = {
+  A4: 595.28,
+  Letter: 612,
+};
+
+const CONTACT_ICON_GAP = space[2];
+const CONTACT_CELL_PAD = space[3];
+
 /** Between skills within a category row. */
 const SKILL_SEPARATOR = " · ";
-
-/** Contact-line icons render at this size; text line-height is matched to it. */
-const CONTACT_ICON_SIZE = 10;
 
 const styles = StyleSheet.create({
   page: {
@@ -62,13 +78,17 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
   },
   headerLeading: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: space[3],
     paddingTop: layout.contentInsetBelowTopBar,
     paddingLeft: layout.pagePaddingX,
+    paddingRight: layout.headerLogoGap,
     minWidth: 0,
+    overflow: "hidden",
   },
   photo: {
     width: layout.photoSize,
@@ -78,12 +98,18 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   headerMain: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
     flexDirection: "column",
     justifyContent: "center",
     minWidth: 0,
+    overflow: "hidden",
   },
   logoContainer: {
+    width: layout.logoColumnWidth,
+    flexGrow: 0,
+    flexShrink: 0,
     backgroundColor: colors.brandSubtle,
     paddingHorizontal: layout.logoContainerPadX,
     paddingVertical: layout.logoContainerPadY,
@@ -92,40 +118,78 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
   },
   name: {
+    fontFamily: fonts.display,
     fontSize: fonts.sizeName,
     fontWeight: 700,
     lineHeight: fonts.lineHeightName,
+    letterSpacing: fonts.letterSpacingName,
     color: colors.text,
   },
   headline: {
     marginTop: space[1],
+    fontFamily: fonts.family,
     fontSize: fonts.sizeHeadline,
-    color: colors.textSecondary,
+    lineHeight: fonts.lineHeightHeadline,
+    letterSpacing: fonts.letterSpacingHeadline,
+    color: colors.text,
+  },
+  contactTable: {
+    marginTop: space[4],
+    width: "100%",
   },
   contactRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    columnGap: space[3],
-    rowGap: space[1],
-    marginTop: space[2],
+    alignItems: "flex-start",
+    width: "100%",
   },
-  contactItem: {
+  contactRowSpaced: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
+    alignItems: "flex-start",
+    width: "100%",
+    marginTop: space[4],
   },
-  contactIcon: {
-    width: CONTACT_ICON_SIZE,
-    height: CONTACT_ICON_SIZE,
+  contactCell: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+    gap: CONTACT_ICON_GAP,
+    paddingRight: CONTACT_CELL_PAD,
+  },
+  contactCellDivided: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+    gap: CONTACT_ICON_GAP,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.borderMuted,
+    paddingLeft: CONTACT_CELL_PAD,
+    paddingRight: CONTACT_CELL_PAD,
+  },
+  contactBadge: {
+    width: layout.contactBadgeSize,
+    height: layout.contactBadgeSize,
+    borderRadius: layout.contactBadgeSize / 2,
+    backgroundColor: colors.brandSubtle,
     justifyContent: "center",
     alignItems: "center",
     flexShrink: 0,
   },
-  contactText: {
-    fontSize: fonts.sizeSmall,
-    lineHeight: CONTACT_ICON_SIZE / fonts.sizeSmall,
-    color: colors.textSecondary,
+  contactBody: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  contactValue: {
+    fontSize: fonts.sizeTag,
+    lineHeight: fonts.lineHeightHeadline,
+    color: colors.text,
+    textDecoration: "none",
+  },
+  contactCaption: {
+    marginTop: 1,
+    fontSize: fonts.sizeTag,
+    lineHeight: fonts.lineHeightTag,
+    color: colors.textMuted,
   },
   summary: {
     marginBottom: space[4],
@@ -143,14 +207,16 @@ const styles = StyleSheet.create({
     marginBottom: space[2],
   },
   sectionTitle: {
+    fontFamily: fonts.display,
     fontSize: fonts.sizeSection,
     fontWeight: 700,
+    lineHeight: fonts.lineHeightSection,
     letterSpacing: fonts.letterSpacingSection,
     textTransform: "uppercase",
     color: colors.brand,
   },
   sectionRule: {
-    marginTop: space[1],
+    marginBottom: space[1],
     height: layout.sectionRuleHeight,
     backgroundColor: colors.brand,
   },
@@ -166,12 +232,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: space[2],
-    marginTop: space[3],
+    marginTop: space[4],
   },
   entryTitle: {
     flex: 1,
+    fontFamily: fonts.display,
     fontSize: fonts.sizeBody,
     fontWeight: 700,
+    lineHeight: fonts.lineHeightSection,
+    letterSpacing: fonts.letterSpacingEntryTitle,
     color: colors.text,
   },
   entryDates: {
@@ -194,7 +263,7 @@ const styles = StyleSheet.create({
   },
   bulletRow: {
     flexDirection: "row",
-    marginTop: space[1],
+    marginTop: space[2],
     paddingLeft: space[2],
   },
   bulletMark: {
@@ -220,13 +289,13 @@ const styles = StyleSheet.create({
   gridCell: {
     width: layout.gridCellWidth,
     paddingHorizontal: layout.gridGutter,
-    marginBottom: space[2],
+    marginBottom: space[3],
   },
   tagRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "flex-start",
-    gap: space[1],
+    gap: space[2],
     marginTop: space[1],
   },
   tag: {
@@ -243,13 +312,15 @@ const styles = StyleSheet.create({
   skillRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: space[1],
+    marginBottom: space[2],
   },
   skillLabel: {
     width: layout.skillLabelWidth,
     paddingRight: space[2],
+    fontFamily: fonts.display,
     fontSize: fonts.sizeSmall,
     fontWeight: 700,
+    lineHeight: fonts.lineHeightSection,
     color: colors.textSecondary,
   },
   skillValues: {
@@ -270,7 +341,7 @@ export function ExabyingDocument({ data }: ResumeTemplateProps) {
       <Page size={PDF_PAGE_SIZE[meta.pageSize]} style={styles.page} wrap>
         <View style={styles.topBar} fixed />
         <View style={styles.headerSection} wrap={false}>
-          <Header personalInfo={personalInfo} />
+          <Header personalInfo={personalInfo} pageSize={meta.pageSize} />
         </View>
         {hasText(summary) ? (
           <View style={styles.summary}>
@@ -286,12 +357,15 @@ export function ExabyingDocument({ data }: ResumeTemplateProps) {
 
 function Header({
   personalInfo,
+  pageSize,
 }: {
   personalInfo: ResumeTemplateProps["data"]["personalInfo"];
+  pageSize: PageSize;
 }) {
   const photoSrc = isRenderableImageSrc(personalInfo.photoDataUrl)
     ? personalInfo.photoDataUrl.trim()
     : null;
+  const headline = normalizeHeadline(personalInfo.headline);
 
   return (
     <View style={styles.header} wrap={false}>
@@ -301,10 +375,16 @@ function Header({
           {hasText(personalInfo.fullName) ? (
             <Text style={styles.name}>{personalInfo.fullName}</Text>
           ) : null}
-          {hasText(personalInfo.headline) ? (
-            <Text style={styles.headline}>{personalInfo.headline}</Text>
+          {hasText(headline) ? (
+            <Text style={styles.headline}>
+              {preventOrphanWord(headline)}
+            </Text>
           ) : null}
-          <ContactRow personalInfo={personalInfo} />
+          <ContactTable
+            personalInfo={personalInfo}
+            pageSize={pageSize}
+            hasPhoto={Boolean(photoSrc)}
+          />
         </View>
       </View>
       <View style={styles.logoContainer}>
@@ -316,78 +396,184 @@ function Header({
 
 interface ContactItem {
   icon: ReactNode;
-  label: string;
+  value: string;
+  caption: string;
   href?: string;
 }
 
-function ContactRow({
+function ContactTable({
   personalInfo,
+  pageSize,
+  hasPhoto,
 }: {
   personalInfo: ResumeTemplateProps["data"]["personalInfo"];
+  pageSize: PageSize;
+  hasPhoto: boolean;
 }) {
-  const items = buildContactItems(personalInfo);
-  if (items.length === 0) return null;
+  const phones = buildPhoneItems(personalInfo);
+  const others = buildOtherContactItems(personalInfo);
+  const grid = packContactGrid(phones, others);
+  if (grid.rows.length === 0) return null;
+
+  const { columnWidths, textWidths } = contactColumnMetrics(
+    pageSize,
+    hasPhoto,
+    grid.columnCount,
+    grid.hasPhoneColumn,
+  );
 
   return (
-    <View style={styles.contactRow}>
-      {items.map((item, index) => (
-        <View key={index} style={styles.contactItem} wrap={false}>
-          <View style={styles.contactIcon}>{item.icon}</View>
-          {item.href ? (
-            <Link src={item.href} style={styles.contactText}>
-              {item.label}
-            </Link>
-          ) : (
-            <Text style={styles.contactText}>{item.label}</Text>
-          )}
+    <View style={styles.contactTable}>
+      {grid.rows.map((row, rowIndex) => (
+        <View
+          key={rowIndex}
+          style={rowIndex === 0 ? styles.contactRow : styles.contactRowSpaced}
+          wrap={false}
+        >
+          {row.map((item, index) => {
+            const columnWidth = columnWidths[index];
+            const textWidth = textWidths[index];
+            const cellStyle = [
+              index === 0 ? styles.contactCell : styles.contactCellDivided,
+              { width: columnWidth },
+            ];
+            if (!item) {
+              return <View key={index} style={cellStyle} />;
+            }
+            const displayValue = breakContactValue(
+              item.value,
+              maxCharsForWidth(textWidth, fonts.sizeTag),
+            );
+            const valueStyle = [styles.contactValue, { width: textWidth }];
+            return (
+              <View key={index} style={cellStyle}>
+                {item.icon}
+                <View style={[styles.contactBody, { width: textWidth }]}>
+                  {item.href ? (
+                    <Link src={item.href}>
+                      <Text style={valueStyle}>{displayValue}</Text>
+                    </Link>
+                  ) : (
+                    <Text style={valueStyle}>{displayValue}</Text>
+                  )}
+                  <Text style={styles.contactCaption}>{item.caption}</Text>
+                </View>
+              </View>
+            );
+          })}
         </View>
       ))}
     </View>
   );
 }
 
-function buildContactItems(
+function contactColumnMetrics(
+  pageSize: PageSize,
+  hasPhoto: boolean,
+  columnCount: number,
+  hasPhoneColumn: boolean,
+) {
+  const leadingWidth =
+    PDF_PAGE_WIDTH[pageSize] -
+    layout.logoColumnWidth -
+    layout.pagePaddingX -
+    layout.headerLogoGap;
+  const tableWidth = hasPhoto
+    ? leadingWidth - layout.photoSize - space[3]
+    : leadingWidth;
+
+  let columnWidths: number[];
+  if (columnCount <= 1) {
+    columnWidths = [tableWidth];
+  } else if (hasPhoneColumn) {
+    const phoneWidth = tableWidth * layout.contactPhoneColumnShare;
+    const otherCount = columnCount - 1;
+    const otherWidth = (tableWidth - phoneWidth) / otherCount;
+    columnWidths = [
+      ...Array.from({ length: otherCount }, () => otherWidth),
+      phoneWidth,
+    ];
+  } else {
+    const width = tableWidth / columnCount;
+    columnWidths = Array.from({ length: columnCount }, () => width);
+  }
+
+  const textWidths = columnWidths.map(
+    (width) =>
+      width - layout.contactBadgeSize - CONTACT_ICON_GAP - CONTACT_CELL_PAD * 2,
+  );
+  return { columnWidths, textWidths };
+}
+
+function contactBadge(icon: ReactNode) {
+  return <View style={styles.contactBadge}>{icon}</View>;
+}
+
+function profileCaption(url: string): string {
+  switch (detectLinkKind(url)) {
+    case "github":
+      return "GitHub";
+    case "linkedin":
+      return "LinkedIn";
+    default:
+      return "Website";
+  }
+}
+
+function buildPhoneItems(
+  info: ResumeTemplateProps["data"]["personalInfo"],
+): ContactItem[] {
+  const glyph = colors.brand;
+  const glyphSize = layout.contactGlyphSize;
+  return phonesForDisplay(info.phone).map((phone) => ({
+    icon: contactBadge(<PhoneIcon size={glyphSize} color={glyph} />),
+    value: phone,
+    caption: isSystemAlternatePhone(phone) ? "Alternate" : "Mobile",
+  }));
+}
+
+function buildOtherContactItems(
   info: ResumeTemplateProps["data"]["personalInfo"],
 ): ContactItem[] {
   const items: ContactItem[] = [];
-  const iconColor = colors.textSecondary;
+  const glyph = colors.brand;
+  const glyphSize = layout.contactGlyphSize;
 
   if (hasText(info.email)) {
     items.push({
-      icon: <MailIcon color={iconColor} />,
-      label: info.email,
-    });
-  }
-  if (hasText(info.phone)) {
-    items.push({
-      icon: <PhoneIcon color={iconColor} />,
-      label: info.phone,
+      icon: contactBadge(<MailIcon size={glyphSize} color={glyph} />),
+      value: info.email,
+      caption: "Email",
     });
   }
   if (hasText(info.location)) {
     items.push({
-      icon: <MapPinIcon color={iconColor} />,
-      label: info.location,
+      icon: contactBadge(<MapPinIcon size={glyphSize} color={glyph} />),
+      value: info.location,
+      caption: "Location",
     });
   }
   if (hasText(info.website)) {
     items.push({
-      icon: linkKindIcon(info.website, iconColor),
-      label: displayLink(info.website),
+      icon: contactBadge(linkKindIcon(info.website, glyph, glyphSize)),
+      value: compactProfileLabel(info.website),
+      caption: profileCaption(info.website),
       href: normalizeHref(info.website),
     });
   }
   if (hasText(info.linkedin)) {
     items.push({
-      icon: linkKindIcon(info.linkedin, iconColor),
-      label: displayLink(info.linkedin),
+      icon: contactBadge(linkKindIcon(info.linkedin, glyph, glyphSize)),
+      value: compactProfileLabel(info.linkedin),
+      caption: "LinkedIn",
       href: normalizeHref(info.linkedin),
     });
   }
   if (hasText(info.github)) {
     items.push({
-      icon: linkKindIcon(info.github, iconColor),
-      label: displayLink(info.github),
+      icon: contactBadge(linkKindIcon(info.github, glyph, glyphSize)),
+      value: compactProfileLabel(info.github),
+      caption: "GitHub",
       href: normalizeHref(info.github),
     });
   }
@@ -476,8 +662,8 @@ function SectionHeading({
 }) {
   return (
     <View style={spaced ? styles.sectionHeadingSpaced : styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
       <View style={styles.sectionRule} />
+      <Text style={styles.sectionTitle}>{title}</Text>
     </View>
   );
 }
@@ -649,6 +835,16 @@ function normalizeHref(value: string): string {
   const trimmed = value.trim();
   if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed;
   return `https://${trimmed}`;
+}
+
+/**
+ * Ties the last two words together with a non-breaking space so a wrapped
+ * line never strands a single lone word by itself (an "orphan").
+ */
+function preventOrphanWord(value: string): string {
+  const lastSpace = value.trim().lastIndexOf(" ");
+  if (lastSpace === -1) return value;
+  return `${value.slice(0, lastSpace)} ${value.slice(lastSpace + 1)}`;
 }
 
 function hasText(value: string | undefined): value is string {

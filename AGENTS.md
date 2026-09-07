@@ -289,6 +289,22 @@ typography:
     semibold: 600
     bold: 700
     display: 700
+  tracking:
+    display: "-0.02em"
+    title: "-0.015em"
+    heading: "-0.01em"
+    subtitle: "-0.005em"
+    none: "0"
+    overline: "0.08em"
+    mono: "0.02em"
+  leading:
+    display: "1.1"
+    title: "1.2"
+    heading: "1.3"
+    snug: "1.25"
+    ui: "1.4"
+    body: "1.57"
+    caption: "1.4"
   text-styles:
     display-xl:  { size: "64px", weight: 700, lineHeight: "1.08", letterSpacing: "-0.022em", family: "display" }
     display-l:   { size: "48px", weight: 700, lineHeight: "1.10", letterSpacing: "-0.02em",  family: "display" }
@@ -298,8 +314,8 @@ typography:
     h2:          { size: "28px", weight: 700, lineHeight: "1.20", letterSpacing: "-0.01em",  family: "display" }
     h3:          { size: "24px", weight: 700, lineHeight: "1.25", letterSpacing: "-0.01em",  family: "display" }
     h4:          { size: "20px", weight: 700, lineHeight: "1.30", letterSpacing: "-0.005em", family: "display" }
-    h5:          { size: "18px", weight: 600, lineHeight: "1.35", letterSpacing: "0",        family: "body" }
-    h6:          { size: "16px", weight: 600, lineHeight: "1.40", letterSpacing: "0",        family: "body" }
+    h5:          { size: "18px", weight: 600, lineHeight: "1.35", letterSpacing: "0",        family: "display" }
+    h6:          { size: "16px", weight: 600, lineHeight: "1.40", letterSpacing: "0",        family: "display" }
     body-l:      { size: "16px", weight: 400, lineHeight: "1.60", letterSpacing: "0",        family: "body" }
     body-m:      { size: "14px", weight: 400, lineHeight: "1.57", letterSpacing: "0",        family: "body" }
     body-s:      { size: "13px", weight: 400, lineHeight: "1.54", letterSpacing: "0",        family: "body" }
@@ -618,10 +634,26 @@ Component hierarchy follows Atomic Design: **Primitives/Atoms** (Button, Input, 
   --ease-out:     cubic-bezier(0, 0, 0.2, 1);
   --ease-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  --font-display:        'Gilroy', 'Inter', system-ui, sans-serif;
+  --font-display:        var(--font-gilroy, "Gilroy"), var(--font-inter, "Inter"), system-ui, sans-serif;
   --font-display-weight: 700;
-  --font-body:           'Inter', system-ui, sans-serif;
-  --font-mono:           'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --font-body:           var(--font-inter, "Inter"), system-ui, sans-serif;
+  --font-mono:           var(--font-jetbrains, "JetBrains Mono"), "Fira Code", ui-monospace, monospace;
+
+  --tracking-display:  -0.02em;
+  --tracking-title:    -0.015em;
+  --tracking-heading:  -0.01em;
+  --tracking-subtitle: -0.005em;
+  --tracking-none:     0;
+  --tracking-overline: 0.08em;
+  --tracking-mono:     0.02em;
+
+  --leading-display: 1.1;
+  --leading-title:   1.2;
+  --leading-heading: 1.3;
+  --leading-snug:    1.25;
+  --leading-ui:      1.4;
+  --leading-body:    1.57;
+  --leading-caption: 1.4;
 }
 
 .dark {
@@ -671,11 +703,11 @@ Use these for import-confidence banners, AI/parse error states, and settings con
 
 | Role | Font | Fallback chain |
 |---|---|---|
-| Display / H1–H4 | **Gilroy** | Inter → system-ui → sans-serif |
-| H5, H6, Body, Label, Caption, Overline | **Inter** | system-ui → sans-serif |
+| Display / titles (H1–H6) | **Gilroy** | Inter → system-ui → sans-serif |
+| Body, Label, Caption, Overline, buttons | **Inter** | system-ui → sans-serif |
 | IDs, codes, technical strings | **JetBrains Mono** | Fira Code → ui-monospace → monospace |
 
-> **Font loading:** Gilroy from a licensed font host. Inter via `next/font/google` or `@fontsource/inter`. JetBrains Mono via Google Fonts or system fallback. This governs app-chrome typography only — resume template fonts are registered separately via react-pdf's `Font.register()` and come from the brand tokens supplied for the template itself.
+> **Font loading:** Gilroy from licensed files in `public/assets/fonts` (woff2, app chrome) and `public/fonts` (TTF, resume PDF). Inter via `next/font/google` in the app and TTF in `public/fonts` for PDF. JetBrains Mono via Google Fonts. Resume templates cannot read CSS tokens — they register the same families in `templates/fonts.ts` and pick Gilroy vs Inter in `templates/<id>/tokens.ts`. Preview and export share `toPdfBlob()`, so they stay identical.
 
 #### Text Casing Rules
 
@@ -811,6 +843,8 @@ DURATION         --duration-fast (100ms)  --duration-base (150ms)
 EASING           --ease-default  --ease-in  --ease-out  --ease-spring
 FONTS            --font-display (Gilroy)  --font-body (Inter)
                  --font-mono (JetBrains Mono)  --font-display-weight (700)
+TRACKING         --tracking-display/-title/-heading/-subtitle/-none/-overline/-mono
+LEADING          --leading-display/-title/-heading/-snug/-ui/-body/-caption
 ```
 
 ---

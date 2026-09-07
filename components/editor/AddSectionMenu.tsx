@@ -98,7 +98,11 @@ export function AddSectionMenu({
           }
         />
         <Menu.Portal>
-          <Menu.Positioner sideOffset={8} align="start">
+          <Menu.Positioner
+            className="add-section-menu__positioner"
+            sideOffset={8}
+            align="start"
+          >
             <Menu.Popup
               className="add-section-menu__dropdown"
               aria-label="Add resume section options"

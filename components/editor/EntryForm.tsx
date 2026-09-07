@@ -103,15 +103,13 @@ export function EntryForm({
   return (
     <div className={["entry-form", className].filter(Boolean).join(" ")}>
       <div className="entry-form__grid">
-        <div className="entry-form__full-width">
-          <Input
-            label={titleLabel}
-            placeholder={`Enter ${titleLabel.toLowerCase()}`}
-            value={value.title || ""}
-            onChange={(e) => handleFieldChange("title", e.target.value)}
-            required
-          />
-        </div>
+        <Input
+          label={titleLabel}
+          placeholder={`Enter ${titleLabel.toLowerCase()}`}
+          value={value.title || ""}
+          onChange={(e) => handleFieldChange("title", e.target.value)}
+          required
+        />
 
         <Input
           label={subtitleLabel}
@@ -163,25 +161,21 @@ export function EntryForm({
           </div>
         )}
 
-        <div className="entry-form__full-width">
-          <Input
-            label="Link / URL"
-            type="url"
-            placeholder="https://..."
-            value={value.link || ""}
-            onChange={(e) => handleFieldChange("link", e.target.value)}
-          />
-        </div>
+        <Input
+          label="Link / URL"
+          type="url"
+          placeholder="https://..."
+          value={value.link || ""}
+          onChange={(e) => handleFieldChange("link", e.target.value)}
+        />
 
-        <div className="entry-form__full-width">
-          <Textarea
-            label="Description / Overview"
-            placeholder="Optional overview or summary of this entry..."
-            value={value.description || ""}
-            onChange={(e) => handleFieldChange("description", e.target.value)}
-            rows={2}
-          />
-        </div>
+        <Textarea
+          label="Description / Overview"
+          placeholder="Optional overview or summary of this entry..."
+          value={value.description || ""}
+          onChange={(e) => handleFieldChange("description", e.target.value)}
+          rows={2}
+        />
       </div>
 
       {showBullets && (

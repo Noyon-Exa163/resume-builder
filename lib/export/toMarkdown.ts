@@ -6,6 +6,7 @@ import {
   visibleSections,
 } from "./shared";
 import { formatDateRange } from "@/lib/date";
+import { normalizeHeadline } from "@/lib/schema/headline";
 
 /**
  * Renders a resume as Markdown — a pure string transform over ResumeData,
@@ -17,7 +18,8 @@ export function toMarkdown(data: ResumeData): string {
   const lines: string[] = [];
 
   if (hasText(personalInfo.fullName)) lines.push(`# ${personalInfo.fullName}`);
-  if (hasText(personalInfo.headline)) lines.push(personalInfo.headline.trim());
+  const headline = normalizeHeadline(personalInfo.headline);
+  if (hasText(headline)) lines.push(headline);
   const contact = contactLine(personalInfo);
   if (contact) lines.push(contact);
   lines.push("");
