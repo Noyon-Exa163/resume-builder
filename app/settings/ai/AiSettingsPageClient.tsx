@@ -219,6 +219,21 @@ export default function AiSettingsPageClient() {
     return payload;
   }
 
+  /**
+   * Keeps an explicit choice if it's still valid; otherwise auto-picks the
+   * single configured provider (adding a key without separately choosing it
+   * as "default" is an easy step to miss, and pointless when there's only
+   * one option) — mirrors the same fallback the ai-parse route applies.
+   */
+  function resolveDefaultProviderId(
+    payload: AdminSettingsResponse["providers"],
+    current: AIProviderId | null,
+  ): AIProviderId | null {
+    if (current && payload[current]) return current;
+    const configuredIds = Object.keys(payload) as AIProviderId[];
+    return configuredIds.length === 1 ? configuredIds[0] : null;
+  }
+
   async function persistSettings(
     providersPayload: AdminSettingsResponse["providers"],
     nextDefaultProviderId: AIProviderId | null,
@@ -247,12 +262,15 @@ export default function AiSettingsPageClient() {
     setError("");
     setIsSaving(true);
     try {
-      const ok = await persistSettings(
-        buildProvidersPayloadFrom(providers),
+      const payload = buildProvidersPayloadFrom(providers);
+      const resolvedDefault = resolveDefaultProviderId(
+        payload,
         defaultProviderId as AIProviderId | null,
       );
+      const ok = await persistSettings(payload, resolvedDefault);
       if (!ok) return;
       setSavedProviders(providers);
+      setDefaultProviderId(resolvedDefault);
       setDirtyProviders(new Set());
       setDefaultsDirty(false);
     } catch {
@@ -272,12 +290,15 @@ export default function AiSettingsPageClient() {
     setSavingProviderId(id);
     try {
       const merged: ProvidersState = { ...savedProviders, [id]: providers[id] };
-      const ok = await persistSettings(
-        buildProvidersPayloadFrom(merged),
+      const payload = buildProvidersPayloadFrom(merged);
+      const resolvedDefault = resolveDefaultProviderId(
+        payload,
         defaultProviderId as AIProviderId | null,
       );
+      const ok = await persistSettings(payload, resolvedDefault);
       if (!ok) return;
       setSavedProviders(merged);
+      setDefaultProviderId(resolvedDefault);
       setDirtyProviders((prev) => {
         const next = new Set(prev);
         next.delete(id);
@@ -296,16 +317,15 @@ export default function AiSettingsPageClient() {
     setError("");
     setSavingProviderId(id);
     try {
-      const nextDefault =
+      const currentDefault =
         defaultProviderId === id
           ? null
           : (defaultProviderId as AIProviderId | null);
       const cleared: ProviderFormState = { apiKey: "", model: "", baseUrl: "" };
       const merged: ProvidersState = { ...savedProviders, [id]: cleared };
-      const ok = await persistSettings(
-        buildProvidersPayloadFrom(merged),
-        nextDefault,
-      );
+      const payload = buildProvidersPayloadFrom(merged);
+      const resolvedDefault = resolveDefaultProviderId(payload, currentDefault);
+      const ok = await persistSettings(payload, resolvedDefault);
       if (!ok) return;
       setProviders((prev) => ({ ...prev, [id]: cleared }));
       setSavedProviders(merged);
@@ -314,7 +334,7 @@ export default function AiSettingsPageClient() {
         next.delete(id);
         return next;
       });
-      if (defaultProviderId === id) setDefaultProviderId(null);
+      setDefaultProviderId(resolvedDefault);
       setDefaultsDirty(false);
       setTestStatus((prev) => ({ ...prev, [id]: { state: "idle" } }));
     } catch {

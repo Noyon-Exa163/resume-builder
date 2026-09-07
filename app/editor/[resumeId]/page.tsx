@@ -5,9 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useEditorStore } from "@/lib/store/editorStore";
 import { formatLastSavedLabel } from "@/lib/utils/formatLastSaved";
-import { Button } from "@/components/ui";
+import { Button, CollapsibleSection } from "@/components/ui";
 import { SplitPane } from "@/components/common/SplitPane";
 import {
+  ImportResumeCard,
   PersonalInfoForm,
   SummaryForm,
   SectionList,
@@ -32,6 +33,7 @@ export default function EditorPage() {
     lastSavedAt,
     load,
     save,
+    importInto,
     setTitle,
     setPersonalInfo,
     setSummary,
@@ -104,6 +106,11 @@ export default function EditorPage() {
     );
   }
 
+  const hasContent =
+    Boolean(resume.personalInfo.fullName?.trim()) ||
+    Boolean(resume.summary?.trim()) ||
+    resume.sections.length > 0;
+
   return (
     <main className="editor-page">
       <header className="editor-page__header">
@@ -139,22 +146,34 @@ export default function EditorPage() {
           secondaryAriaLabel="Live preview"
           primary={
             <div className="editor-page__form-pane">
-              <PersonalInfoForm
-                value={resume.personalInfo}
-                onChange={setPersonalInfo}
+              <ImportResumeCard
+                hasExistingContent={hasContent}
+                onImport={importInto}
               />
-              <SummaryForm value={resume.summary ?? ""} onChange={setSummary} />
-              <SectionList
-                sections={resume.sections}
-                onUpdateSection={updateSection}
-                onRemoveSection={removeSection}
-                onReorderSections={reorderSections}
-                onAddEntry={addEntry}
-                onUpdateEntry={updateEntry}
-                onRemoveEntry={removeEntry}
-                onReorderEntries={reorderEntries}
-              />
-              <AddSectionMenu onAddSection={addSection} />
+              <CollapsibleSection
+                label="Edit Manually"
+                defaultOpen={hasContent}
+              >
+                <PersonalInfoForm
+                  value={resume.personalInfo}
+                  onChange={setPersonalInfo}
+                />
+                <SummaryForm
+                  value={resume.summary ?? ""}
+                  onChange={setSummary}
+                />
+                <SectionList
+                  sections={resume.sections}
+                  onUpdateSection={updateSection}
+                  onRemoveSection={removeSection}
+                  onReorderSections={reorderSections}
+                  onAddEntry={addEntry}
+                  onUpdateEntry={updateEntry}
+                  onRemoveEntry={removeEntry}
+                  onReorderEntries={reorderEntries}
+                />
+                <AddSectionMenu onAddSection={addSection} />
+              </CollapsibleSection>
             </div>
           }
           secondary={<LivePreviewPane data={resume} />}

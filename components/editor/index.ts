@@ -21,4 +21,7 @@ export type { AddSectionMenuProps } from "./AddSectionMenu";
 
 export { LivePreviewPane } from "./LivePreviewPane";
 
+export { ImportResumeCard } from "./ImportResumeCard";
+export type { ImportResumeCardProps } from "./ImportResumeCard";
+
 export { ExportButtons } from "./ExportButtons";

@@ -1,0 +1,56 @@
+/* Collapsible — generic disclosure section, e.g. the editor's manual-entry
+   form under the AI import panel. */
+
+.collapsible-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.collapsible-section__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  background: none;
+  border: none;
+  padding: var(--space-2) 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.collapsible-section__trigger:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.collapsible-section__chevron {
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
+  transition: transform var(--duration-base) var(--ease-default);
+}
+
+.collapsible-section__trigger[data-open] .collapsible-section__chevron {
+  transform: rotate(180deg);
+}
+
+.collapsible-section__panel {
+  overflow: hidden;
+  height: var(--collapsible-panel-height);
+  transition: height var(--duration-slow) var(--ease-default);
+}
+
+.collapsible-section__panel[data-starting-style],
+.collapsible-section__panel[data-ending-style] {
+  height: 0;
+}
+
+.collapsible-section__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-top: var(--space-4);
+}

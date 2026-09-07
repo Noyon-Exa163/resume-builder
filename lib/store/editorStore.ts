@@ -8,6 +8,7 @@ import type {
 import {
   createBlankResume,
   normalizeAndValidate,
+  type DeepPartial,
 } from "@/lib/schema/normalize";
 import { resumeRepository } from "@/lib/storage/api/resumeRepository";
 import { createId } from "@/lib/utils/ids";
@@ -33,6 +34,15 @@ interface EditorState {
 
   load: (id: string) => Promise<void>;
   startBlank: (templateId?: string) => ResumeData;
+  /**
+   * Applies AI/heuristic/project-file-parsed data onto the currently open
+   * resume — keeps the same id/createdAt (so autosave keeps writing to the
+   * same row rather than orphaning a new one) but otherwise replaces
+   * personalInfo/summary/sections wholesale. Throws if `partial` can't be
+   * normalized into a valid ResumeData (caller should catch and show a
+   * friendly message rather than letting it bubble up).
+   */
+  importInto: (partial: DeepPartial<ResumeData>) => void;
 
   setTitle: (title: string) => void;
   setTemplateId: (templateId: string) => void;
@@ -123,6 +133,23 @@ export const useEditorStore = create<EditorState>((set, get) => {
       });
       set({ resume: blank, isDirty: false, lastSavedAt: null });
       return blank;
+    },
+
+    importInto(partial) {
+      const { resume } = get();
+      if (!resume) return;
+      const merged = normalizeAndValidate({
+        ...partial,
+        meta: {
+          ...partial.meta,
+          id: resume.meta.id,
+          createdAt: resume.meta.createdAt,
+          templateId: partial.meta?.templateId ?? resume.meta.templateId,
+          pageSize: partial.meta?.pageSize ?? resume.meta.pageSize,
+          title: partial.meta?.title ?? resume.meta.title,
+        },
+      });
+      set({ resume: touch(merged), isDirty: true });
     },
 
     setTitle(title) {

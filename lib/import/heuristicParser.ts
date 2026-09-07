@@ -1,8 +1,5 @@
 import type { ResumeData, ResumeEntry, ResumeSection, SectionKind } from "@/lib/schema/resume";
-
-type DeepPartial<T> = T extends object
-  ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : T;
+import type { DeepPartial } from "@/lib/schema/normalize";
 
 export type HeuristicSourceFormat = "pdf" | "docx" | "markdown" | "text";
 
