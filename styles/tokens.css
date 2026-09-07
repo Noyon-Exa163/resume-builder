@@ -1,0 +1,262 @@
+/*
+ * ExaDesign app-chrome tokens.
+ * Source of truth: AGENTS.md (YAML frontmatter). Do not hand-edit values here
+ * without updating AGENTS.md to match — they must stay in sync.
+ *
+ * These tokens govern the app UI (editor, settings, dashboard) ONLY.
+ * Resume templates use a separate system — see templates/<name>/tokens.ts.
+ */
+
+:root {
+  /* Raw palette (token source only — do not use directly in components) */
+  --exa-1: #f0f5fe;
+  --exa-2: #d7e5fd;
+  --exa-3: #acccff;
+  --exa-4: #64a5ff;
+  --exa-5: #0072ed;
+  --exa-6: #0058d7;
+  --exa-7: #0043b8;
+  --exa-8: #003291;
+  --exa-9: #032468;
+  --exa-10: #031643;
+  --exa-11: #020823;
+
+  --neutral-1: #f6f7f8;
+  --neutral-2: #e8ecef;
+  --neutral-3: #d6dbe3;
+  --neutral-4: #bbc5d1;
+  --neutral-5: #8697ad;
+  --neutral-6: #61738d;
+  --neutral-7: #45556c;
+  --neutral-8: #314157;
+  --neutral-9: #1c283c;
+  --neutral-10: #0d1529;
+  --neutral-11: #010515;
+
+  --grey-1: #ffffff;
+  --grey-2: #fcfcfc;
+  --grey-3: #f7f7f7;
+  --grey-4: #f2f2f2;
+  --grey-5: #e4e4e4;
+  --grey-6: #d4d4d4;
+  --grey-7: #bababa;
+  --grey-8: #989898;
+  --grey-9: #717171;
+  --grey-10: #4a4a4a;
+  --grey-11: #222222;
+
+  --red-1: #fef2f2;
+  --red-2: #ffe2e2;
+  --red-3: #ffc7c7;
+  --red-4: #fc9c9a;
+  --red-5: #fb2c36;
+  --red-6: #e6000d;
+  --red-7: #c00006;
+  --red-8: #9a000b;
+  --red-9: #7a0b11;
+  --red-10: #540a0c;
+  --red-11: #320606;
+
+  --orange-1: #fff7ed;
+  --orange-2: #feecd3;
+  --orange-3: #ffd6a5;
+  --orange-4: #ffb566;
+  --orange-5: #ff6900;
+  --orange-6: #f54900;
+  --orange-7: #c93300;
+  --orange-8: #a02c00;
+  --orange-9: #7c2809;
+  --orange-10: #501a07;
+  --orange-11: #300e06;
+
+  --ylw-1: #fefce8;
+  --ylw-2: #fef9c2;
+  --ylw-3: #fef084;
+  --ylw-4: #fdde31;
+  --ylw-5: #f6ba00;
+  --ylw-6: #df9300;
+  --ylw-7: #b26500;
+  --ylw-8: #904d00;
+  --ylw-9: #753c00;
+  --ylw-10: #4f2703;
+  --ylw-11: #321705;
+
+  --green-1: #f0fdf4;
+  --green-2: #dbfce7;
+  --green-3: #b9f8cf;
+  --green-4: #7cf1a6;
+  --green-5: #00c950;
+  --green-6: #00a53c;
+  --green-7: #008135;
+  --green-8: #02652f;
+  --green-9: #095027;
+  --green-10: #043218;
+  --green-11: #031c0b;
+
+  --cyan-1: #ecfeff;
+  --cyan-2: #cefafe;
+  --cyan-3: #a2f3fc;
+  --cyan-4: #51e8fb;
+  --cyan-5: #00b8db;
+  --cyan-6: #0091b7;
+  --cyan-7: #007595;
+  --cyan-8: #005f78;
+  --cyan-9: #0f4d63;
+  --cyan-10: #053344;
+  --cyan-11: #051e29;
+
+  --mint-1: #f0fdfa;
+  --mint-2: #cbfbf1;
+  --mint-3: #95f7e5;
+  --mint-4: #47ecd4;
+  --mint-5: #00bba7;
+  --mint-6: #009689;
+  --mint-7: #00776e;
+  --mint-8: #005f59;
+  --mint-9: #0b4e4a;
+  --mint-10: #043331;
+  --mint-11: #031d1d;
+
+  --indigo-1: #eef2ff;
+  --indigo-2: #e0e7ff;
+  --indigo-3: #c6d2ff;
+  --indigo-4: #a2b3ff;
+  --indigo-5: #615fff;
+  --indigo-6: #4f39f6;
+  --indigo-7: #432cd7;
+  --indigo-8: #3628ab;
+  --indigo-9: #302b84;
+  --indigo-10: #201c54;
+  --indigo-11: #100e2f;
+
+  --purple-1: #faf5ff;
+  --purple-2: #f3e8ff;
+  --purple-3: #ead4ff;
+  --purple-4: #d9b1ff;
+  --purple-5: #ad46ff;
+  --purple-6: #970efa;
+  --purple-7: #8200da;
+  --purple-8: #6d0faf;
+  --purple-9: #59178a;
+  --purple-10: #3c0266;
+  --purple-11: #230140;
+
+  --black: #000000;
+  --white: #ffffff;
+
+  /* Semantic tokens — components reference ONLY these */
+  --color-brand: var(--exa-5);
+  --color-brand-hover: var(--exa-6);
+  --color-brand-active: var(--exa-7);
+  --color-brand-subtle: var(--exa-2);
+  --color-brand-muted: var(--exa-2);
+  --color-brand-light: var(--exa-3);
+
+  --color-success: var(--green-5);
+  --color-success-subtle: var(--green-1);
+  --color-success-text: var(--green-9);
+  --color-danger: var(--red-5);
+  --color-danger-subtle: var(--red-1);
+  --color-danger-text: var(--red-9);
+  --color-warning: var(--ylw-5);
+  --color-warning-subtle: var(--ylw-1);
+  --color-warning-text: var(--ylw-9);
+  --color-info: var(--exa-5);
+  --color-info-subtle: var(--exa-1);
+  --color-info-text: var(--exa-9);
+
+  --color-bg: var(--grey-4);
+  --color-surface: var(--grey-1);
+  --color-surface-raised: var(--grey-1);
+  --color-surface-inset: var(--grey-3);
+  --color-surface-overlay: rgba(7, 12, 17, 0.48);
+
+  --color-border: var(--grey-5);
+  --color-border-strong: var(--grey-7);
+  --color-border-focus: var(--color-brand);
+
+  --color-text-primary: var(--neutral-11);
+  --color-text-secondary: var(--neutral-7);
+  --color-text-tertiary: var(--neutral-5);
+  --color-text-disabled: var(--neutral-4);
+  --color-text-on-brand: #ffffff;
+  --color-text-on-dark: #ffffff;
+  --color-text-inverse: var(--grey-1);
+
+  --color-link: var(--exa-6);
+  --color-link-hover: var(--exa-7);
+
+  --chart-brand: var(--color-brand);
+  --chart-blue: var(--exa-6);
+  --chart-green: var(--green-5);
+  --chart-orange: var(--orange-5);
+  --chart-purple: var(--purple-5);
+  --chart-cyan: var(--cyan-5);
+  --chart-yellow: var(--ylw-5);
+  --chart-mint: var(--mint-5);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-9: 36px;
+  --space-10: 40px;
+  --space-11: 44px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
+
+  --shadow-1: 0 1px 2px 0 rgba(7, 12, 17, 0.06);
+  --shadow-2: 0 2px 6px 0 rgba(7, 12, 17, 0.08), 0 1px 2px 0 rgba(7, 12, 17, 0.06);
+  --shadow-3: 0 4px 16px 0 rgba(7, 12, 17, 0.1), 0 2px 4px 0 rgba(7, 12, 17, 0.06);
+  --shadow-4: 0 8px 32px 0 rgba(7, 12, 17, 0.14), 0 2px 8px 0 rgba(7, 12, 17, 0.08);
+
+  --duration-fast: 100ms;
+  --duration-base: 150ms;
+  --duration-slow: 250ms;
+  --duration-slower: 1s;
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --font-display: "Gilroy", "Inter", system-ui, sans-serif;
+  --font-display-weight: 700;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+}
+
+.dark {
+  --color-bg: oklch(10% 0.018 265);
+  --color-surface: oklch(14% 0.022 265);
+  --color-surface-raised: oklch(17% 0.025 265);
+  --color-surface-inset: var(--neutral-10);
+  --color-surface-overlay: rgba(0, 0, 0, 0.65);
+  --color-border: var(--neutral-9);
+  --color-border-strong: var(--neutral-7);
+  --color-text-primary: var(--grey-1);
+  --color-text-secondary: var(--neutral-4);
+  --color-text-tertiary: var(--neutral-6);
+  --color-text-disabled: var(--neutral-8);
+  --color-brand-subtle: var(--exa-11);
+  --color-brand-muted: var(--exa-10);
+  --color-brand-light: var(--exa-9);
+  --color-danger-subtle: var(--red-11);
+  --color-success-subtle: var(--green-11);
+  --color-warning-subtle: var(--ylw-11);
+  --color-info-subtle: var(--exa-11);
+}
