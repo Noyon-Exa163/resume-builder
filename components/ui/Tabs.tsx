@@ -2,11 +2,13 @@
 
 import { Tabs } from "@base-ui/react/tabs";
 import { forwardRef, type ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 import "./Tabs.css";
 
 export interface TabItem {
   value: string;
   label: string;
+  icon?: LucideIcon;
   content: ReactNode;
 }
 
@@ -29,12 +31,23 @@ const TabsField = forwardRef<HTMLDivElement, TabsFieldProps>(
         className={["tabs", className].filter(Boolean).join(" ")}
       >
         <Tabs.List className="tabs__list">
-          {tabs.map((tab) => (
-            <Tabs.Tab key={tab.value} value={tab.value} className="tabs__tab">
-              {tab.label}
-            </Tabs.Tab>
-          ))}
-          <Tabs.Indicator className="tabs__indicator" />
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <Tabs.Tab
+                key={tab.value}
+                value={tab.value}
+                className="tabs__tab"
+              >
+                {Icon && <Icon size={16} className="tabs__tab-icon" />}
+                {tab.label}
+              </Tabs.Tab>
+            );
+          })}
+          <Tabs.Indicator
+            className="tabs__indicator"
+            renderBeforeHydration
+          />
         </Tabs.List>
         {tabs.map((tab) => (
           <Tabs.Panel key={tab.value} value={tab.value} className="tabs__panel">

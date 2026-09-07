@@ -83,7 +83,7 @@ test.describe("auth and dashboard smoke", () => {
     await expect(page.locator(".live-preview-pane")).toBeVisible();
 
     await page.getByLabel("Full Name").fill("Ada Lovelace");
-    await expect(page.locator("iframe.live-preview-pane__viewer")).toBeVisible({
+    await expect(page.locator("canvas.pdf-canvas-viewer__page")).toBeVisible({
       timeout: 30_000,
     });
 

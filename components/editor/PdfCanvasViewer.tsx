@@ -7,6 +7,7 @@ import "./PdfCanvasViewer.css";
 interface PdfCanvasViewerProps {
   blob: Blob | null;
   className?: string;
+  "aria-label"?: string;
 }
 
 /** Cap the raster resolution — a 3x display would quadruple render cost for
@@ -25,7 +26,11 @@ const RESIZE_DEBOUNCE_MS = 120;
  * the old document down before the new one loads, which is what made the
  * preview flash on every edit.
  */
-export function PdfCanvasViewer({ blob, className }: PdfCanvasViewerProps) {
+export function PdfCanvasViewer({
+  blob,
+  className,
+  "aria-label": ariaLabel,
+}: PdfCanvasViewerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pagesRef = useRef<HTMLDivElement>(null);
   const [pageWidth, setPageWidth] = useState(0);
@@ -88,6 +93,8 @@ export function PdfCanvasViewer({ blob, className }: PdfCanvasViewerProps) {
     <div
       className={["pdf-canvas-viewer", className].filter(Boolean).join(" ")}
       ref={scrollRef}
+      role={ariaLabel ? "region" : undefined}
+      aria-label={ariaLabel}
     >
       {/* Populated imperatively above — React must not own these children. */}
       <div className="pdf-canvas-viewer__pages" ref={pagesRef} />

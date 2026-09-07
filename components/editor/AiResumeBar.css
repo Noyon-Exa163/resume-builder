@@ -1,0 +1,164 @@
+/* Chat-style input at the top of the editor's form pane — surface contrast
+   (not a border, not a brand-color wash) separates it from the form below,
+   per ExaDesign §6.1 rule 6. The brand tint only appears transiently while
+   dragging a file over it, and permanently on the Send button itself. */
+
+.ai-resume-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ai-resume-bar__box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: var(--color-surface-inset);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-3);
+  transition: background-color var(--duration-base) var(--ease-default);
+}
+
+.ai-resume-bar__box:focus-within {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 1px;
+}
+
+.ai-resume-bar__box--dragging {
+  background: var(--color-brand-subtle);
+}
+
+.ai-resume-bar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  align-self: flex-start;
+  max-width: 100%;
+  background: var(--color-surface);
+  border-radius: var(--radius-full);
+  padding: 4px var(--space-2);
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.ai-resume-bar__chip-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-resume-bar__chip-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-full);
+}
+
+.ai-resume-bar__chip-remove:hover {
+  color: var(--color-text-primary);
+}
+
+.ai-resume-bar__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ai-resume-bar__icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-base) var(--ease-default),
+    color var(--duration-base) var(--ease-default);
+}
+
+.ai-resume-bar__icon-button:hover:not(:disabled) {
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.ai-resume-bar__icon-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-resume-bar__icon-button:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.ai-resume-bar__icon-button--send {
+  background-color: var(--color-brand);
+  color: var(--color-text-on-brand);
+}
+
+.ai-resume-bar__icon-button--send:hover:not(:disabled) {
+  background-color: var(--color-brand-hover);
+  color: var(--color-text-on-brand);
+}
+
+.ai-resume-bar__icon-button--send:disabled {
+  background-color: var(--color-border);
+  color: var(--color-text-disabled);
+  opacity: 1;
+}
+
+.ai-resume-bar__textarea {
+  height: 128px;
+  resize: none;
+  overflow: hidden;
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--color-text-primary);
+  text-align: left;
+  vertical-align: top;
+}
+
+.ai-resume-bar__textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.ai-resume-bar__textarea:focus {
+  outline: none;
+}
+
+.ai-resume-bar__file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ai-resume-bar__error {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+}

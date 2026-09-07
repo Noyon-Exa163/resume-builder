@@ -69,18 +69,87 @@
 
 .editor-page__body {
   flex: 1;
-  padding: var(--space-6);
   min-height: 0;
+  display: flex;
+  flex-direction: row;
 }
 
-.editor-page__form-pane {
+.editor-page__body--resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* A real sidebar (flat panel with a divider, like
+   components/common/AppSidebar.css) — width is user-resizable via the
+   handle below rather than fixed, so it's set inline on the element. */
+.editor-page__sidebar {
+  flex-shrink: 0;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  padding: var(--space-6);
+}
+
+.editor-page__resizer {
+  position: relative;
+  width: var(--space-3);
+  margin: 0 -4px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.editor-page__resizer:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.editor-page__resizer-handle {
+  width: 4px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-border);
+  transition:
+    background-color var(--duration-base) var(--ease-default),
+    transform var(--duration-base) var(--ease-default);
+}
+
+.editor-page__resizer:hover .editor-page__resizer-handle,
+.editor-page__body--resizing .editor-page__resizer-handle {
+  background-color: var(--color-brand);
+  transform: scaleX(1.5);
+}
+
+.editor-page__manual-edit {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  height: 100%;
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-1);
-  padding: var(--space-6);
-  overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .editor-page__body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  /* Overrides the resize handle's inline width style — dragging a width
+     doesn't apply once the layout stacks into a single column. */
+  .editor-page__sidebar {
+    width: 100% !important;
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .editor-page__resizer {
+    display: none;
+  }
 }

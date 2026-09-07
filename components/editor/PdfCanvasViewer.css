@@ -1,12 +1,10 @@
 .pdf-canvas-viewer {
   position: relative;
-  height: 100%;
-  width: 100%;
   overflow-y: auto;
   /* Reserve the scrollbar so measuring the pane can't oscillate between
      "content overflows" and "it no longer does". */
   scrollbar-gutter: stable;
-  padding: var(--space-4);
+  padding: var(--space-6);
 }
 
 .pdf-canvas-viewer__pages {

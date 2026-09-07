@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
-import { getProvider } from "@/lib/ai/registry";
+import { resolveConfiguredProvider } from "@/lib/ai/resolveConfiguredProvider";
 import { RESUME_SCHEMA_DESCRIPTION } from "@/lib/ai/extractionPrompt";
-import { postgresSettingsStore } from "@/lib/storage/settings/postgresStore";
-import type { AIProviderId } from "@/lib/ai/types";
 
 /**
  * POST /api/import/ai-parse — the only server hop in the import pipeline,
@@ -43,29 +41,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const settings = await postgresSettingsStore.get();
-  const configuredIds = Object.keys(settings.providers) as AIProviderId[];
-  // An admin can save a provider's key without separately picking it as the
-  // default — that's an easy step to miss (and pointless busywork when only
-  // one provider is configured), so fall back to the single configured one.
-  const providerId =
-    settings.defaultProviderId ??
-    (configuredIds.length === 1 ? configuredIds[0] : undefined);
-  const config = providerId ? settings.providers[providerId] : undefined;
-  if (!providerId || !config) {
-    return NextResponse.json(
-      {
-        error:
-          configuredIds.length > 1
-            ? "Multiple AI providers are configured but none is set as default. Ask an admin to pick one in AI Settings."
-            : "No AI provider is configured. Ask an admin to set one up in AI Settings.",
-      },
-      { status: 422 },
-    );
+  const resolved = await resolveConfiguredProvider();
+  if (!resolved.ok) {
+    return NextResponse.json({ error: resolved.error }, { status: 422 });
   }
+  const { provider, config } = resolved.result;
 
   try {
-    const provider = getProvider(providerId);
     const result = await provider.extractResumeData(
       {
         rawText: parsed.data.rawText,

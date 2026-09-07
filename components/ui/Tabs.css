@@ -1,25 +1,36 @@
-/* Tabs — ExaDesign §6.10
-   Line variant: --color-brand underline, 220ms transition
+/* Tabs — shadcn-style segmented control
+   Track: inset surface, radius-lg. Active pill: surface + shadow-1, radius-md
+   (12px outer − 4px padding = 8px inner). Sliding indicator, not an underline.
 */
 
 .tabs {
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .tabs__list {
-  display: flex;
-  border-bottom: 1px solid var(--color-border);
   position: relative;
+  display: flex;
+  width: 100%;
+  flex-shrink: 0;
+  padding: var(--space-1);
+  background: var(--color-surface-inset);
+  border-radius: var(--radius-lg);
 }
 
 .tabs__tab {
   position: relative;
+  z-index: 1;
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
-  padding: var(--space-3) var(--space-4);
+  gap: var(--space-2);
+  min-height: 32px;
+  padding: var(--space-1) var(--space-3);
   border: none;
+  border-radius: var(--radius-md);
   background: transparent;
   font-family: var(--font-body);
   font-size: 14px;
@@ -29,32 +40,60 @@
   cursor: pointer;
   white-space: nowrap;
   transition:
-    color 220ms var(--ease-default);
-}
-
-.tabs__tab:focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: -2px;
+    color var(--duration-base) var(--ease-default),
+    transform var(--duration-fast) var(--ease-default);
 }
 
 .tabs__tab:hover {
   color: var(--color-text-primary);
 }
 
-.tabs__tab[data-selected] {
-  color: var(--color-brand);
+.tabs__tab:active {
+  transform: scale(0.96);
 }
 
-/* Line underline via indicator */
+.tabs__tab[data-active] {
+  color: var(--color-text-primary);
+}
+
+.tabs__tab:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.tabs__tab-icon {
+  flex-shrink: 0;
+}
+
 .tabs__indicator {
   position: absolute;
-  bottom: -1px;
-  height: 2px;
-  background-color: var(--color-brand);
-  border-radius: 1px;
-  transition: left 220ms var(--ease-default), width 220ms var(--ease-default);
+  z-index: 0;
+  pointer-events: none;
+  left: var(--active-tab-left);
+  top: var(--active-tab-top);
+  width: var(--active-tab-width);
+  height: var(--active-tab-height);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
+  transition:
+    left var(--duration-slow) var(--ease-default),
+    width var(--duration-slow) var(--ease-default),
+    top var(--duration-slow) var(--ease-default),
+    height var(--duration-slow) var(--ease-default);
 }
 
 .tabs__panel {
   padding: var(--space-4) 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabs__tab,
+  .tabs__indicator {
+    transition: none;
+  }
+
+  .tabs__tab:active {
+    transform: none;
+  }
 }

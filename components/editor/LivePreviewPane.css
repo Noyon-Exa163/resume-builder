@@ -1,13 +1,7 @@
+/* The viewer is a direct flex child of .editor-page__body — no extra
+   wrapper around the canvas scroller. */
 .live-preview-pane {
-  height: 100%;
-  width: 100%;
-  background: var(--color-surface-inset);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-.live-preview-pane__viewer {
-  height: 100%;
-  width: 100%;
-  border: none;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
 }

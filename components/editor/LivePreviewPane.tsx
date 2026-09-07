@@ -42,9 +42,11 @@ export function LivePreviewPane({ data }: LivePreviewPaneProps) {
   }, [draft]);
 
   return (
-    <div className="live-preview-pane">
-      <PdfCanvasViewer blob={blob} className="live-preview-pane__viewer" />
-    </div>
+    <PdfCanvasViewer
+      blob={blob}
+      className="live-preview-pane"
+      aria-label="Live preview"
+    />
   );
 }
 

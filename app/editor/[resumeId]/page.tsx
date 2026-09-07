@@ -1,17 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, FilePlus, Loader2 } from "lucide-react";
+import { ArrowLeft, FilePlus, Loader2, Pencil, Sparkles } from "lucide-react";
 import { useEditorStore } from "@/lib/store/editorStore";
 import { formatLastSavedLabel } from "@/lib/utils/formatLastSaved";
 import { createBlankResume, type DeepPartial } from "@/lib/schema/normalize";
 import type { ResumeData } from "@/lib/schema/resume";
 import { resumeRepository } from "@/lib/storage/api/resumeRepository";
-import { Button, CollapsibleSection } from "@/components/ui";
-import { SplitPane } from "@/components/common/SplitPane";
+import { Button, TabsField } from "@/components/ui";
 import {
-  ImportResumeCard,
+  AiResumeBar,
   PersonalInfoForm,
   SummaryForm,
   SectionList,
@@ -23,6 +28,9 @@ import "./page.css";
 
 const AUTOSAVE_DELAY_MS = 5_000;
 const SAVE_STATUS_TICK_MS = 30_000;
+const DEFAULT_SIDEBAR_WIDTH = 420;
+const MIN_SIDEBAR_WIDTH = 320;
+const MAX_SIDEBAR_WIDTH = 640;
 
 export default function EditorPage() {
   const params = useParams<{ resumeId: string }>();
@@ -80,25 +88,81 @@ export default function EditorPage() {
     };
   }, []);
 
-  // Controlled rather than Collapsible's `defaultOpen` — that prop only sets
-  // the *initial* state of an uncontrolled component, and recomputing
-  // "does this resume have content" on every render (it must, to react to an
-  // import) makes it look like the default itself is changing after mount,
-  // which Base UI warns about. Seed it once from the freshly loaded resume,
-  // then drive it explicitly (e.g. auto-expanding after an import below).
-  const [isManualEditOpen, setIsManualEditOpen] = useState(false);
+  // Seed which tab opens first from the freshly loaded resume — a blank one
+  // leads with AI, one that already has content opens straight to Manual
+  // Edit. Only ever seeded once per resume load; afterward the user (or a
+  // completed AI import, below) drives it explicitly.
+  const [activeTab, setActiveTab] = useState("ai");
   const [isCreating, setIsCreating] = useState(false);
-  const hasInitializedManualEditOpen = useRef(false);
+  const hasInitializedActiveTab = useRef(false);
 
   useEffect(() => {
-    if (hasInitializedManualEditOpen.current || !hasLoaded || !resume) return;
-    hasInitializedManualEditOpen.current = true;
-    setIsManualEditOpen(
+    if (hasInitializedActiveTab.current || !hasLoaded || !resume) return;
+    hasInitializedActiveTab.current = true;
+    const hasContent =
       Boolean(resume.personalInfo.fullName?.trim()) ||
-        Boolean(resume.summary?.trim()) ||
-        resume.sections.length > 0,
-    );
+      Boolean(resume.summary?.trim()) ||
+      resume.sections.length > 0;
+    setActiveTab(hasContent ? "manual" : "ai");
   }, [hasLoaded, resume]);
+
+  // Drag-to-resize the sidebar, dragging from its left edge. The sidebar
+  // sits on the right, so its width is the distance from the cursor to the
+  // container's right edge — the mirror of a left-side resizer.
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  function clampSidebarWidth(width: number) {
+    return Math.min(Math.max(width, MIN_SIDEBAR_WIDTH), MAX_SIDEBAR_WIDTH);
+  }
+
+  function handleResizerPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsResizingSidebar(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function handleResizerPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!isResizingSidebar || !bodyRef.current) return;
+    const rect = bodyRef.current.getBoundingClientRect();
+    setSidebarWidth(clampSidebarWidth(rect.right - e.clientX));
+  }
+
+  function handleResizerPointerUp(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!isResizingSidebar) return;
+    setIsResizingSidebar(false);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // Pointer capture may already be released
+    }
+  }
+
+  function handleResizerKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    const step = 16;
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      setSidebarWidth((w) => clampSidebarWidth(w + step));
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      setSidebarWidth((w) => clampSidebarWidth(w - step));
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      setSidebarWidth(MAX_SIDEBAR_WIDTH);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      setSidebarWidth(MIN_SIDEBAR_WIDTH);
+    }
+  }
+
+  // Stop resizing if the pointer is released outside the handle.
+  useEffect(() => {
+    if (!isResizingSidebar) return;
+    const stop = () => setIsResizingSidebar(false);
+    window.addEventListener("mouseup", stop);
+    return () => window.removeEventListener("mouseup", stop);
+  }, [isResizingSidebar]);
 
   async function handleBack() {
     await save();
@@ -119,11 +183,11 @@ export default function EditorPage() {
 
   // A completed AI/heuristic extraction is a deliberate, commit-worthy
   // moment — persist right away rather than waiting out the normal
-  // keystroke-debounced autosave. Also expand the manual-edit section so
+  // keystroke-debounced autosave. Also switch to the Manual Edit tab so
   // the newly filled-in fields are actually visible.
   function handleImport(partial: DeepPartial<ResumeData>) {
     importInto(partial);
-    setIsManualEditOpen(true);
+    setActiveTab("manual");
     void save();
   }
 
@@ -150,11 +214,6 @@ export default function EditorPage() {
       </main>
     );
   }
-
-  const hasContent =
-    Boolean(resume.personalInfo.fullName?.trim()) ||
-    Boolean(resume.summary?.trim()) ||
-    resume.sections.length > 0;
 
   return (
     <main className="editor-page">
@@ -202,45 +261,81 @@ export default function EditorPage() {
         </div>
       </header>
 
-      <div className="editor-page__body">
-        <SplitPane
-          primaryAriaLabel="Resume editor"
-          secondaryAriaLabel="Live preview"
-          primary={
-            <div className="editor-page__form-pane">
-              <ImportResumeCard
-                hasExistingContent={hasContent}
-                onImport={handleImport}
-              />
-              <CollapsibleSection
-                label="Edit Manually"
-                open={isManualEditOpen}
-                onOpenChange={setIsManualEditOpen}
-              >
-                <PersonalInfoForm
-                  value={resume.personalInfo}
-                  onChange={setPersonalInfo}
-                />
-                <SummaryForm
-                  value={resume.summary ?? ""}
-                  onChange={setSummary}
-                />
-                <SectionList
-                  sections={resume.sections}
-                  onUpdateSection={updateSection}
-                  onRemoveSection={removeSection}
-                  onReorderSections={reorderSections}
-                  onAddEntry={addEntry}
-                  onUpdateEntry={updateEntry}
-                  onRemoveEntry={removeEntry}
-                  onReorderEntries={reorderEntries}
-                />
-                <AddSectionMenu onAddSection={addSection} />
-              </CollapsibleSection>
-            </div>
-          }
-          secondary={<LivePreviewPane data={resume} />}
-        />
+      <div
+        className={[
+          "editor-page__body",
+          isResizingSidebar && "editor-page__body--resizing",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        ref={bodyRef}
+        onPointerMove={handleResizerPointerMove}
+        onPointerUp={handleResizerPointerUp}
+        onPointerCancel={handleResizerPointerUp}
+      >
+        <LivePreviewPane data={resume} />
+        <div
+          role="separator"
+          tabIndex={0}
+          aria-orientation="vertical"
+          aria-valuenow={Math.round(sidebarWidth)}
+          aria-valuemin={MIN_SIDEBAR_WIDTH}
+          aria-valuemax={MAX_SIDEBAR_WIDTH}
+          aria-label="Resize sidebar"
+          className="editor-page__resizer"
+          onPointerDown={handleResizerPointerDown}
+          onKeyDown={handleResizerKeyDown}
+        >
+          <div className="editor-page__resizer-handle" />
+        </div>
+        <aside
+          className="editor-page__sidebar"
+          style={{ width: sidebarWidth }}
+          aria-label="Resume editor"
+        >
+          <TabsField
+            value={activeTab}
+            onValueChange={setActiveTab}
+            tabs={[
+              {
+                value: "ai",
+                label: "AI",
+                icon: Sparkles,
+                content: (
+                  <AiResumeBar resume={resume} onApply={handleImport} />
+                ),
+              },
+              {
+                value: "manual",
+                label: "Manual Edit",
+                icon: Pencil,
+                content: (
+                  <div className="editor-page__manual-edit">
+                    <PersonalInfoForm
+                      value={resume.personalInfo}
+                      onChange={setPersonalInfo}
+                    />
+                    <SummaryForm
+                      value={resume.summary ?? ""}
+                      onChange={setSummary}
+                    />
+                    <SectionList
+                      sections={resume.sections}
+                      onUpdateSection={updateSection}
+                      onRemoveSection={removeSection}
+                      onReorderSections={reorderSections}
+                      onAddEntry={addEntry}
+                      onUpdateEntry={updateEntry}
+                      onRemoveEntry={removeEntry}
+                      onReorderEntries={reorderEntries}
+                    />
+                    <AddSectionMenu onAddSection={addSection} />
+                  </div>
+                ),
+              },
+            ]}
+          />
+        </aside>
       </div>
     </main>
   );
