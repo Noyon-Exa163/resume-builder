@@ -56,51 +56,51 @@ export default function AccountPageClient() {
       <div className="account-card">
         <h2 className="account-card__title">Change Password</h2>
         <form className="account-form" onSubmit={handleSubmit}>
-          {success && <div className="account-form__success">{success}</div>}
-          {error && <div className="account-form__error">{error}</div>}
+          <div className="account-form__fields">
+            {success && <div className="account-form__success">{success}</div>}
+            {error && <div className="account-form__error">{error}</div>}
 
-          <Input
-            label="Current Password"
-            type="password"
-            size="m"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
+            <Input
+              label="Current Password"
+              type="password"
+              size="m"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+            />
 
-          <Input
-            label="New Password"
-            type="password"
-            size="m"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
+            <Input
+              label="New Password"
+              type="password"
+              size="m"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
 
-          <Input
-            label="Confirm New Password"
-            type="password"
-            size="m"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
-
-          <div>
-            <Button type="submit" variant="primary" size="m" disabled={isLoading}>
-              {isLoading ? (
-                <Loader2 size={16} className="button__icon--spin" />
-              ) : (
-                <KeyRound size={16} />
-              )}
-              {isLoading ? "Updating..." : "Update Password"}
-            </Button>
+            <Input
+              label="Confirm New Password"
+              type="password"
+              size="m"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
           </div>
+
+          <Button type="submit" variant="primary" size="m" disabled={isLoading}>
+            {isLoading ? (
+              <Loader2 size={16} className="button__icon--spin" />
+            ) : (
+              <KeyRound size={16} />
+            )}
+            {isLoading ? "Updating…" : "Update Password"}
+          </Button>
         </form>
       </div>
     </div>

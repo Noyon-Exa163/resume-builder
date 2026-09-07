@@ -81,6 +81,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  min-width: 0;
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-1);
@@ -96,6 +97,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  min-width: 0;
   text-decoration: none;
 }
 
@@ -109,22 +111,27 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 0;
 }
 
 .resume-card__title-row {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .resume-card__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 16px;
   line-height: var(--leading-ui);
   letter-spacing: var(--tracking-none);
-  text-wrap: balance;
   color: var(--color-text-primary);
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, PlugZap, Save, Trash2 } from "lucide-react";
+import { CircleCheck, Loader2, PlugZap, Trash2 } from "lucide-react";
 import { Input, Button, SelectField, Badge, type SelectOption } from "@/components/ui";
 import type { AIProviderId } from "@/lib/ai/types";
 import { templateRegistry } from "@/templates";
@@ -374,7 +374,8 @@ export default function AiSettingsPageClient() {
 
       {error && <div className="ai-settings-page__error">{error}</div>}
 
-      <div className="ai-settings-page__providers">
+      <div className="ai-settings-page__layout">
+        <div className="ai-settings-page__providers">
         {PROVIDER_ORDER.map((id) => {
           const config = providers[id];
           const status = testStatus[id];
@@ -419,40 +420,55 @@ export default function AiSettingsPageClient() {
                 )}
               </div>
               <div className="ai-settings-page__provider-footer">
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="s"
-                  disabled={!config.apiKey.trim() || isSavingThisProvider}
-                  onClick={() => void handleSaveProvider(id)}
-                >
-                  {isSavingThisProvider ? (
-                    <Loader2 size={14} className="button__icon--spin" />
-                  ) : (
-                    <Save size={14} />
+                <div className="ai-settings-page__provider-actions">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="m"
+                    disabled={!config.apiKey.trim() || isSavingThisProvider}
+                    onClick={() => void handleSaveProvider(id)}
+                  >
+                    {isSavingThisProvider ? (
+                      <Loader2 size={16} className="button__icon--spin" />
+                    ) : (
+                      <CircleCheck size={16} />
+                    )}
+                    {isSavingThisProvider ? "Saving…" : "Save"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="m"
+                    disabled={
+                      !config.apiKey.trim() ||
+                      status?.state === "testing" ||
+                      isSavingThisProvider
+                    }
+                    onClick={() => void handleTestConnection(id)}
+                  >
+                    {status?.state === "testing" ? (
+                      <Loader2 size={16} className="button__icon--spin" />
+                    ) : (
+                      <PlugZap size={16} />
+                    )}
+                    {status?.state === "testing"
+                      ? "Testing…"
+                      : "Test Connection"}
+                  </Button>
+                  {isProviderDirty && !isSavingThisProvider && (
+                    <span className="ai-settings-page__unsaved-label">
+                      Unsaved
+                    </span>
                   )}
-                  {isSavingThisProvider ? "Saving…" : "Save"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="s"
-                  disabled={
-                    !config.apiKey.trim() ||
-                    status?.state === "testing" ||
-                    isSavingThisProvider
-                  }
-                  onClick={() => void handleTestConnection(id)}
-                >
-                  {status?.state === "testing" ? (
-                    <Loader2 size={14} className="button__icon--spin" />
-                  ) : (
-                    <PlugZap size={14} />
+                  {status?.state === "ok" && (
+                    <Badge variant="default">Connected</Badge>
                   )}
-                  {status?.state === "testing"
-                    ? "Testing…"
-                    : "Test Connection"}
-                </Button>
+                  {status?.state === "error" && (
+                    <span className="ai-settings-page__provider-error">
+                      {status.message}
+                    </span>
+                  )}
+                </div>
                 <Button
                   type="button"
                   variant="tertiary"
@@ -463,26 +479,14 @@ export default function AiSettingsPageClient() {
                   <Trash2 size={14} />
                   Remove
                 </Button>
-                {isProviderDirty && !isSavingThisProvider && (
-                  <span className="ai-settings-page__unsaved-label">
-                    Unsaved
-                  </span>
-                )}
-                {status?.state === "ok" && (
-                  <Badge variant="default">Connected</Badge>
-                )}
-                {status?.state === "error" && (
-                  <span className="ai-settings-page__provider-error">
-                    {status.message}
-                  </span>
-                )}
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className="ai-settings-page__defaults">
+      <aside className="ai-settings-page__defaults" aria-label="Settings">
+        <h2 className="ai-settings-page__defaults-title">Settings</h2>
         <SelectField
           label="Default Provider"
           placeholder="Choose a configured provider"
@@ -498,7 +502,7 @@ export default function AiSettingsPageClient() {
           disabled={configuredProviderOptions.length === 0 || savingDefaults}
           helperText={
             configuredProviderOptions.length === 0
-              ? "Add an API key for a provider above before choosing a default."
+              ? "Add an API key for a provider before choosing a default."
               : "Used for every AI-assisted import — users don't pick a provider themselves."
           }
         />
@@ -522,6 +526,7 @@ export default function AiSettingsPageClient() {
         {!savingDefaults && defaultsSavedAt && (
           <span className="ai-settings-page__saved-label">Saved.</span>
         )}
+      </aside>
       </div>
     </div>
   );

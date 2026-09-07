@@ -1,7 +1,7 @@
 /* Admin AI provider settings page */
 
 .ai-settings-page {
-  max-width: 720px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: var(--space-6);
 }
@@ -41,7 +41,14 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-  margin-bottom: var(--space-6);
+  min-width: 0;
+}
+
+.ai-settings-page__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--space-6);
+  align-items: start;
 }
 
 .ai-settings-page__provider {
@@ -53,30 +60,34 @@
 
 .ai-settings-page__provider-title {
   font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 600;
-  line-height: var(--leading-ui);
-  letter-spacing: var(--tracking-none);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: var(--leading-heading);
+  letter-spacing: var(--tracking-subtitle);
   color: var(--color-text-primary);
   margin: 0 0 var(--space-4);
 }
 
 .ai-settings-page__provider-row {
   display: flex;
-  gap: var(--space-3);
-  align-items: flex-start;
-}
-
-.ai-settings-page__provider-row > * {
-  flex: 1;
+  flex-direction: column;
+  gap: var(--space-6);
 }
 
 .ai-settings-page__provider-footer {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
-  margin-top: var(--space-4);
+  margin-top: var(--space-8);
+}
+
+.ai-settings-page__provider-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
 }
 
 .ai-settings-page__provider-error {
@@ -88,11 +99,33 @@
 .ai-settings-page__defaults {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-6);
   background-color: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-2);
   padding: var(--space-5);
+  position: sticky;
+  top: var(--space-6);
+}
+
+.ai-settings-page__defaults-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: var(--leading-heading);
+  letter-spacing: var(--tracking-subtitle);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+@media (max-width: 960px) {
+  .ai-settings-page__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-settings-page__defaults {
+    position: static;
+  }
 }
 
 .ai-settings-page__saved-label {
