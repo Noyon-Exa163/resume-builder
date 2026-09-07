@@ -18,11 +18,15 @@ export const colors = {
   logoMark: "#008DFF",
   /** Logo wordmark paths from Exa-Logo-Full_Vertical.svg. */
   logoWordmark: "#08061D",
+  /** Near-black — name, job titles, contact values. */
   text: "#010515",
-  textSecondary: "#45556c",
+  /** grey.11 — next lighter tint of black, for body copy. */
+  textBody: "#222222",
+  /** grey.10 — one step lighter still, for company names and entry meta. */
+  textSecondary: "#4a4a4a",
   textMuted: "#8697ad",
   border: "#e4e4e4",
-  /** grey.4 — quieter rules, e.g. contact column dividers. */
+  /** grey.4 — quieter rules. */
   borderMuted: "#f2f2f2",
   surface: "#FFFFFF",
   tagBackground: "#f0f5fe",
@@ -41,8 +45,9 @@ export const fonts = {
   sizeName: 20,
   sizeHeadline: 11,
   sizeSection: 10,
-  sizeBody: 10,
-  sizeSmall: 9,
+  sizeBody: 9,
+  /** One step below body — company names, dates, and other lines under titles. */
+  sizeSmall: 8,
   sizeTag: 8,
   letterSpacingName: -0.3,
   letterSpacingHeadline: 0,
@@ -52,6 +57,8 @@ export const fonts = {
   lineHeightName: 1.2,
   lineHeightHeadline: 1.3,
   lineHeightSection: 1.25,
+  /** Tight enough that a title does not leave a band of air above its meta. */
+  lineHeightEntryTitle: 1.15,
   /**
    * Chips size their box from the line height, so body leading would hang as
    * dead space under the label. 1 keeps the padding even top and bottom.
@@ -76,7 +83,10 @@ export const layout = {
   topBarHeight: 4,
   /** Inset from page top to name/body — below the fixed bar. */
   contentInsetBelowTopBar: 40,
-  photoSize: 56,
+  /** Fixed square size — generous enough to sit comfortably beside a
+   * two-line headline, since react-pdf has no way to measure rendered
+   * text height ahead of layout to size the photo exactly to match it. */
+  photoSize: 64,
   photoRadius: 4,
   /** Vertical full logo render height in the header container. */
   logoHeight: 32,
@@ -86,16 +96,11 @@ export const layout = {
   logoContainerPadY: 24,
   /** Reserved header column so contact text cannot paint over the logo. */
   logoColumnWidth: 108,
-  /** Gap between the contact table and the logo column. */
+  /** Gap between the contact flow and the logo column. */
   headerLogoGap: 16,
   /** Filled exa.1 circle around each brand-blue contact glyph. */
   contactBadgeSize: 18,
   contactGlyphSize: 9,
-  /**
-   * Share of the contact table given to the phone column when one exists.
-   * Remaining width is split among however many other columns the grid used.
-   */
-  contactPhoneColumnShare: 0.28,
   bulletMarkWidth: 10,
   /**
    * Keep an entry title with the first line of its body. Used on flattened
@@ -109,6 +114,8 @@ export const layout = {
    */
   entryHeadMinPresence: 36,
   compactRowMinPresence: 28,
+  /** Space between a title and the company / result line under it. */
+  entryFollowGap: 2,
   sectionRuleHeight: 1,
   tagRadius: 2,
   tagPadX: 6,

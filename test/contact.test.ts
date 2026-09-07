@@ -4,7 +4,6 @@ import {
   breakContactValue,
   compactProfileLabel,
   isSystemAlternatePhone,
-  packContactGrid,
   phonesForDisplay,
 } from "@/lib/contact";
 
@@ -57,32 +56,6 @@ describe("compactProfileLabel", () => {
 
   it("strips the scheme from a generic website", () => {
     expect(compactProfileLabel("https://exabyting.com/")).toBe("exabyting.com");
-  });
-});
-
-describe("packContactGrid", () => {
-  it("uses two columns when there is no third item besides phones", () => {
-    const grid = packContactGrid(
-      ["mobile", "alternate"],
-      ["email", "location"],
-    );
-    expect(grid.columnCount).toBe(2);
-    expect(grid.rows).toEqual([
-      ["email", "mobile"],
-      ["location", "alternate"],
-    ]);
-  });
-
-  it("uses three columns when other details need a second column", () => {
-    const grid = packContactGrid(
-      ["mobile", "alternate"],
-      ["email", "location", "linkedin", "github"],
-    );
-    expect(grid.columnCount).toBe(3);
-    expect(grid.rows).toEqual([
-      ["email", "linkedin", "mobile"],
-      ["location", "github", "alternate"],
-    ]);
   });
 });
 

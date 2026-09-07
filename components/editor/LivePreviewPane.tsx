@@ -10,6 +10,7 @@ const DEBOUNCE_MS = 400;
 
 interface LivePreviewPaneProps {
   data: ResumeData;
+  onPageCountChange?: (pageCount: number) => void;
 }
 
 /**
@@ -17,7 +18,10 @@ interface LivePreviewPaneProps {
  * so the preview never drifts from the exported file. Debounced so typing
  * doesn't rebuild the whole PDF per keystroke.
  */
-export function LivePreviewPane({ data }: LivePreviewPaneProps) {
+export function LivePreviewPane({
+  data,
+  onPageCountChange,
+}: LivePreviewPaneProps) {
   const [draft, setDraft] = useState(() => ({ key: previewKey(data), data }));
   const [blob, setBlob] = useState<Blob | null>(null);
 
@@ -46,6 +50,7 @@ export function LivePreviewPane({ data }: LivePreviewPaneProps) {
       blob={blob}
       className="live-preview-pane"
       aria-label="Live preview"
+      onPageCountChange={onPageCountChange}
     />
   );
 }

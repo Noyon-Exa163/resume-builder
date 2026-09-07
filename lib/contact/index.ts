@@ -7,5 +7,4 @@ export {
   breakContactValue,
   compactProfileLabel,
   maxCharsForWidth,
-  packContactGrid,
 } from "./display";

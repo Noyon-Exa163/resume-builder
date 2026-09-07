@@ -77,6 +77,7 @@ export default function EditorPage() {
   const [access, setAccess] = useState<ResumeAccessLevel | null>(null);
   const [ownerEmail, setOwnerEmail] = useState("");
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [pageCount, setPageCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!params.resumeId) return;
@@ -263,49 +264,62 @@ export default function EditorPage() {
         >
           <ArrowLeft size={18} />
         </Button>
-        <input
-          className="editor-page__title-input"
-          value={resume.meta.title}
-          onChange={(e) => setTitle(e.target.value)}
-          readOnly={isReadOnly}
-          aria-label="Resume title"
-        />
-        {/* Keyed so a new save restarts the elapsed-time clock immediately
-            rather than waiting out the current tick. */}
-        <LastSavedStatus
-          key={lastSavedAt}
-          lastSavedAt={lastSavedAt}
-          isSaving={isSaving}
-        />
-        <div className="editor-page__actions">
-          <ExportButtons data={resume} />
-          {access === "owner" && (
+        <span className="editor-page__title">
+          <span className="editor-page__title-sizer" aria-hidden="true">
+            {`${resume.meta.title}\u00a0`}
+          </span>
+          <input
+            className="editor-page__title-input"
+            value={resume.meta.title}
+            onChange={(e) => setTitle(e.target.value)}
+            readOnly={isReadOnly}
+            aria-label="Resume title"
+            size={1}
+          />
+        </span>
+        <div className="editor-page__header-end">
+          {/* Keyed so a new save restarts the elapsed-time clock immediately
+              rather than waiting out the current tick. */}
+          <LastSavedStatus
+            key={lastSavedAt}
+            lastSavedAt={lastSavedAt}
+            isSaving={isSaving}
+          />
+          {pageCount != null && (
+            <p className="editor-page__save-status" aria-live="polite">
+              {pageCount === 1 ? "1 page" : `${pageCount} pages`}
+            </p>
+          )}
+          <div className="editor-page__actions">
+            <ExportButtons data={resume} />
+            {access === "owner" && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="m"
+                iconOnly
+                aria-label="Share resume"
+                onClick={() => setIsShareOpen(true)}
+              >
+                <Share2 size={18} />
+              </Button>
+            )}
             <Button
               type="button"
               variant="secondary"
               size="m"
               iconOnly
-              aria-label="Share resume"
-              onClick={() => setIsShareOpen(true)}
+              aria-label="New Resume"
+              disabled={isCreating}
+              onClick={() => void handleNewResume()}
             >
-              <Share2 size={18} />
+              {isCreating ? (
+                <Loader2 size={18} className="button__icon--spin" />
+              ) : (
+                <FilePlus size={18} />
+              )}
             </Button>
-          )}
-          <Button
-            type="button"
-            variant="secondary"
-            size="m"
-            iconOnly
-            aria-label="New Resume"
-            disabled={isCreating}
-            onClick={() => void handleNewResume()}
-          >
-            {isCreating ? (
-              <Loader2 size={18} className="button__icon--spin" />
-            ) : (
-              <FilePlus size={18} />
-            )}
-          </Button>
+          </div>
         </div>
       </header>
 
@@ -321,7 +335,7 @@ export default function EditorPage() {
         onPointerUp={handleResizerPointerUp}
         onPointerCancel={handleResizerPointerUp}
       >
-        <LivePreviewPane data={resume} />
+        <LivePreviewPane data={resume} onPageCountChange={setPageCount} />
         <div
           role="separator"
           tabIndex={0}

@@ -46,11 +46,4 @@ describe("exabyting header layout", () => {
       layout.logoWidth + layout.logoContainerPadX * 2,
     );
   });
-
-  it("gives the phone column less than a third of the contact table", () => {
-    expect(layout.contactPhoneColumnShare).toBeLessThan(1 / 3);
-    expect(
-      layout.contactPhoneColumnShare + (1 - layout.contactPhoneColumnShare) / 2 * 2,
-    ).toBeCloseTo(1);
-  });
 });

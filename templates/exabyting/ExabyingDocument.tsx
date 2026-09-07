@@ -15,7 +15,6 @@ import {
   compactProfileLabel,
   isSystemAlternatePhone,
   maxCharsForWidth,
-  packContactGrid,
   phonesForDisplay,
 } from "@/lib/contact";
 import { formatDateRange } from "@/lib/date";
@@ -37,14 +36,13 @@ const PDF_PAGE_SIZE: Record<PageSize, "A4" | "LETTER"> = {
   Letter: "LETTER",
 };
 
-/** react-pdf page widths in pt — used to size contact cells in real units. */
+/** react-pdf page widths in pt — used to size the contact flow in real units. */
 const PDF_PAGE_WIDTH: Record<PageSize, number> = {
   A4: 595.28,
   Letter: 612,
 };
 
 const CONTACT_ICON_GAP = space[2];
-const CONTACT_CELL_PAD = space[3];
 
 /** Between skills within a category row. */
 const SKILL_SEPARATOR = " · ";
@@ -54,7 +52,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.family,
     fontSize: fonts.sizeBody,
     lineHeight: fonts.lineHeightBody,
-    color: colors.text,
+    color: colors.textBody,
     backgroundColor: colors.surface,
     paddingTop: layout.pagePaddingY,
     paddingBottom: layout.pagePaddingY,
@@ -81,14 +79,17 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexShrink: 1,
     flexBasis: 0,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: space[3],
+    flexDirection: "column",
     paddingTop: layout.contentInsetBelowTopBar,
     paddingLeft: layout.pagePaddingX,
     paddingRight: layout.headerLogoGap,
     minWidth: 0,
     overflow: "hidden",
+  },
+  identityRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: space[4],
   },
   photo: {
     width: layout.photoSize,
@@ -97,14 +98,11 @@ const styles = StyleSheet.create({
     objectFit: "cover",
     flexShrink: 0,
   },
-  headerMain: {
+  identityGroup: {
     flexGrow: 1,
     flexShrink: 1,
-    flexBasis: 0,
     flexDirection: "column",
-    justifyContent: "center",
     minWidth: 0,
-    overflow: "hidden",
   },
   logoContainer: {
     width: layout.logoColumnWidth,
@@ -126,44 +124,26 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   headline: {
-    marginTop: space[1],
     fontFamily: fonts.family,
     fontSize: fonts.sizeHeadline,
     lineHeight: fonts.lineHeightHeadline,
     letterSpacing: fonts.letterSpacingHeadline,
-    color: colors.text,
+    color: colors.textBody,
   },
-  contactTable: {
+  contactFlow: {
     marginTop: space[4],
-    width: "100%",
-  },
-  contactRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "flex-start",
-    width: "100%",
+    gap: space[3],
   },
-  contactRowSpaced: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    width: "100%",
-    marginTop: space[4],
-  },
-  contactCell: {
+  contactChip: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "flex-start",
     gap: CONTACT_ICON_GAP,
-    paddingRight: CONTACT_CELL_PAD,
-  },
-  contactCellDivided: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "flex-start",
-    gap: CONTACT_ICON_GAP,
-    borderLeftWidth: 1,
-    borderLeftColor: colors.borderMuted,
-    paddingLeft: CONTACT_CELL_PAD,
-    paddingRight: CONTACT_CELL_PAD,
+    flexGrow: 0,
+    flexShrink: 0,
   },
   contactBadge: {
     width: layout.contactBadgeSize,
@@ -175,7 +155,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   contactBody: {
-    flexGrow: 1,
+    flexGrow: 0,
     flexShrink: 1,
     minWidth: 0,
   },
@@ -183,6 +163,9 @@ const styles = StyleSheet.create({
     fontSize: fonts.sizeTag,
     lineHeight: fonts.lineHeightHeadline,
     color: colors.text,
+    textDecoration: "none",
+  },
+  contactLink: {
     textDecoration: "none",
   },
   contactCaption: {
@@ -196,7 +179,7 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     fontSize: fonts.sizeBody,
-    color: colors.text,
+    color: colors.textBody,
   },
   sectionHeader: {
     marginBottom: space[2],
@@ -216,7 +199,7 @@ const styles = StyleSheet.create({
     color: colors.brand,
   },
   sectionRule: {
-    marginBottom: space[1],
+    marginTop: space[1],
     height: layout.sectionRuleHeight,
     backgroundColor: colors.brand,
   },
@@ -234,17 +217,24 @@ const styles = StyleSheet.create({
     gap: space[2],
     marginTop: space[4],
   },
+  /** Title, then company/meta/description — one column so dates cannot open a gap. */
+  entryLead: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
+  },
   entryTitle: {
-    flex: 1,
     fontFamily: fonts.display,
     fontSize: fonts.sizeBody,
     fontWeight: 700,
-    lineHeight: fonts.lineHeightSection,
+    lineHeight: fonts.lineHeightEntryTitle,
     letterSpacing: fonts.letterSpacingEntryTitle,
     color: colors.text,
   },
   entryDates: {
     fontSize: fonts.sizeSmall,
+    lineHeight: fonts.lineHeightEntryTitle,
     color: colors.textMuted,
     textAlign: "right",
   },
@@ -252,14 +242,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   entryMeta: {
-    marginTop: space[1] / 2,
+    marginTop: layout.entryFollowGap,
     fontSize: fonts.sizeSmall,
+    lineHeight: fonts.lineHeightName,
     color: colors.textSecondary,
   },
   entryDescription: {
-    marginTop: space[1],
-    fontSize: fonts.sizeBody,
-    color: colors.text,
+    marginTop: layout.entryFollowGap,
+    fontSize: fonts.sizeSmall,
+    lineHeight: fonts.lineHeightName,
+    color: colors.textBody,
+  },
+  /** Job blurbs sit further from the company line than a one-line result. */
+  entryDescriptionAfterMeta: {
+    marginTop: space[2],
   },
   bulletRow: {
     flexDirection: "row",
@@ -268,13 +264,13 @@ const styles = StyleSheet.create({
   },
   bulletMark: {
     width: layout.bulletMarkWidth,
-    fontSize: fonts.sizeBody,
-    color: colors.text,
+    fontSize: fonts.sizeSmall,
+    color: colors.textBody,
   },
   bulletText: {
     flex: 1,
-    fontSize: fonts.sizeBody,
-    color: colors.text,
+    fontSize: fonts.sizeSmall,
+    color: colors.textBody,
   },
   link: {
     marginTop: space[1],
@@ -318,7 +314,7 @@ const styles = StyleSheet.create({
     width: layout.skillLabelWidth,
     paddingRight: space[2],
     fontFamily: fonts.display,
-    fontSize: fonts.sizeSmall,
+    fontSize: fonts.sizeBody,
     fontWeight: 700,
     lineHeight: fonts.lineHeightSection,
     color: colors.textSecondary,
@@ -326,7 +322,7 @@ const styles = StyleSheet.create({
   skillValues: {
     flex: 1,
     fontSize: fonts.sizeSmall,
-    color: colors.text,
+    color: colors.textBody,
   },
 });
 
@@ -366,26 +362,26 @@ function Header({
     ? personalInfo.photoDataUrl.trim()
     : null;
   const headline = normalizeHeadline(personalInfo.headline);
+  const hasName = hasText(personalInfo.fullName);
+  const hasHeadline = hasText(headline);
 
   return (
     <View style={styles.header} wrap={false}>
       <View style={styles.headerLeading}>
-        {photoSrc ? <PdfImage src={photoSrc} style={styles.photo} /> : null}
-        <View style={styles.headerMain}>
-          {hasText(personalInfo.fullName) ? (
-            <Text style={styles.name}>{personalInfo.fullName}</Text>
-          ) : null}
-          {hasText(headline) ? (
-            <Text style={styles.headline}>
-              {preventOrphanWord(headline)}
-            </Text>
-          ) : null}
-          <ContactTable
-            personalInfo={personalInfo}
-            pageSize={pageSize}
-            hasPhoto={Boolean(photoSrc)}
-          />
+        <View style={styles.identityRow}>
+          {photoSrc ? <PdfImage src={photoSrc} style={styles.photo} /> : null}
+          <View style={styles.identityGroup}>
+            {hasName ? (
+              <Text style={styles.name}>{personalInfo.fullName}</Text>
+            ) : null}
+            {hasHeadline ? (
+              <Text style={styles.headline}>
+                {preventOrphanWord(headline)}
+              </Text>
+            ) : null}
+          </View>
         </View>
+        <ContactFlow personalInfo={personalInfo} pageSize={pageSize} />
       </View>
       <View style={styles.logoContainer}>
         <ExabytingLogoFullVertical />
@@ -401,108 +397,55 @@ interface ContactItem {
   href?: string;
 }
 
-function ContactTable({
+function ContactFlow({
   personalInfo,
   pageSize,
-  hasPhoto,
 }: {
   personalInfo: ResumeTemplateProps["data"]["personalInfo"];
   pageSize: PageSize;
-  hasPhoto: boolean;
 }) {
-  const phones = buildPhoneItems(personalInfo);
-  const others = buildOtherContactItems(personalInfo);
-  const grid = packContactGrid(phones, others);
-  if (grid.rows.length === 0) return null;
+  const items = buildContactItems(personalInfo);
+  if (items.length === 0) return null;
 
-  const { columnWidths, textWidths } = contactColumnMetrics(
-    pageSize,
-    hasPhoto,
-    grid.columnCount,
-    grid.hasPhoneColumn,
-  );
+  const flowWidth = contactFlowWidth(pageSize);
+  const textMaxWidth = flowWidth - layout.contactBadgeSize - CONTACT_ICON_GAP;
+  const maxChars = maxCharsForWidth(textMaxWidth, fonts.sizeTag);
 
   return (
-    <View style={styles.contactTable}>
-      {grid.rows.map((row, rowIndex) => (
-        <View
-          key={rowIndex}
-          style={rowIndex === 0 ? styles.contactRow : styles.contactRowSpaced}
-          wrap={false}
-        >
-          {row.map((item, index) => {
-            const columnWidth = columnWidths[index];
-            const textWidth = textWidths[index];
-            const cellStyle = [
-              index === 0 ? styles.contactCell : styles.contactCellDivided,
-              { width: columnWidth },
-            ];
-            if (!item) {
-              return <View key={index} style={cellStyle} />;
-            }
-            const displayValue = breakContactValue(
-              item.value,
-              maxCharsForWidth(textWidth, fonts.sizeTag),
-            );
-            const valueStyle = [styles.contactValue, { width: textWidth }];
-            return (
-              <View key={index} style={cellStyle}>
-                {item.icon}
-                <View style={[styles.contactBody, { width: textWidth }]}>
-                  {item.href ? (
-                    <Link src={item.href}>
-                      <Text style={valueStyle}>{displayValue}</Text>
-                    </Link>
-                  ) : (
-                    <Text style={valueStyle}>{displayValue}</Text>
-                  )}
-                  <Text style={styles.contactCaption}>{item.caption}</Text>
-                </View>
-              </View>
-            );
-          })}
-        </View>
-      ))}
+    <View style={[styles.contactFlow, { width: flowWidth }]}>
+      {items.map((item, index) => {
+        const displayValue = breakContactValue(item.value, maxChars);
+        return (
+          <View
+            key={`${item.caption}-${index}`}
+            style={[styles.contactChip, { maxWidth: flowWidth }]}
+            wrap={false}
+          >
+            {item.icon}
+            <View style={styles.contactBody}>
+              {item.href ? (
+                <Link src={item.href} style={styles.contactLink}>
+                  <Text style={styles.contactValue}>{displayValue}</Text>
+                </Link>
+              ) : (
+                <Text style={styles.contactValue}>{displayValue}</Text>
+              )}
+              <Text style={styles.contactCaption}>{item.caption}</Text>
+            </View>
+          </View>
+        );
+      })}
     </View>
   );
 }
 
-function contactColumnMetrics(
-  pageSize: PageSize,
-  hasPhoto: boolean,
-  columnCount: number,
-  hasPhoneColumn: boolean,
-) {
-  const leadingWidth =
+function contactFlowWidth(pageSize: PageSize) {
+  return (
     PDF_PAGE_WIDTH[pageSize] -
     layout.logoColumnWidth -
     layout.pagePaddingX -
-    layout.headerLogoGap;
-  const tableWidth = hasPhoto
-    ? leadingWidth - layout.photoSize - space[3]
-    : leadingWidth;
-
-  let columnWidths: number[];
-  if (columnCount <= 1) {
-    columnWidths = [tableWidth];
-  } else if (hasPhoneColumn) {
-    const phoneWidth = tableWidth * layout.contactPhoneColumnShare;
-    const otherCount = columnCount - 1;
-    const otherWidth = (tableWidth - phoneWidth) / otherCount;
-    columnWidths = [
-      ...Array.from({ length: otherCount }, () => otherWidth),
-      phoneWidth,
-    ];
-  } else {
-    const width = tableWidth / columnCount;
-    columnWidths = Array.from({ length: columnCount }, () => width);
-  }
-
-  const textWidths = columnWidths.map(
-    (width) =>
-      width - layout.contactBadgeSize - CONTACT_ICON_GAP - CONTACT_CELL_PAD * 2,
+    layout.headerLogoGap
   );
-  return { columnWidths, textWidths };
 }
 
 function contactBadge(icon: ReactNode) {
@@ -520,19 +463,7 @@ function profileCaption(url: string): string {
   }
 }
 
-function buildPhoneItems(
-  info: ResumeTemplateProps["data"]["personalInfo"],
-): ContactItem[] {
-  const glyph = colors.brand;
-  const glyphSize = layout.contactGlyphSize;
-  return phonesForDisplay(info.phone).map((phone) => ({
-    icon: contactBadge(<PhoneIcon size={glyphSize} color={glyph} />),
-    value: phone,
-    caption: isSystemAlternatePhone(phone) ? "Alternate" : "Mobile",
-  }));
-}
-
-function buildOtherContactItems(
+function buildContactItems(
   info: ResumeTemplateProps["data"]["personalInfo"],
 ): ContactItem[] {
   const items: ContactItem[] = [];
@@ -544,6 +475,13 @@ function buildOtherContactItems(
       icon: contactBadge(<MailIcon size={glyphSize} color={glyph} />),
       value: info.email,
       caption: "Email",
+    });
+  }
+  for (const phone of phonesForDisplay(info.phone)) {
+    items.push({
+      icon: contactBadge(<PhoneIcon size={glyphSize} color={glyph} />),
+      value: phone,
+      caption: isSystemAlternatePhone(phone) ? "Alternate" : "Mobile",
     });
   }
   if (hasText(info.location)) {
@@ -662,8 +600,8 @@ function SectionHeading({
 }) {
   return (
     <View style={spaced ? styles.sectionHeadingSpaced : styles.sectionHeader}>
-      <View style={styles.sectionRule} />
       <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionRule} />
     </View>
   );
 }
@@ -674,43 +612,77 @@ function SectionHeading({
  * honoured, so it could sit alone at the foot of a page with its description
  * overleaf. Flat, it has to bring the top of its body with it.
  */
+function entryFollowLines(entry: ResumeEntry): {
+  dates: string;
+  metaLine: string;
+} {
+  return {
+    dates: formatDateRange(entry),
+    metaLine: [entry.subtitle, entry.location].filter(hasText).join("  ·  "),
+  };
+}
+
+function EntryHeading({
+  entry,
+  dates,
+  metaLine,
+  description,
+  spaced,
+  minPresenceAhead,
+}: {
+  entry: ResumeEntry;
+  dates: string;
+  metaLine: string;
+  description?: boolean;
+  spaced?: boolean;
+  minPresenceAhead?: number;
+}) {
+  return (
+    <View
+      style={spaced ? styles.entryHeaderSpaced : styles.entryHeader}
+      minPresenceAhead={minPresenceAhead}
+    >
+      <View style={styles.entryLead}>
+        {hasText(entry.title) ? (
+          <Text style={styles.entryTitle}>{entry.title}</Text>
+        ) : (
+          <View style={styles.entryTitleSpacer} />
+        )}
+        {metaLine ? <Text style={styles.entryMeta}>{metaLine}</Text> : null}
+        {description && hasText(entry.description) ? (
+          <Text
+            style={
+              metaLine
+                ? [styles.entryDescription, styles.entryDescriptionAfterMeta]
+                : styles.entryDescription
+            }
+          >
+            {entry.description}
+          </Text>
+        ) : null}
+      </View>
+      {dates ? <Text style={styles.entryDates}>{dates}</Text> : null}
+    </View>
+  );
+}
+
 function entryNodes(entry: ResumeEntry, spaced: boolean): ReactElement[] {
-  const dates = formatDateRange(entry);
-  const metaLine = [entry.subtitle, entry.location]
-    .filter(hasText)
-    .join("  ·  ");
+  const { dates, metaLine } = entryFollowLines(entry);
   const bullets = entry.bullets.filter(hasText);
   const tags = entry.tags.filter(hasText);
 
   const nodes: ReactElement[] = [
-    <View
+    <EntryHeading
       key={`${entry.id}-head`}
-      style={spaced ? styles.entryHeaderSpaced : styles.entryHeader}
+      entry={entry}
+      dates={dates}
+      metaLine={metaLine}
+      description
+      spaced={spaced}
       minPresenceAhead={layout.entryHeadMinPresence}
-    >
-      {hasText(entry.title) ? (
-        <Text style={styles.entryTitle}>{entry.title}</Text>
-      ) : (
-        <View style={styles.entryTitleSpacer} />
-      )}
-      {dates ? <Text style={styles.entryDates}>{dates}</Text> : null}
-    </View>,
+    />,
   ];
 
-  if (metaLine) {
-    nodes.push(
-      <Text key={`${entry.id}-meta`} style={styles.entryMeta}>
-        {metaLine}
-      </Text>,
-    );
-  }
-  if (hasText(entry.description)) {
-    nodes.push(
-      <Text key={`${entry.id}-desc`} style={styles.entryDescription}>
-        {entry.description}
-      </Text>,
-    );
-  }
   nodes.push(
     ...bullets.map((bullet, index) => (
       <View key={`${entry.id}-b-${index}`} style={styles.bulletRow} wrap={false}>
@@ -739,26 +711,17 @@ function entryNodes(entry: ResumeEntry, spaced: boolean): ReactElement[] {
 
 /** Grid cells stay nested — they are cells of a wrapping flex row. */
 function CompactEntryBody({ entry }: { entry: ResumeEntry }) {
-  const dates = formatDateRange(entry);
-  const metaLine = [entry.subtitle, entry.location]
-    .filter(hasText)
-    .join("  ·  ");
+  const { dates, metaLine } = entryFollowLines(entry);
   const tags = entry.tags.filter(hasText);
 
   return (
     <View>
-      <View style={styles.entryHeader}>
-        {hasText(entry.title) ? (
-          <Text style={styles.entryTitle}>{entry.title}</Text>
-        ) : (
-          <View style={styles.entryTitleSpacer} />
-        )}
-        {dates ? <Text style={styles.entryDates}>{dates}</Text> : null}
-      </View>
-      {metaLine ? <Text style={styles.entryMeta}>{metaLine}</Text> : null}
-      {hasText(entry.description) ? (
-        <Text style={styles.entryDescription}>{entry.description}</Text>
-      ) : null}
+      <EntryHeading
+        entry={entry}
+        dates={dates}
+        metaLine={metaLine}
+        description
+      />
       {tags.length > 0 ? <TagRow tags={tags} /> : null}
       {hasText(entry.link) ? (
         <Link src={normalizeHref(entry.link)} style={styles.link}>

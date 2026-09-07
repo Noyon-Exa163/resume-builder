@@ -35,18 +35,50 @@
   box-shadow: var(--shadow-1);
 }
 
+.editor-page__title {
+  display: inline-grid;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.editor-page__title-sizer,
 .editor-page__title-input {
-  flex: 1;
+  grid-area: 1 / 1;
+  box-sizing: border-box;
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 16px;
   line-height: var(--leading-ui);
   letter-spacing: var(--tracking-none);
-  color: var(--color-text-primary);
-  background: none;
+  padding: var(--space-1) var(--space-2);
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  padding: var(--space-1) var(--space-2);
+}
+
+.editor-page__title-sizer {
+  visibility: hidden;
+  white-space: pre;
+  min-width: 4ch;
+}
+
+.editor-page__title-input {
+  width: 100%;
+  min-width: 0;
+  color: var(--color-text-primary);
+  background: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editor-page__header-end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .editor-page__title-input:hover,

@@ -8,6 +8,7 @@ interface PdfCanvasViewerProps {
   blob: Blob | null;
   className?: string;
   "aria-label"?: string;
+  onPageCountChange?: (pageCount: number) => void;
 }
 
 /** Cap the raster resolution — a 3x display would quadruple render cost for
@@ -30,11 +31,15 @@ export function PdfCanvasViewer({
   blob,
   className,
   "aria-label": ariaLabel,
+  onPageCountChange,
 }: PdfCanvasViewerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pagesRef = useRef<HTMLDivElement>(null);
+  const onPageCountChangeRef = useRef(onPageCountChange);
   const [pageWidth, setPageWidth] = useState(0);
   const [hasRendered, setHasRendered] = useState(false);
+
+  onPageCountChangeRef.current = onPageCountChange;
 
   useEffect(() => {
     const scroller = scrollRef.current;
@@ -79,6 +84,7 @@ export function PdfCanvasViewer({
         host.replaceChildren(...canvases);
         if (scroller) scroller.scrollTop = scrollTop;
         setHasRendered(true);
+        onPageCountChangeRef.current?.(canvases.length);
       } catch (error) {
         if (!isStale) console.error("Preview render failed:", error);
       }
