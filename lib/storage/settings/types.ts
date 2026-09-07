@@ -51,7 +51,10 @@ const AIProviderConfigSchema = z.object({
  * request body's shape.
  */
 export const AdminSettingsInputSchema = z.object({
-  providers: z.record(z.enum(AI_PROVIDER_IDS), AIProviderConfigSchema),
+  // `z.record` with an enum key schema is exhaustive in Zod v4 — it would
+  // require all 5 provider ids to be present. Admins only configure a
+  // subset, so this needs `partialRecord` (every key optional) instead.
+  providers: z.partialRecord(z.enum(AI_PROVIDER_IDS), AIProviderConfigSchema),
   defaultProviderId: z.enum(AI_PROVIDER_IDS).optional(),
   defaultTemplateId: z.string().min(1),
 });
