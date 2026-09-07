@@ -114,15 +114,7 @@
   min-width: 0;
 }
 
-.resume-card__title-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
 .resume-card__title {
-  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -140,11 +132,12 @@
   font-family: var(--font-body);
   font-size: 11px;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: var(--leading-caption);
+  letter-spacing: var(--tracking-overline);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 2px var(--space-2);
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-full);
+  white-space: nowrap;
 }
 
 .resume-card__badge--editor {
@@ -179,6 +172,10 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
+}
+
+.resume-card__actions-group--end {
+  gap: var(--space-2);
 }
 
 .resume-card__icon-button {

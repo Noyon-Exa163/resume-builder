@@ -146,20 +146,7 @@ export default function DashboardClient() {
               <a href={`/editor/${resume.meta.id}`} className="resume-card__link">
                 <ResumeCardPreview data={resume} />
                 <span className="resume-card__text">
-                  <span className="resume-card__title-row">
-                    <span className="resume-card__title">{resume.meta.title}</span>
-                    {access !== "owner" && (
-                      <span
-                        className={`resume-card__badge resume-card__badge--${access}`}
-                      >
-                        {access === "editor"
-                          ? "Shared • Editor"
-                          : access === "admin"
-                            ? "Admin"
-                            : "Shared • Viewer"}
-                      </span>
-                    )}
-                  </span>
+                  <span className="resume-card__title">{resume.meta.title}</span>
                   <span className="resume-card__meta">
                     Updated {formatDisplayDate(resume.meta.updatedAt)}
                   </span>
@@ -195,16 +182,29 @@ export default function DashboardClient() {
                     </button>
                   )}
                 </div>
-                {canManageResume(access) && (
-                  <button
-                    type="button"
-                    className="resume-card__icon-button resume-card__icon-button--delete"
-                    aria-label={`Delete ${resume.meta.title}`}
-                    onClick={() => setDeleteTarget(resume)}
-                  >
-                    <Trash2 size={16} aria-hidden="true" />
-                  </button>
-                )}
+                <div className="resume-card__actions-group resume-card__actions-group--end">
+                  {access !== "owner" && (
+                    <span
+                      className={`resume-card__badge resume-card__badge--${access}`}
+                    >
+                      {access === "editor"
+                        ? "Shared • Editor"
+                        : access === "admin"
+                          ? "Admin"
+                          : "Shared • Viewer"}
+                    </span>
+                  )}
+                  {canManageResume(access) && (
+                    <button
+                      type="button"
+                      className="resume-card__icon-button resume-card__icon-button--delete"
+                      aria-label={`Delete ${resume.meta.title}`}
+                      onClick={() => setDeleteTarget(resume)}
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
               </div>
             </li>
           ))}
