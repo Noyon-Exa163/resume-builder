@@ -4,3 +4,7 @@
  * Other admins can be created and deleted freely.
  */
 export const PROTECTED_ADMIN_EMAIL = "khalid.hasan@exabyting.com";
+
+export function isProtectedAdmin(email: string): boolean {
+  return email.toLowerCase() === PROTECTED_ADMIN_EMAIL;
+}

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
-import { PROTECTED_ADMIN_EMAIL } from "@/lib/auth/constants";
+import { isProtectedAdmin } from "@/lib/auth/constants";
 
 /**
  * DELETE /api/admin/users/[id] — delete a user and their resumes (admin-only).
@@ -29,7 +29,7 @@ export async function DELETE(
   if (!target) {
     return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
-  if (target.email.toLowerCase() === PROTECTED_ADMIN_EMAIL) {
+  if (isProtectedAdmin(target.email)) {
     return NextResponse.json(
       { error: "This account cannot be deleted." },
       { status: 403 },

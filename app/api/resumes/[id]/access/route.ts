@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
+import { resolveResumeAccess } from "@/lib/auth/permissions";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -9,7 +10,8 @@ interface RouteParams {
 /**
  * GET /api/resumes/[id]/access — the caller's relationship to a resume, for
  * the editor to decide whether to render read-only. 404 if the caller has
- * no relationship to the resume (not owner, not shared with).
+ * no relationship to the resume (not owner, not shared with) and is not
+ * the protected Super Admin.
  */
 export async function GET(_request: Request, { params }: RouteParams) {
   const user = await getCurrentUser();
@@ -26,20 +28,29 @@ export async function GET(_request: Request, { params }: RouteParams) {
     LEFT JOIN resume_shares rs
       ON rs.resume_id = r.id AND rs.shared_with_user_id = ${user.id}
     WHERE r.id = ${id}
-  `) as Array<{ ownerId: string; ownerEmail: string; permission: string | null }>;
+  `) as Array<{
+    ownerId: string;
+    ownerEmail: string;
+    permission: "viewer" | "editor" | null;
+  }>;
 
   const row = rows[0];
   if (!row) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const isOwner = row.ownerId === user.id;
-  if (!isOwner && !row.permission) {
+  const access = resolveResumeAccess({
+    userId: user.id,
+    userEmail: user.email,
+    ownerId: row.ownerId,
+    sharePermission: row.permission,
+  });
+  if (!access) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   return NextResponse.json({
-    access: isOwner ? "owner" : row.permission,
+    access,
     ownerEmail: row.ownerEmail,
   });
 }

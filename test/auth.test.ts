@@ -6,6 +6,8 @@ import {
   createUserSessionToken,
   verifyUserSessionToken,
 } from "@/lib/auth/userSession";
+import { PROTECTED_ADMIN_EMAIL } from "@/lib/auth/constants";
+import { canManageAllResumes, resolveResumeAccess } from "@/lib/auth/permissions";
 
 const TEST_SECRET = "test-session-secret-for-auth-unit-tests";
 
@@ -60,5 +62,49 @@ describe("createUserSessionToken / verifyUserSessionToken", () => {
       .update(payload)
       .digest("hex");
     expect(verifyUserSessionToken(`${payload}.${signature}`)).toBeNull();
+  });
+});
+
+describe("resume visibility", () => {
+  it("grants org-wide full access to the protected Super Admin only", () => {
+    expect(canManageAllResumes(PROTECTED_ADMIN_EMAIL)).toBe(true);
+    expect(canManageAllResumes("Khalid.Hasan@exabyting.com")).toBe(true);
+    expect(canManageAllResumes("other.admin@exabyting.com")).toBe(false);
+
+    expect(
+      resolveResumeAccess({
+        userId: "admin-1",
+        userEmail: PROTECTED_ADMIN_EMAIL,
+        ownerId: "admin-1",
+        sharePermission: null,
+      }),
+    ).toBe("owner");
+
+    expect(
+      resolveResumeAccess({
+        userId: "admin-1",
+        userEmail: PROTECTED_ADMIN_EMAIL,
+        ownerId: "someone-else",
+        sharePermission: null,
+      }),
+    ).toBe("admin");
+
+    expect(
+      resolveResumeAccess({
+        userId: "admin-1",
+        userEmail: PROTECTED_ADMIN_EMAIL,
+        ownerId: "someone-else",
+        sharePermission: "viewer",
+      }),
+    ).toBe("admin");
+
+    expect(
+      resolveResumeAccess({
+        userId: "user-1",
+        userEmail: "member@exabyting.com",
+        ownerId: "someone-else",
+        sharePermission: null,
+      }),
+    ).toBeNull();
   });
 });

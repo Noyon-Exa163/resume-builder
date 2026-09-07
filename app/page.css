@@ -150,6 +150,11 @@
   color: var(--color-text-secondary);
 }
 
+.resume-card__badge--admin {
+  background-color: var(--color-info-subtle);
+  color: var(--color-info-text);
+}
+
 .resume-card__meta {
   font-family: var(--font-body);
   font-size: 13px;

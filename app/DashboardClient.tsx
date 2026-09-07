@@ -8,6 +8,7 @@ import { createBlankResume } from "@/lib/schema/normalize";
 import { resumeRepository } from "@/lib/storage/api/resumeRepository";
 import {
   listResumesWithAccess,
+  canManageResume,
   type ResumeAccessEntry,
 } from "@/lib/storage/api/resumeAccess";
 import { ResumeCardPreview } from "@/components/dashboard/ResumeCardPreview";
@@ -151,7 +152,11 @@ export default function DashboardClient() {
                       <span
                         className={`resume-card__badge resume-card__badge--${access}`}
                       >
-                        {access === "editor" ? "Shared • Editor" : "Shared • Viewer"}
+                        {access === "editor"
+                          ? "Shared • Editor"
+                          : access === "admin"
+                            ? "Admin"
+                            : "Shared • Viewer"}
                       </span>
                     )}
                   </span>
@@ -179,7 +184,7 @@ export default function DashboardClient() {
                       <Download size={16} aria-hidden="true" />
                     )}
                   </button>
-                  {access === "owner" && (
+                  {canManageResume(access) && (
                     <button
                       type="button"
                       className="resume-card__icon-button resume-card__icon-button--share"
@@ -190,7 +195,7 @@ export default function DashboardClient() {
                     </button>
                   )}
                 </div>
-                {access === "owner" && (
+                {canManageResume(access) && (
                   <button
                     type="button"
                     className="resume-card__icon-button resume-card__icon-button--delete"

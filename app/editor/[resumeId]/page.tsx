@@ -23,6 +23,7 @@ import type { ResumeData } from "@/lib/schema/resume";
 import { resumeRepository } from "@/lib/storage/api/resumeRepository";
 import {
   getResumeAccess,
+  canManageResume,
   type ResumeAccessLevel,
 } from "@/lib/storage/api/resumeAccess";
 import { Button, TabsField } from "@/components/ui";
@@ -292,7 +293,7 @@ export default function EditorPage() {
           )}
           <div className="editor-page__actions">
             <ExportButtons data={resume} />
-            {access === "owner" && (
+            {access != null && canManageResume(access) && (
               <Button
                 type="button"
                 variant="secondary"
@@ -406,7 +407,7 @@ export default function EditorPage() {
         </aside>
       </div>
 
-      {access === "owner" && (
+      {access != null && canManageResume(access) && (
         <ShareDialog
           resumeId={resume.meta.id}
           resumeTitle={resume.meta.title}

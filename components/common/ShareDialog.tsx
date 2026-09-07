@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { Button, DialogPopup, DialogRoot, EmptyState, SelectField } from "@/components/ui";
+import { Button, DialogPopup, DialogRoot, SelectField } from "@/components/ui";
 import {
   getResumeShares,
   listShareableUsers,
@@ -27,8 +27,8 @@ export interface ShareDialogProps {
 }
 
 /**
- * Owner-only sharing UI: a scrollable list of every other user in the
- * system with a per-person permission choice (Drive-style), applied all at
+ * Sharing UI: the resume owner is shown as a locked row, then every other
+ * user in the system gets a Drive-style permission dropdown. Applied all at
  * once on Share. Opens from both the dashboard card and the editor header.
  */
 export function ShareDialog({
@@ -37,7 +37,8 @@ export function ShareDialog({
   open,
   onOpenChange,
 }: ShareDialogProps) {
-  const [users, setUsers] = useState<ShareableUser[] | null>(null);
+  const [owner, setOwner] = useState<ShareableUser | null>(null);
+  const [shareTargets, setShareTargets] = useState<ShareableUser[] | null>(null);
   const [permissions, setPermissions] = useState<Record<string, PermissionChoice>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -51,14 +52,16 @@ export function ShareDialog({
       setErrorMessage("");
       setIsLoading(true);
       try {
-        const [allUsers, currentShares] = await Promise.all([
+        const [allUsers, { owner: resumeOwner, shares }] = await Promise.all([
           listShareableUsers(),
           getResumeShares(resumeId),
         ]);
         if (cancelled) return;
-        setUsers(allUsers);
+        setOwner(allUsers.find((user) => user.id === resumeOwner.id) ?? null);
+        setShareTargets(allUsers.filter((user) => user.id !== resumeOwner.id));
         const seeded: Record<string, PermissionChoice> = {};
-        for (const share of currentShares) {
+        for (const share of shares) {
+          if (share.userId === resumeOwner.id) continue;
           seeded[share.userId] = share.permission;
         }
         setPermissions(seeded);
@@ -85,7 +88,10 @@ export function ShareDialog({
     setIsSaving(true);
     try {
       const shares = Object.entries(permissions)
-        .filter((entry): entry is [string, "viewer" | "editor"] => entry[1] !== "none")
+        .filter(
+          (entry): entry is [string, "viewer" | "editor"] =>
+            entry[1] !== "none" && entry[0] !== owner?.id,
+        )
         .map(([userId, permission]) => ({ userId, permission }));
       await updateResumeShares(resumeId, shares);
       onOpenChange(false);
@@ -97,6 +103,8 @@ export function ShareDialog({
       setIsSaving(false);
     }
   }
+
+  const hasShareTargets = (shareTargets?.length ?? 0) > 0;
 
   return (
     <DialogRoot open={open} onOpenChange={onOpenChange}>
@@ -117,7 +125,7 @@ export function ShareDialog({
               type="button"
               variant="primary"
               size="m"
-              disabled={isLoading || isSaving || !users?.length}
+              disabled={isLoading || isSaving || !hasShareTargets}
               onClick={() => void handleShare()}
             >
               {isSaving && <Loader2 size={16} className="button__icon--spin" />}
@@ -129,27 +137,50 @@ export function ShareDialog({
         <div className="share-dialog__body">
           {isLoading ? (
             <p className="share-dialog__loading">Loading users…</p>
-          ) : users && users.length === 0 ? (
-            <EmptyState title="There are no other users to share with yet." />
           ) : (
-            <div className="share-dialog__list">
-              {users?.map((user) => (
-                <div key={user.id} className="share-dialog__row">
-                  <span className="share-dialog__email">{user.email}</span>
-                  <SelectField
-                    size="s"
-                    options={PERMISSION_OPTIONS}
-                    value={permissions[user.id] ?? "none"}
-                    onValueChange={(value) =>
-                      setPermissions((prev) => ({
-                        ...prev,
-                        [user.id]: (value as PermissionChoice) ?? "none",
-                      }))
-                    }
-                  />
+            <>
+              {owner && (
+                <div className="share-dialog__section">
+                  <p className="share-dialog__heading">Owner</p>
+                  <div className="share-dialog__list">
+                    <div className="share-dialog__row">
+                      <span className="share-dialog__email">{owner.email}</span>
+                      <span className="share-dialog__role">Owner</span>
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
+              )}
+
+              <div className="share-dialog__section">
+                <p className="share-dialog__heading">Share With</p>
+                {hasShareTargets ? (
+                  <div className="share-dialog__list">
+                    {shareTargets?.map((user) => (
+                      <div key={user.id} className="share-dialog__row">
+                        <span className="share-dialog__email">{user.email}</span>
+                        <SelectField
+                          size="s"
+                          options={PERMISSION_OPTIONS}
+                          value={permissions[user.id] ?? "none"}
+                          onValueChange={(value) =>
+                            setPermissions((prev) => ({
+                              ...prev,
+                              [user.id]: (value as PermissionChoice) ?? "none",
+                            }))
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="share-dialog__hint">
+                    There are no other users to share with yet. Add people in
+                    Manage Users and they will appear here with a permission
+                    dropdown.
+                  </p>
+                )}
+              </div>
+            </>
           )}
 
           {errorMessage && (

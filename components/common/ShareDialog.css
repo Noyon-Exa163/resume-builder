@@ -13,6 +13,28 @@
   color: var(--color-text-tertiary);
 }
 
+.share-dialog__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.share-dialog__heading {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.share-dialog__hint {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: var(--leading-body);
+  color: var(--color-text-tertiary);
+}
+
 .share-dialog__list {
   max-height: 320px;
   overflow-y: auto;
@@ -45,6 +67,16 @@
 .share-dialog__row .select {
   flex-shrink: 0;
   min-width: 130px;
+}
+
+.share-dialog__role {
+  flex-shrink: 0;
+  min-width: 130px;
+  text-align: right;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
 }
 
 .share-dialog__error {

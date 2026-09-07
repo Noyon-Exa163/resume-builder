@@ -3,7 +3,7 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { Users, Loader2, Trash2, UserPlus } from "lucide-react";
 import { Input, Button, EmptyState, ConfirmDialog } from "@/components/ui";
-import { PROTECTED_ADMIN_EMAIL } from "@/lib/auth/constants";
+import { isProtectedAdmin } from "@/lib/auth/constants";
 import "./page.css";
 
 interface User {
@@ -200,7 +200,7 @@ export default function UsersPageClient() {
                 </span>
               </div>
               <div className="users-page__user-actions">
-                {u.email.toLowerCase() === PROTECTED_ADMIN_EMAIL ? (
+                {isProtectedAdmin(u.email) ? (
                   <span className="users-page__user-protected">
                     Cannot be deleted
                   </span>

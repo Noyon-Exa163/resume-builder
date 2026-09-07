@@ -2,12 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { verifyUserSessionToken } from "@/lib/auth/userSession";
 
 /**
- * Node.js-runtime middleware (verifyUserSessionToken uses node:crypto).
+ * Proxy (formerly "middleware" — renamed in Next 16, which now runs it on
+ * the Node.js runtime by default; verifyUserSessionToken uses node:crypto).
  * Redirects unauthenticated requests to /login with ?next=<original path>.
  * Exempts: /login itself, /api/auth/*, and static assets.
  */
-export const runtime = "nodejs";
-
 const PUBLIC_PATHS = ["/login", "/api/auth"];
 
 function isPublicPath(pathname: string): boolean {
@@ -16,7 +15,7 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (isPublicPath(pathname)) {

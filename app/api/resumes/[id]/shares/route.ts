@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
+import { canManageAllResumes } from "@/lib/auth/permissions";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -16,16 +17,24 @@ const SharesUpdateSchema = z.object({
   ),
 });
 
-async function requireOwnedResume(resumeId: string, ownerId: string) {
+async function getManageableResume(
+  resumeId: string,
+  userId: string,
+  userEmail: string,
+) {
+  const manageAll = canManageAllResumes(userEmail);
   const rows = (await sql`
-    SELECT id FROM resumes WHERE id = ${resumeId} AND user_id = ${ownerId}
-  `) as Array<{ id: string }>;
-  return rows.length > 0;
+    SELECT r.id, r.user_id AS "ownerId", u.email AS "ownerEmail"
+    FROM resumes r
+    JOIN users u ON u.id = r.user_id
+    WHERE r.id = ${resumeId} AND (${manageAll} OR r.user_id = ${userId})
+  `) as Array<{ id: string; ownerId: string; ownerEmail: string }>;
+  return rows[0] ?? null;
 }
 
 /**
  * GET /api/resumes/[id]/shares — current share list for a resume.
- * Owner-only; 404 (not 403) for anyone else, to avoid leaking existence.
+ * Owner or Super Admin; 404 (not 403) for anyone else, to avoid leaking existence.
  */
 export async function GET(_request: Request, { params }: RouteParams) {
   const user = await getCurrentUser();
@@ -35,7 +44,8 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
   const { id } = await params;
 
-  if (!(await requireOwnedResume(id, user.id))) {
+  const resume = await getManageableResume(id, user.id, user.email);
+  if (!resume) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -47,13 +57,16 @@ export async function GET(_request: Request, { params }: RouteParams) {
     ORDER BY u.email ASC
   `) as Array<{ userId: string; email: string; permission: string }>;
 
-  return NextResponse.json(rows);
+  return NextResponse.json({
+    owner: { id: resume.ownerId, email: resume.ownerEmail },
+    shares: rows,
+  });
 }
 
 /**
  * PUT /api/resumes/[id]/shares — replaces the resume's entire share set with
  * the given list (Drive-style: the body is the full desired state, not a
- * diff). Owner-only.
+ * diff). Owner or Super Admin.
  */
 export async function PUT(request: Request, { params }: RouteParams) {
   const user = await getCurrentUser();
@@ -63,7 +76,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
   const { id } = await params;
 
-  if (!(await requireOwnedResume(id, user.id))) {
+  const resume = await getManageableResume(id, user.id, user.email);
+  if (!resume) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -82,7 +96,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
     );
   }
 
-  const { shares } = parsed.data;
+  const shares = parsed.data.shares.filter(
+    (share) => share.userId !== resume.ownerId,
+  );
 
   await sql.transaction([
     sql`DELETE FROM resume_shares WHERE resume_id = ${id}`,

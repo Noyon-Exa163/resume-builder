@@ -1,6 +1,11 @@
 import type { ResumeData } from "@/lib/schema/resume";
 
-export type ResumeAccessLevel = "owner" | "editor" | "viewer";
+export type ResumeAccessLevel = "owner" | "editor" | "viewer" | "admin";
+
+/** Owner controls (edit, share, delete) — Super Admin counts as this. */
+export function canManageResume(access: ResumeAccessLevel): boolean {
+  return access === "owner" || access === "admin";
+}
 
 export interface ResumeAccessEntry {
   resume: ResumeData;
@@ -19,6 +24,11 @@ export interface ResumeShare {
   permission: "viewer" | "editor";
 }
 
+export interface ResumeSharesState {
+  owner: ShareableUser;
+  shares: ResumeShare[];
+}
+
 async function readJsonOrThrow<T>(res: Response, fallback: string): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => null);
@@ -31,6 +41,8 @@ async function readJsonOrThrow<T>(res: Response, fallback: string): Promise<T> {
  * Every resume the current user owns or has been shared, with per-resume
  * access level — the richer sibling of resumeRepository.list(), which stays
  * on the plain StorageAdapter<ResumeData> contract. Dashboard-only concern.
+ * Super Admin also receives every resume in the system as access "admin"
+ * (full edit / share / delete, without taking ownership).
  */
 export async function listResumesWithAccess(): Promise<ResumeAccessEntry[]> {
   const res = await fetch("/api/resumes", { method: "GET" });
@@ -38,7 +50,7 @@ export async function listResumesWithAccess(): Promise<ResumeAccessEntry[]> {
 }
 
 /** The caller's access level for one resume — used by the editor to decide
- * whether to render read-only. */
+ * whether to render read-only, and whether share/delete controls appear. */
 export async function getResumeAccess(
   id: string,
 ): Promise<{ access: ResumeAccessLevel; ownerEmail: string }> {
@@ -54,12 +66,12 @@ export async function listShareableUsers(): Promise<ShareableUser[]> {
   return readJsonOrThrow<ShareableUser[]>(res, "Failed to list users");
 }
 
-/** Current share list for a resume. Owner-only server-side. */
-export async function getResumeShares(id: string): Promise<ResumeShare[]> {
+/** Current share list for a resume, including who owns it. */
+export async function getResumeShares(id: string): Promise<ResumeSharesState> {
   const res = await fetch(`/api/resumes/${encodeURIComponent(id)}/shares`, {
     method: "GET",
   });
-  return readJsonOrThrow<ResumeShare[]>(res, "Failed to load current shares");
+  return readJsonOrThrow(res, "Failed to load current shares");
 }
 
 /** Replaces a resume's entire share set. Owner-only server-side. */

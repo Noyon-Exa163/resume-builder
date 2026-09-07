@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
+import { canManageAllResumes } from "@/lib/auth/permissions";
 import { ResumeDataSchema } from "@/lib/schema/resume";
 
 interface RouteParams {
@@ -18,8 +19,9 @@ interface ResumeRow {
 /**
  * GET /api/resumes/[id]
  * Returns 401 if unauthenticated.
- * Returns 404 if not found, or the caller is neither the owner nor a user
- * the resume has been shared with (see db/migrations/0003_resume_shares.sql).
+ * Returns 404 if not found, or the caller is neither the owner, a user
+ * the resume has been shared with (see db/migrations/0003_resume_shares.sql),
+ * nor the protected Super Admin (org-wide full access).
  */
 export async function GET(_request: Request, { params }: RouteParams) {
   const user = await getCurrentUser();
@@ -28,13 +30,19 @@ export async function GET(_request: Request, { params }: RouteParams) {
   }
 
   const { id } = await params;
+  const manageAll = canManageAllResumes(user.email);
 
   const rows = (await sql`
     SELECT r.id, r.user_id, r.data, r.created_at, r.updated_at
     FROM resumes r
     LEFT JOIN resume_shares rs
       ON rs.resume_id = r.id AND rs.shared_with_user_id = ${user.id}
-    WHERE r.id = ${id} AND (r.user_id = ${user.id} OR rs.shared_with_user_id = ${user.id})
+    WHERE r.id = ${id}
+      AND (
+        ${manageAll}
+        OR r.user_id = ${user.id}
+        OR rs.shared_with_user_id = ${user.id}
+      )
   `) as ResumeRow[];
 
   if (rows.length === 0) {
@@ -54,8 +62,9 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
 /**
  * PUT /api/resumes/[id]
- * Updates an existing resume. Must belong to the current user, or the
- * current user must have "editor" access via resume_shares.
+ * Updates an existing resume. Must belong to the current user, the
+ * current user must have "editor" access via resume_shares, or the
+ * caller is the protected Super Admin.
  * Returns 401 if unauthenticated.
  * Returns 404 if not found or not writable by the current user.
  */
@@ -66,6 +75,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
   }
 
   const { id } = await params;
+  const manageAll = canManageAllResumes(user.email);
 
   let body: unknown;
   try {
@@ -84,13 +94,18 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
   const resume = parsed.data;
 
-  // Confirm the caller may write to this resume (owner or editor share)
+  // Confirm the caller may write to this resume (owner, editor share, or Super Admin)
   const existing = (await sql`
     SELECT r.id
     FROM resumes r
     LEFT JOIN resume_shares rs
       ON rs.resume_id = r.id AND rs.shared_with_user_id = ${user.id} AND rs.permission = 'editor'
-    WHERE r.id = ${id} AND (r.user_id = ${user.id} OR rs.shared_with_user_id = ${user.id})
+    WHERE r.id = ${id}
+      AND (
+        ${manageAll}
+        OR r.user_id = ${user.id}
+        OR rs.shared_with_user_id = ${user.id}
+      )
   `) as Array<{ id: string }>;
 
   if (existing.length === 0) {
@@ -105,7 +120,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
         updated_at = now()
     WHERE id = ${id}
       AND (
-        user_id = ${user.id}
+        ${manageAll}
+        OR user_id = ${user.id}
         OR EXISTS (
           SELECT 1 FROM resume_shares
           WHERE resume_id = resumes.id AND shared_with_user_id = ${user.id} AND permission = 'editor'
@@ -118,10 +134,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
 /**
  * DELETE /api/resumes/[id]
- * Deletes a resume. Must belong to current user — owner-only, even for
- * users with editor access via resume_shares.
+ * Deletes a resume. Owner-only for ordinary users; the protected Super
+ * Admin may delete any resume. Editor shares cannot delete.
  * Returns 401 if unauthenticated.
- * Returns 404 if not found or not owned by current user.
+ * Returns 404 if not found or not deletable by the current user.
  */
 export async function DELETE(_request: Request, { params }: RouteParams) {
   const user = await getCurrentUser();
@@ -130,10 +146,11 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
   }
 
   const { id } = await params;
+  const manageAll = canManageAllResumes(user.email);
 
   const result = (await sql`
     DELETE FROM resumes
-    WHERE id = ${id} AND user_id = ${user.id}
+    WHERE id = ${id} AND (${manageAll} OR user_id = ${user.id})
     RETURNING id
   `) as Array<{ id: string }>;
 
