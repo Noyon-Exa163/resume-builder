@@ -4,7 +4,15 @@
  */
 const HEADLINE_BAR = /\s*[|│｜]\s*/g;
 
+/**
+ * Swap `|` for a bullet as the user types. Does not trim — a trailing
+ * space has to survive so the next word can be typed.
+ */
+export function replaceHeadlineBars(value: string): string {
+  return value.replace(HEADLINE_BAR, " • ");
+}
+
 export function normalizeHeadline(value: string | undefined): string | undefined {
   if (value === undefined) return undefined;
-  return value.replace(HEADLINE_BAR, " • ").replace(/[ \t]{2,}/g, " ").trim();
+  return replaceHeadlineBars(value).replace(/[ \t]{2,}/g, " ").trim();
 }

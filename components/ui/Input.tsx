@@ -1,4 +1,10 @@
-import { forwardRef, useState, type InputHTMLAttributes } from "react";
+import {
+  forwardRef,
+  useState,
+  type ChangeEvent,
+  type InputHTMLAttributes,
+  type KeyboardEvent,
+} from "react";
 import { Eye, EyeOff } from "lucide-react";
 import "./Input.css";
 
@@ -8,13 +14,52 @@ export interface InputProps
   label?: string;
   error?: string;
   helperText?: string;
+  /** Drop whitespace as the user types. Implied for `type="url"`. */
+  stripWhitespace?: boolean;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ size = "m", label, error, helperText, className, id, type, ...rest }, ref) => {
+  (
+    {
+      size = "m",
+      label,
+      error,
+      helperText,
+      className,
+      id,
+      type,
+      stripWhitespace,
+      onChange,
+      onKeyDown,
+      ...rest
+    },
+    ref,
+  ) => {
     const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
     const isPassword = type === "password";
+    const shouldStripWhitespace = Boolean(stripWhitespace) || type === "url";
     const [showPassword, setShowPassword] = useState(false);
+
+    const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+      if (
+        shouldStripWhitespace &&
+        event.key === " " &&
+        !event.nativeEvent.isComposing
+      ) {
+        event.preventDefault();
+      }
+      onKeyDown?.(event);
+    };
+
+    const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+      if (shouldStripWhitespace) {
+        const stripped = event.target.value.replace(/\s/g, "");
+        if (stripped !== event.target.value) {
+          event.target.value = stripped;
+        }
+      }
+      onChange?.(event);
+    };
 
     return (
       <div className={["input-field", className].filter(Boolean).join(" ")}>
@@ -31,6 +76,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             className={`input-field__input input-field__input--${size}${isPassword ? " input-field__input--has-toggle" : ""}`}
             aria-invalid={error ? true : undefined}
             {...rest}
+            onKeyDown={handleKeyDown}
+            onChange={handleChange}
           />
           {isPassword && (
             <button

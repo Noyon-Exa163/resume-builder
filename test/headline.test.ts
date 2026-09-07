@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { normalizeHeadline } from "@/lib/schema/headline";
+import {
+  normalizeHeadline,
+  replaceHeadlineBars,
+} from "@/lib/schema/headline";
 import { normalizeAndValidate } from "@/lib/schema/normalize";
+
+describe("replaceHeadlineBars", () => {
+  it("keeps a trailing space so the next word can be typed", () => {
+    expect(replaceHeadlineBars("DevOps Engineer ")).toBe("DevOps Engineer ");
+  });
+
+  it("replaces a pipe without trimming surrounding spaces the user still needs", () => {
+    expect(replaceHeadlineBars("Engineer | ")).toBe("Engineer • ");
+  });
+});
 
 describe("normalizeHeadline", () => {
   it("replaces pipe separators with a spaced bullet", () => {
@@ -19,6 +32,10 @@ describe("normalizeHeadline", () => {
 
   it("leaves an already-bulleted headline unchanged", () => {
     expect(normalizeHeadline("Engineer • Cloud")).toBe("Engineer • Cloud");
+  });
+
+  it("trims only when persisting, not as a typing filter", () => {
+    expect(normalizeHeadline("  Engineer • Cloud  ")).toBe("Engineer • Cloud");
   });
 });
 

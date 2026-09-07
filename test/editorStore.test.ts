@@ -129,3 +129,34 @@ describe("editorStore.importInto", () => {
     );
   });
 });
+
+describe("editorStore.setPersonalInfo", () => {
+  beforeEach(() => {
+    useEditorStore.setState({
+      resume: createBlankResume(),
+      isLoading: false,
+      isSaving: false,
+      isDirty: false,
+      lastSavedAt: null,
+      hasLoaded: true,
+    });
+  });
+
+  it("keeps a trailing space in the headline while typing", () => {
+    useEditorStore.getState().setPersonalInfo({ headline: "DevOps " });
+
+    expect(useEditorStore.getState().resume?.personalInfo.headline).toBe(
+      "DevOps ",
+    );
+  });
+
+  it("still rewrites pipes to bullets without eating the following space", () => {
+    useEditorStore
+      .getState()
+      .setPersonalInfo({ headline: "DevOps Engineer | " });
+
+    expect(useEditorStore.getState().resume?.personalInfo.headline).toBe(
+      "DevOps Engineer • ",
+    );
+  });
+});

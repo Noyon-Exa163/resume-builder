@@ -410,6 +410,7 @@ export default function AiSettingsPageClient() {
                 {id === "customOpenAICompatible" && (
                   <Input
                     label="Base URL"
+                    stripWhitespace
                     size="s"
                     value={config.baseUrl}
                     onChange={(e) =>

@@ -13,7 +13,7 @@ import {
 } from "@/lib/schema/normalize";
 import { resumeRepository } from "@/lib/storage/api/resumeRepository";
 import { createId } from "@/lib/utils/ids";
-import { normalizeHeadline } from "@/lib/schema/headline";
+import { replaceHeadlineBars } from "@/lib/schema/headline";
 
 /**
  * Editor draft state. This is the one place editor UI reads/writes the
@@ -190,7 +190,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
       if (!resume) return;
       const next =
         patch.headline !== undefined
-          ? { ...patch, headline: normalizeHeadline(patch.headline) }
+          ? { ...patch, headline: replaceHeadlineBars(patch.headline) }
           : patch;
       set({
         resume: touch({

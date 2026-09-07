@@ -176,6 +176,7 @@ export function PersonalInfoForm({
           label="LinkedIn Profile"
           placeholder="e.g. linkedin.com/in/janedoe"
           value={value.linkedin || ""}
+          stripWhitespace
           onChange={(e) => handleFieldChange("linkedin", e.target.value)}
         />
 
@@ -183,6 +184,7 @@ export function PersonalInfoForm({
           label="GitHub Profile"
           placeholder="e.g. github.com/janedoe"
           value={value.github || ""}
+          stripWhitespace
           onChange={(e) => handleFieldChange("github", e.target.value)}
         />
       </div>
