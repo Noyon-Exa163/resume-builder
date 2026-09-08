@@ -101,6 +101,34 @@ describe("editorStore.load", () => {
     expect(state.resume?.personalInfo.fullName).toBe("Stored Name");
     expect(state.isDirty).toBe(false);
   });
+
+  it("repairs and marks dirty a resume stored with duplicate section/entry ids", async () => {
+    stored.current = {
+      ...stored.current,
+      sections: [
+        {
+          id: "dup-section",
+          kind: "skills",
+          title: "Skills",
+          visible: true,
+          layout: "list",
+          entries: [
+            { id: "dup-entry", title: "Languages", bullets: [], tags: [] },
+            { id: "dup-entry", title: "Cloud", bullets: [], tags: [] },
+          ],
+        },
+      ],
+    };
+
+    const pending = useEditorStore.getState().load(stored.current.meta.id);
+    deferred.forEach((release) => release());
+    await pending;
+
+    const state = useEditorStore.getState();
+    const ids = state.resume?.sections[0].entries.map((e) => e.id) ?? [];
+    expect(new Set(ids).size).toBe(2);
+    expect(state.isDirty).toBe(true);
+  });
 });
 
 describe("editorStore.importInto", () => {

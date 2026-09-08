@@ -8,3 +8,9 @@ export {
   compactProfileLabel,
   maxCharsForWidth,
 } from "./display";
+export {
+  extractEntryContact,
+  type EntryContactItem,
+  type EntryContactKind,
+  type ExtractedEntryContact,
+} from "./fromEntry";

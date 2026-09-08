@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ResumeData } from "@/lib/schema/resume";
-import { getResumeThumbnailDataUrl } from "@/lib/export/resumeThumbnail";
+import {
+  computeThumbnailKey,
+  getResumeThumbnailDataUrl,
+} from "@/lib/export/resumeThumbnail";
 import "./ResumeCardPreview.css";
 
 interface ResumeCardPreviewProps {
@@ -10,16 +13,17 @@ interface ResumeCardPreviewProps {
 }
 
 /**
- * Shows the top of the first resume page, zoomed to fill the card width.
- * Backed by the cached header thumbnail (lib/export/resumeThumbnail.ts) —
- * a resume's summary and sections never appear in this crop, so this only
- * does real rendering work the first time a resume is seen, or after its
- * header (name, headline, contact info, template, page size) changes.
+ * Shows the top of page 1 (header and summary), zoomed to fill the card
+ * width. Backed by the cached header+summary thumbnail — sections never
+ * appear in this crop, so this only does real rendering work the first
+ * time a resume is seen, or after its header, summary, template, or page
+ * size changes.
  */
 export function ResumeCardPreview({ data }: ResumeCardPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const contentKey = computeThumbnailKey(data);
 
   useEffect(() => {
     const element = containerRef.current;
@@ -53,7 +57,9 @@ export function ResumeCardPreview({ data }: ResumeCardPreviewProps) {
     return () => {
       isStale = true;
     };
-  }, [isVisible, data]);
+    // data is read for the fetch; contentKey is the cache fingerprint.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVisible, contentKey]);
 
   return (
     <div className="resume-card-preview" ref={containerRef} aria-hidden="true">

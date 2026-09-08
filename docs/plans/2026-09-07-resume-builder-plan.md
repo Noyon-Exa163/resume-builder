@@ -82,7 +82,7 @@ resume-builder/
   templates/
     index.ts                          # registry: templateId -> TemplateModule
     types.ts                          # TemplateModule / TemplateMeta contracts (react-pdf Document component)
-    exabyting/ (ExabyingDocument.tsx, tokens.ts, thumbnail.png, meta.ts)
+    exabyting/ (ExabytingDocument.tsx, tokens.ts, thumbnail.png, meta.ts)
                                        # tokens.ts: JS constants (react-pdf can't read CSS vars)
 
   lib/

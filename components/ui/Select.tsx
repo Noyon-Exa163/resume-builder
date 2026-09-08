@@ -2,12 +2,13 @@
 
 import { Select } from "@base-ui/react/select";
 import { ChevronDown } from "lucide-react";
-import { forwardRef } from "react";
+import { forwardRef, type ReactNode } from "react";
 import "./Select.css";
 
 export interface SelectOption {
   value: string;
   label: string;
+  icon?: ReactNode;
 }
 
 export interface SelectFieldProps {
@@ -63,19 +64,29 @@ const SelectField = forwardRef<HTMLButtonElement, SelectFieldProps>(
             className={`select__trigger select__trigger--${size}`}
           >
             <Select.Value className="select__value" placeholder={placeholder}>
-              {(selected: string | null) =>
-                selected
-                  ? (options.find((opt) => opt.value === selected)?.label ??
-                    selected)
-                  : placeholder
-              }
+              {(selected: string | null) => {
+                if (!selected) return placeholder;
+                const opt = options.find((option) => option.value === selected);
+                if (!opt) return selected;
+                return (
+                  <span className="select__value-inner">
+                    {opt.icon}
+                    <span className="select__value-label">{opt.label}</span>
+                  </span>
+                );
+              }}
             </Select.Value>
             <Select.Icon className="select__icon">
               <ChevronDown size={16} />
             </Select.Icon>
           </Select.Trigger>
           <Select.Portal>
-            <Select.Positioner className="select__positioner" sideOffset={4}>
+            <Select.Positioner
+              className="select__positioner"
+              sideOffset={4}
+              alignItemWithTrigger={false}
+              align="start"
+            >
               <Select.Popup className="select__popup">
                 {options.map((opt) => (
                   <Select.Item
@@ -83,10 +94,15 @@ const SelectField = forwardRef<HTMLButtonElement, SelectFieldProps>(
                     value={opt.value}
                     className="select__item"
                   >
+                    {opt.icon ? (
+                      <span className="select__item-icon">{opt.icon}</span>
+                    ) : null}
+                    <Select.ItemText className="select__item-text">
+                      {opt.label}
+                    </Select.ItemText>
                     <Select.ItemIndicator className="select__item-indicator">
                       <CheckIcon />
                     </Select.ItemIndicator>
-                    <Select.ItemText>{opt.label}</Select.ItemText>
                   </Select.Item>
                 ))}
               </Select.Popup>

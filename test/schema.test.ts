@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  backfillMetaDefaults,
   createBlankResume,
+  dedupeResumeIds,
   normalizeAndValidate,
 } from "@/lib/schema/normalize";
 import {
@@ -34,6 +36,8 @@ function validResume(overrides: Partial<ResumeData> = {}): ResumeData {
       updatedAt: ISO,
       templateId: "exabyting",
       pageSize: "A4",
+      nameCasing: "uppercase",
+      accentColor: "cyan",
     },
     personalInfo: { fullName: "Ada Lovelace" },
     sections: [],
@@ -154,6 +158,20 @@ describe("ResumeDataSchema", () => {
     expect(resume.personalInfo.fullName).toBe("");
   });
 
+  it("maps a stored yellow accent to black", () => {
+    const resume = ResumeDataSchema.parse({
+      schemaVersion: 1,
+      meta: {
+        id: "resume-1",
+        createdAt: ISO,
+        updatedAt: ISO,
+        accentColor: "yellow",
+      },
+      personalInfo: {},
+    });
+    expect(resume.meta.accentColor).toBe("black");
+  });
+
   it("fails when required fields are missing or illegal", () => {
     expectParseFail(ResumeDataSchema, {
       meta: { id: "resume-1", createdAt: ISO, updatedAt: ISO },
@@ -237,6 +255,7 @@ describe("normalizeAndValidate", () => {
     expect(resume.meta.title).toBe("Untitled Resume");
     expect(resume.meta.templateId).toBe("exabyting");
     expect(resume.meta.pageSize).toBe("A4");
+    expect(resume.meta.nameCasing).toBe("uppercase");
     expect(Number.isNaN(Date.parse(resume.meta.createdAt))).toBe(false);
     expect(Number.isNaN(Date.parse(resume.meta.updatedAt))).toBe(false);
 
@@ -260,9 +279,12 @@ describe("normalizeAndValidate", () => {
     const draft = normalizeAndValidate({
       personalInfo: { email: "ada@", website: "ada.d" },
       sections: [
-        { id: "s1", kind: "projects", title: "Projects", entries: [
-          { id: "e1", title: "Portfolio", link: "ada.d" },
-        ] },
+        {
+          id: "s1",
+          kind: "projects",
+          title: "Projects",
+          entries: [{ id: "e1", title: "Portfolio", link: "ada.d" }],
+        },
       ],
     });
 
@@ -278,6 +300,7 @@ describe("createBlankResume", () => {
     expect(ResumeDataSchema.safeParse(blank).success).toBe(true);
     expect(blank.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(blank.meta.templateId).toBe("exabyting");
+    expect(blank.meta.accentColor).toBe("cyan");
     expect(blank.meta.pageSize).toBe("A4");
     expect(blank.meta.title).toBe("Untitled Resume");
     expect(blank.personalInfo.fullName).toBe("");
@@ -285,6 +308,11 @@ describe("createBlankResume", () => {
     expect(blank.meta.id.length).toBeGreaterThan(0);
     expect(blank.meta.createdAt.length).toBeGreaterThan(0);
     expect(blank.meta.updatedAt.length).toBeGreaterThan(0);
+  });
+
+  it("stamps a supplied template id onto a blank resume", () => {
+    expect(createBlankResume("minimal").meta.templateId).toBe("minimal");
+    expect(createBlankResume("cyan").meta.templateId).toBe("cyan");
   });
 });
 
@@ -312,6 +340,101 @@ describe("re-normalizing a valid resume", () => {
     expect(again.personalInfo.fullName).toBe("Ada Lovelace");
     expect(ResumeDataSchema.safeParse(again).success).toBe(true);
   });
+
+  it("mints a fresh id for a section or entry that reuses another's id", () => {
+    const resume = normalizeAndValidate({
+      sections: [
+        {
+          id: "dup-section",
+          kind: "experience",
+          title: "Experience",
+          entries: [
+            { id: "dup-entry", title: "Analyst" },
+            { id: "dup-entry", title: "Engineer" },
+          ],
+        },
+        {
+          id: "dup-section",
+          kind: "education",
+          title: "Education",
+          entries: [],
+        },
+      ],
+    });
+
+    expect(resume.sections[0].id).toBe("dup-section");
+    expect(resume.sections[1].id).not.toBe("dup-section");
+    expect(resume.sections[0].entries[0].id).toBe("dup-entry");
+    expect(resume.sections[0].entries[1].id).not.toBe("dup-entry");
+  });
+});
+
+describe("dedupeResumeIds", () => {
+  it("returns the exact same object when there's nothing to fix", () => {
+    const resume = normalizeAndValidate({
+      sections: [
+        {
+          kind: "experience",
+          title: "Experience",
+          entries: [{ title: "Analyst" }],
+        },
+      ],
+    });
+
+    expect(dedupeResumeIds(resume)).toBe(resume);
+  });
+
+  it("reassigns a reused id already sitting in storage, leaving the first occurrence untouched", () => {
+    const resume = normalizeAndValidate({
+      sections: [{ kind: "skills", title: "Skills", entries: [{ title: "A" }] }],
+    });
+    const corrupted: typeof resume = {
+      ...resume,
+      sections: [
+        {
+          ...resume.sections[0],
+          entries: [
+            { ...resume.sections[0].entries[0], id: "8Qjndq7fjmAw", title: "Languages" },
+            { ...resume.sections[0].entries[0], id: "8Qjndq7fjmAw", title: "Cloud" },
+          ],
+        },
+      ],
+    };
+
+    const repaired = dedupeResumeIds(corrupted);
+
+    expect(repaired).not.toBe(corrupted);
+    expect(repaired.sections[0].entries[0].id).toBe("8Qjndq7fjmAw");
+    expect(repaired.sections[0].entries[1].id).not.toBe("8Qjndq7fjmAw");
+    expect(ResumeDataSchema.safeParse(repaired).success).toBe(true);
+  });
+});
+
+describe("backfillMetaDefaults", () => {
+  it("returns the exact same object when nameCasing is already set", () => {
+    const resume = normalizeAndValidate({
+      personalInfo: { fullName: "Ada Lovelace" },
+    });
+    expect(backfillMetaDefaults(resume)).toBe(resume);
+  });
+
+  it("defaults a resume saved before nameCasing existed to uppercase", () => {
+    const resume = normalizeAndValidate({
+      personalInfo: { fullName: "Ada Lovelace" },
+    });
+    // Simulate data written before the field existed: the type says
+    // nameCasing can't be undefined, but a legacy DB row's JSON has no such
+    // key — this cast mirrors what `found.resume` looks like at runtime.
+    const legacy = {
+      ...resume,
+      meta: { ...resume.meta, nameCasing: undefined as unknown as "uppercase" },
+    };
+
+    const repaired = backfillMetaDefaults(legacy);
+
+    expect(repaired).not.toBe(legacy);
+    expect(repaired.meta.nameCasing).toBe("uppercase");
+  });
 });
 
 describe("references layout", () => {
@@ -321,12 +444,10 @@ describe("references layout", () => {
     expect(isReferencesSectionTitle("Referees")).toBe(true);
     expect(isReferencesSectionTitle("Publications")).toBe(false);
 
-    expect(
-      sectionUsesGrid({ layout: "list", title: "References" }),
-    ).toBe(true);
-    expect(
-      sectionUsesGrid({ layout: "list", title: "Experience" }),
-    ).toBe(false);
+    expect(sectionUsesGrid({ layout: "list", title: "References" })).toBe(true);
+    expect(sectionUsesGrid({ layout: "list", title: "Experience" })).toBe(
+      false,
+    );
   });
 
   it("normalizes a References section onto the grid even if it arrived as a list", () => {

@@ -4,6 +4,7 @@ import {
   type ChangeEvent,
   type InputHTMLAttributes,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import "./Input.css";
@@ -16,6 +17,11 @@ export interface InputProps
   helperText?: string;
   /** Drop whitespace as the user types. Implied for `type="url"`. */
   stripWhitespace?: boolean;
+  /** A compact control rendered inside the input's own box, right-aligned
+   *  (e.g. a small casing toggle) — the input gets extra right padding to
+   *  make room, the same treatment as the built-in password show/hide
+   *  button. Ignored for `type="password"`, which already uses this slot. */
+  trailingAddon?: ReactNode;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -29,6 +35,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       id,
       type,
       stripWhitespace,
+      trailingAddon,
       onChange,
       onKeyDown,
       ...rest
@@ -73,13 +80,20 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             type={isPassword && showPassword ? "text" : type}
-            className={`input-field__input input-field__input--${size}${isPassword ? " input-field__input--has-toggle" : ""}`}
+            className={[
+              "input-field__input",
+              `input-field__input--${size}`,
+              isPassword && "input-field__input--has-toggle",
+              !isPassword && trailingAddon && "input-field__input--has-addon",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             aria-invalid={error ? true : undefined}
             {...rest}
             onKeyDown={handleKeyDown}
             onChange={handleChange}
           />
-          {isPassword && (
+          {isPassword ? (
             <button
               type="button"
               className="input-field__toggle"
@@ -89,7 +103,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
-          )}
+          ) : trailingAddon ? (
+            <div className="input-field__addon">{trailingAddon}</div>
+          ) : null}
         </div>
         {error && <span className="input-field__error">{error}</span>}
         {!error && helperText && (

@@ -146,6 +146,17 @@ colors:
     "9": "#59178a"
     "10": "#3c0266"
     "11": "#230140"
+  bkash:
+    "1": "#ffe9f3"
+    "2": "#ffc3dd"
+    "3": "#ff9dc8"
+    "4": "#ff76b2"
+    "5": "#ff509d"   # anchor
+    "6": "#ff2987"
+    "7": "#e2136e"
+    "8": "#b90152"
+    "9": "#900040"
+    "10": "#68002e"
   black: "#000000"
   white: "#ffffff"
 
@@ -180,6 +191,8 @@ semantic-colors:
     default: "#ffffff"      # grey.1 — card, panel
     raised: "#ffffff"       # grey.1 — elevated card
     inset: "#f7f7f7"        # grey.3 — inset / nested surface
+    thumb: "#f6f7f8"        # neutral.1 — dashboard / theme-picker thumb well
+    preview: "#e4e4e4"      # grey.5 — editor resume preview well
     overlay: "rgba(7,12,17,0.48)"
   border:
     default: "#e4e4e4"      # grey.5
@@ -205,6 +218,7 @@ semantic-colors:
     cyan: "#00b8db"
     yellow: "#f6ba00"
     mint: "#00bba7"
+    pink: "#ff509d"
 
 # ── Dark mode overrides ───────────────────────────────────────────────────────
 # Applied via the `.dark` class on <html>.
@@ -214,6 +228,8 @@ dark-mode-overrides:
     default: "oklch(14% 0.022 265)"
     raised: "oklch(17% 0.025 265)"
     inset: "#0d1529"
+    thumb: "#0d1529"
+    preview: "oklch(7% 0.016 265)"
     overlay: "rgba(0,0,0,0.65)"
   border:
     default: "#1c283c"
@@ -558,6 +574,11 @@ Component hierarchy follows Atomic Design: **Primitives/Atoms** (Button, Input, 
   --purple-3: #ead4ff;  --purple-7: #8200da;
   --purple-4: #d9b1ff;  --purple-8: #6d0faf;
 
+  --bkash-1: #ffe9f3;  --bkash-5: #ff509d;  --bkash-9:  #900040;
+  --bkash-2: #ffc3dd;  --bkash-6: #ff2987;  --bkash-10: #68002e;
+  --bkash-3: #ff9dc8;  --bkash-7: #e2136e;
+  --bkash-4: #ff76b2;  --bkash-8: #b90152;
+
   --black: #000000;
   --white: #ffffff;
 
@@ -586,6 +607,8 @@ Component hierarchy follows Atomic Design: **Primitives/Atoms** (Button, Input, 
   --color-surface:         var(--grey-1);
   --color-surface-raised:  var(--grey-1);
   --color-surface-inset:   var(--grey-3);
+  --color-surface-thumb:   var(--neutral-1);
+  --color-surface-preview: var(--grey-5);
   --color-surface-overlay: rgba(7, 12, 17, 0.48);
 
   --color-border:        var(--grey-5);
@@ -611,6 +634,7 @@ Component hierarchy follows Atomic Design: **Primitives/Atoms** (Button, Input, 
   --chart-cyan:   var(--cyan-5);
   --chart-yellow: var(--ylw-5);
   --chart-mint:   var(--mint-5);
+  --chart-pink:   var(--bkash-5);
 
   --space-1: 4px;   --space-2: 8px;   --space-3: 12px;  --space-4: 16px;
   --space-5: 20px;  --space-6: 24px;  --space-7: 28px;  --space-8: 32px;
@@ -661,6 +685,8 @@ Component hierarchy follows Atomic Design: **Primitives/Atoms** (Button, Input, 
   --color-surface:         oklch(14% 0.022 265);
   --color-surface-raised:  oklch(17% 0.025 265);
   --color-surface-inset:   var(--neutral-10);
+  --color-surface-thumb:   var(--neutral-10);
+  --color-surface-preview: oklch(7% 0.016 265);
   --color-surface-overlay: rgba(0, 0, 0, 0.65);
   --color-border:          var(--neutral-9);
   --color-border-strong:   var(--neutral-7);
@@ -827,6 +853,8 @@ COLORS
   --color-surface            Card / panel
   --color-surface-raised     Elevated surface (dropdown, popover)
   --color-surface-inset      Nested surface (table row, code block)
+  --color-surface-thumb      Dashboard / theme-picker thumb well
+  --color-surface-preview    Editor resume preview well
   --color-surface-overlay    Backdrop scrim
   --color-border             Default border
   --color-border-strong      Emphasis border

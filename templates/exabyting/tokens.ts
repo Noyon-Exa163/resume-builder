@@ -20,16 +20,18 @@ export const colors = {
   logoWordmark: "#08061D",
   /** Near-black — name, job titles, contact values. */
   text: "#010515",
-  /** grey.11 — next lighter tint of black, for body copy. */
+  /** grey.11 — next lighter tint of black, for remaining body copy. */
   textBody: "#222222",
-  /** grey.10 — one step lighter still, for company names and entry meta. */
-  textSecondary: "#4a4a4a",
+  /** neutral.7 — headline, summary, bullets, skill values, and entry meta. */
+  textSecondary: "#45556c",
+  /** neutral.5 — dates and contact captions. */
   textMuted: "#8697ad",
   border: "#e4e4e4",
   /** grey.4 — quieter rules. */
   borderMuted: "#f2f2f2",
   surface: "#FFFFFF",
-  tagBackground: "#f0f5fe",
+  /** neutral.1 — chip fill, quieter than the old exa.1 wash. */
+  tagBackground: "#f6f7f8",
   tagText: "#032468",
 } as const;
 
@@ -49,11 +51,14 @@ export const fonts = {
   /** One step below body — company names, dates, and other lines under titles. */
   sizeSmall: 8,
   sizeTag: 8,
+  /** Skill/project chips — one step below contact captions. */
+  sizeChip: 7,
   letterSpacingName: -0.3,
   letterSpacingHeadline: 0,
   letterSpacingSection: 1.2,
   letterSpacingEntryTitle: 0,
-  lineHeightBody: 1.45,
+  /** Body copy, summaries, descriptions, and bullets — keep at least 1.4. */
+  lineHeightBody: 1.5,
   lineHeightName: 1.2,
   lineHeightHeadline: 1.3,
   lineHeightSection: 1.25,
@@ -64,6 +69,30 @@ export const fonts = {
    * dead space under the label. 1 keeps the padding even top and bottom.
    */
   lineHeightTag: 1,
+} as const;
+
+/**
+ * Gilroy-Bold.ttf OS/2 metrics. @react-pdf/render draws each text line at
+ * `box.y + ascent * fontSize / unitsPerEm`, so a sibling View disc sits on
+ * the cap-top. Timeline title marks use these numbers to sit on cap-center.
+ */
+export const gilroy = {
+  unitsPerEm: 1000,
+  ascent: 773,
+  capHeight: 700,
+} as const;
+
+/**
+ * Inter-Regular.ttf OS/2 metrics (public/fonts/Inter-Regular.ttf), same
+ * purpose as `gilroy` above — used to sit the language flag icon on the
+ * label's cap-height center rather than its full line-height box, which
+ * (per the react-pdf formula in the comment above) sits visibly lower than
+ * the text's actual ink.
+ */
+export const inter = {
+  unitsPerEm: 2048,
+  ascent: 1984,
+  capHeight: 1490,
 } as const;
 
 /** PLACEHOLDER 4pt spacing scale (react-pdf uses numeric point values). */
@@ -80,7 +109,7 @@ export const layout = {
   pagePaddingX: 48,
   pagePaddingY: 44,
   /** Full-bleed top accent bar — edge to edge, flush with page top. */
-  topBarHeight: 4,
+  topBarHeight: 2,
   /** Inset from page top to name/body — below the fixed bar. */
   contentInsetBelowTopBar: 40,
   /** Fixed square size — generous enough to sit comfortably beside a
@@ -96,30 +125,49 @@ export const layout = {
   logoContainerPadY: 24,
   /** Reserved header column so contact text cannot paint over the logo. */
   logoColumnWidth: 108,
-  /** Gap between the contact flow and the logo column. */
+  /** Gap between the centered name/headline and the logo column. */
   headerLogoGap: 16,
   /** Filled exa.1 circle around each brand-blue contact glyph. */
   contactBadgeSize: 18,
   contactGlyphSize: 9,
   bulletMarkWidth: 10,
   /**
-   * Keep an entry title with the first line of its body. Used on flattened
-   * entry heads, not on section headings — headings stay with their first
-   * item via a short wrap={false} lead group instead, so a two-line section
-   * like Languages can still sit in leftover space.
+   * Paired with wrap={false} on a flattened entry head (title + one meta
+   * line + one description paragraph — see EntryHeading) so the whole group
+   * moves to the next page together rather than splitting between title and
+   * body. Bullets/tags aren't part of this group and stay separately
+   * wrap={false}'d per-row instead, since unlike the head, a bullet list has
+   * no bound on how tall it can get — section headings use the same idea via
+   * their own short wrap={false} lead group, so a two-line section like
+   * Languages can still sit in leftover space.
    *
    * wrap={false} on a block taller than the page paints it on top of
    * whatever precedes it; only use it on groups that are always short
-   * (heading + first title, one bullet, one chip).
+   * (heading + first title, one bullet, one chip, or — now — one entry head).
    */
   entryHeadMinPresence: 36,
   compactRowMinPresence: 28,
   /** Space between a title and the company / result line under it. */
   entryFollowGap: 2,
+  /** Left rail for list entries (experience, education, projects). */
+  timelineRailWidth: 12,
+  timelineDotSize: 7,
+  timelineLineWidth: 1,
+  timelineBulletSize: 4,
+  /** Space between the rail/disc and title, description, and bullets. */
+  timelineGap: 8,
   sectionRuleHeight: 1,
-  tagRadius: 2,
+  /** Capsule ends — half the chip height or larger. */
+  tagRadius: 999,
   tagPadX: 6,
-  tagPadY: 3,
+  /**
+   * Inter's em-box sits the glyphs low, so equal paddingVertical reads as
+   * extra air above the label. Less top than bottom optically centers it.
+   */
+  tagPadTop: 1,
+  tagPadBottom: 3,
+  /** Circular flag icon inside a language chip — see templates/languageFlags.ts. */
+  languageFlagSize: 10,
   /** Horizontal padding inside each grid cell; doubled is the column gutter. */
   gridGutter: 16,
   gridCellWidth: "50%",

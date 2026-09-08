@@ -6,7 +6,9 @@ import "./page.css";
 import type { ResumeData } from "@/lib/schema/resume";
 import { createBlankResume } from "@/lib/schema/normalize";
 import { resumeRepository } from "@/lib/storage/api/resumeRepository";
-import { thumbnailRepository } from "@/lib/storage/thumbnails/thumbnailRepository";
+import { fetchDefaultTemplateId } from "@/lib/storage/api/appDefaults";
+import { deleteResumeThumbnails } from "@/lib/export/resumeThumbnail";
+import { aiChatRepository } from "@/lib/storage/aiChat/aiChatRepository";
 import {
   listResumesWithAccess,
   canManageResume,
@@ -16,6 +18,7 @@ import { ResumeCardPreview } from "@/components/dashboard/ResumeCardPreview";
 import { ResumeCardSkeleton } from "@/components/dashboard/ResumeCardSkeleton";
 import { ShareDialog } from "@/components/common/ShareDialog";
 import { formatDisplayDate } from "@/lib/date";
+import { toTitleCase } from "@/lib/schema/personalInfo";
 import { EmptyState, ConfirmDialog, Button } from "@/components/ui";
 import { toPdfBlob } from "@/lib/export/toPdfBlob";
 import { buildExportFilename } from "@/lib/export/filename";
@@ -62,9 +65,14 @@ export default function DashboardClient() {
 
   async function handleCreate() {
     setIsCreating(true);
-    const blank = createBlankResume();
-    await resumeRepository.set(blank.meta.id, blank);
-    router.push(`/editor/${blank.meta.id}`);
+    try {
+      const templateId = await fetchDefaultTemplateId();
+      const blank = createBlankResume(templateId);
+      await resumeRepository.set(blank.meta.id, blank);
+      router.push(`/editor/${blank.meta.id}`);
+    } finally {
+      setIsCreating(false);
+    }
   }
 
   async function handleDownload(resume: ResumeData) {
@@ -86,8 +94,11 @@ export default function DashboardClient() {
     await resumeRepository.delete(id);
     // Not awaited alongside the resume delete above: this is a purely local
     // cache cleanup, not part of the operation the user is waiting on.
-    void thumbnailRepository.delete(id).catch((error) => {
+    void deleteResumeThumbnails(id).catch((error) => {
       console.error("Failed to clear cached resume thumbnail:", error);
+    });
+    void aiChatRepository.delete(id).catch((error) => {
+      console.error("Failed to clear cached AI chat history:", error);
     });
     setEntries((prev) => prev?.filter((e) => e.resume.meta.id !== id) ?? null);
   }
@@ -96,7 +107,7 @@ export default function DashboardClient() {
     <main className="dashboard">
       <div className="dashboard__toolbar">
         <header className="dashboard__header">
-          <h1 className="dashboard__title">My Resumes</h1>
+          <h1 className="dashboard__title">Resumes</h1>
           <Button
             type="button"
             variant="primary"
@@ -148,18 +159,25 @@ export default function DashboardClient() {
         />
       )}
 
-      {entries !== null && entries.length > 0 && filteredEntries?.length === 0 && (
-        <p className="dashboard__hint">No resumes match your search.</p>
-      )}
+      {entries !== null &&
+        entries.length > 0 &&
+        filteredEntries?.length === 0 && (
+          <p className="dashboard__hint">No resumes match your search.</p>
+        )}
 
       {filteredEntries !== null && filteredEntries.length > 0 && (
         <ul className="dashboard__list">
           {filteredEntries.map(({ resume, access }) => (
             <li key={resume.meta.id} className="resume-card">
-              <a href={`/editor/${resume.meta.id}`} className="resume-card__link">
+              <a
+                href={`/editor/${resume.meta.id}`}
+                className="resume-card__link"
+              >
                 <ResumeCardPreview data={resume} />
                 <span className="resume-card__text">
-                  <span className="resume-card__title">{resume.meta.title}</span>
+                  <span className="resume-card__title">
+                    {toTitleCase(resume.meta.title)}
+                  </span>
                   <span className="resume-card__meta">
                     Updated {formatDisplayDate(resume.meta.updatedAt)}
                   </span>

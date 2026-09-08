@@ -1,11 +1,242 @@
 /* Content inside the "Export as PNG" modal (see components/ui/Dialog.css
    for the shared popup/backdrop chrome). Slider styling matches what used
-   to live inline in the Export popover. */
+   to live inline in the Export popover. Preview well matches dashboard
+   resume thumbs: Neutral 2 well, radius-md, token padding. */
 
-.png-export-dialog__body {
+.dialog-popup.png-export-dialog {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  max-width: 680px;
+  width: calc(100% - var(--space-8));
+  height: min(520px, 85vh);
+  overflow: hidden;
+}
+
+.dialog-popup.png-export-dialog .dialog-header,
+.dialog-popup.png-export-dialog .dialog-description,
+.dialog-popup.png-export-dialog .dialog-footer {
+  flex-shrink: 0;
+}
+
+.dialog-popup.png-export-dialog .dialog-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.png-export-dialog__layout {
+  display: grid;
+  grid-template-columns: 300px minmax(240px, 1fr);
+  gap: var(--space-6);
+  flex: 1;
+  min-height: 0;
+}
+
+.png-export-dialog__preview-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: 0;
+}
+
+.png-export-dialog__preview {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background-color: var(--neutral-2);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  /* Same 24px frame in both modes so toggling doesn't rescale the page. */
+  padding: var(--space-6) 0 0 var(--space-6);
+}
+
+.png-export-dialog__preview--page {
+  overflow: hidden;
+  padding-right: var(--space-6);
+  padding-bottom: var(--space-6);
+}
+
+.png-export-dialog__preview--scroll {
+  /* Right 24px includes the overlay scrollbar. No bottom inset on the well
+     — that gap lives on the image stack so it only appears after the last
+     page. */
+  padding-right: 0;
+  padding-bottom: 0;
+}
+
+.png-export-dialog__preview-skeleton {
+  flex: 1;
+  min-height: 0;
+  align-self: stretch;
+  margin-right: var(--space-6);
+}
+
+.png-export-dialog__images {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.png-export-dialog__preview--scroll .png-export-dialog__images {
+  overflow-y: scroll;
+  padding-right: var(--space-6);
+  padding-bottom: var(--space-6);
+}
+
+.png-export-dialog__preview--page .png-export-dialog__images {
+  position: relative;
+  overflow: hidden;
+}
+
+.png-export-dialog__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  outline: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.png-export-dialog__preview--page .png-export-dialog__image[data-active] {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  transform: translate(-50%, -50%);
+}
+
+.dark .png-export-dialog__image {
+  outline: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.png-export-dialog__preview--page .png-export-dialog__image:not([data-active]) {
+  display: none;
+}
+
+.png-export-dialog__page-count {
+  margin: 0;
+  flex-shrink: 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: var(--leading-caption);
+  color: var(--color-text-tertiary);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.png-export-dialog__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+.png-export-dialog__page-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.png-export-dialog__page-label {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--color-text-secondary);
+}
+
+.png-export-dialog__page-list {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: var(--space-1);
+  background: var(--color-surface-inset);
+  border-radius: var(--radius-lg);
+}
+
+.png-export-dialog__page-choice {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  padding: var(--space-1) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--duration-base) var(--ease-default),
+    background-color var(--duration-base) var(--ease-default),
+    box-shadow var(--duration-base) var(--ease-default),
+    transform var(--duration-fast) var(--ease-default);
+}
+
+.png-export-dialog__page-choice:hover {
+  color: var(--color-text-primary);
+}
+
+.png-export-dialog__page-choice:active {
+  transform: scale(0.96);
+}
+
+.png-export-dialog__page-choice[data-active] {
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-1);
+}
+
+.png-export-dialog__page-choice:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.png-export-dialog__pages .switch {
+  width: 100%;
+  align-items: center;
+}
+
+.png-export-dialog__pages .switch__label {
+  text-wrap: pretty;
+}
+
+@media (max-width: 800px) {
+  .dialog-popup.png-export-dialog {
+    height: min(640px, 90vh);
+  }
+
+  .png-export-dialog__layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 240px auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .png-export-dialog__page-choice {
+    transition: none;
+  }
+
+  .png-export-dialog__page-choice:active {
+    transform: none;
+  }
 }
 
 .png-export-dialog__scale {
@@ -49,6 +280,7 @@
   align-items: center;
   width: 100%;
   min-height: var(--space-6);
+  overflow: visible;
   touch-action: none;
   user-select: none;
 }
@@ -84,7 +316,7 @@
 .png-export-dialog__scale-stops {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -94,21 +326,23 @@
 
 .png-export-dialog__scale-stop {
   width: 0;
-  height: var(--space-2);
+  height: var(--space-3);
   display: flex;
+  align-items: center;
   justify-content: center;
+  overflow: visible;
 }
 
 .png-export-dialog__scale-stop::before {
   content: "";
-  width: var(--space-2);
-  height: var(--space-2);
-  border-radius: var(--radius-full);
-  background-color: var(--color-border-strong);
+  width: 2px;
+  height: var(--space-3);
+  background-color: var(--neutral-1);
+  transition: background-color var(--duration-base) var(--ease-default);
 }
 
-.png-export-dialog__scale-stop[data-reached]::before {
-  background-color: var(--color-text-on-brand);
+.png-export-dialog__scale-stop[data-active]::before {
+  background-color: var(--exa-5);
 }
 
 .png-export-dialog__scale-marks {
@@ -133,12 +367,16 @@
   color: var(--color-text-primary);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .png-export-dialog__scale-stop::before {
+    transition: none;
+  }
+}
+
 .png-export-dialog__pages {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border);
+  gap: var(--space-4);
 }
 
 .png-export-dialog__loading {

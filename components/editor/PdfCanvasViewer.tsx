@@ -63,6 +63,7 @@ export function PdfCanvasViewer({
     let hasMeasured = false;
     const observer = new ResizeObserver(([entry]) => {
       const width = Math.floor(entry.contentRect.width);
+      if (width <= 0) return;
       window.clearTimeout(timer);
       // Take the first measurement straight away so nothing delays first paint;
       // only debounce the resizes that follow.
@@ -71,7 +72,9 @@ export function PdfCanvasViewer({
         setPageWidth(width);
         return;
       }
-      timer = window.setTimeout(() => setPageWidth(width), RESIZE_DEBOUNCE_MS);
+      timer = window.setTimeout(() => {
+        setPageWidth(width);
+      }, RESIZE_DEBOUNCE_MS);
     });
     observer.observe(scroller);
 
@@ -89,7 +92,7 @@ export function PdfCanvasViewer({
 
     void (async () => {
       try {
-        const canvases = await renderPages(
+        const { canvases, pageCount } = await renderPages(
           blob,
           pageWidth,
           () => isStale,
@@ -107,7 +110,7 @@ export function PdfCanvasViewer({
         host.replaceChildren(...canvases);
         if (scroller) scroller.scrollTop = scrollTop;
         setHasRendered(true);
-        onPageCountChangeRef.current?.(canvases.length);
+        onPageCountChangeRef.current?.(pageCount);
       } catch (error) {
         if (!isStale) console.error("Preview render failed:", error);
       }
@@ -135,7 +138,7 @@ export function PdfCanvasViewer({
 }
 
 /**
- * Draws every page off-screen at `pageWidth` CSS pixels. Returns detached
+ * Draws pages off-screen at `pageWidth` CSS pixels. Returns detached
  * canvases; nothing reaches the DOM until the caller decides to swap.
  */
 async function renderPages(
@@ -143,37 +146,39 @@ async function renderPages(
   pageWidth: number,
   isStale: () => boolean,
   appear: boolean,
-): Promise<HTMLCanvasElement[]> {
+): Promise<{ canvases: HTMLCanvasElement[]; pageCount: number }> {
   const pdfjs = await getPdfjs();
   const data = await blob.arrayBuffer();
   const loadingTask = pdfjs.getDocument({ data });
 
   try {
     const pdfDoc = await loadingTask.promise;
+    const pageCount = pdfDoc.numPages;
+    if (isStale()) return { canvases: [], pageCount };
+    if (pageCount < 1) return { canvases: [], pageCount };
+
     const pixelRatio = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
     const canvases: HTMLCanvasElement[] = [];
 
-    for (let pageNumber = 1; pageNumber <= pdfDoc.numPages; pageNumber += 1) {
-      if (isStale()) return [];
+    for (let number = 1; number <= pageCount; number += 1) {
+      if (isStale()) return { canvases: [], pageCount };
 
-      const page = await pdfDoc.getPage(pageNumber);
+      const page = await pdfDoc.getPage(number);
       const unscaled = page.getViewport({ scale: 1 });
+      const cssWidth = pageWidth;
       const viewport = page.getViewport({
-        scale: (pageWidth / unscaled.width) * pixelRatio,
+        scale: (cssWidth / unscaled.width) * pixelRatio,
       });
 
       const canvas = document.createElement("canvas");
       canvas.className = "pdf-canvas-viewer__page";
       canvas.width = Math.floor(viewport.width);
       canvas.height = Math.floor(viewport.height);
-      canvas.style.width = `${pageWidth}px`;
+      canvas.style.width = `${cssWidth}px`;
       canvas.style.height = `${Math.floor(viewport.height / pixelRatio)}px`;
       if (appear) {
         canvas.classList.add("pdf-canvas-viewer__page--appear");
-        const staggerIndex = Math.min(
-          pageNumber - 1,
-          APPEAR_STAGGER_MAX_PAGES,
-        );
+        const staggerIndex = Math.min(number - 1, APPEAR_STAGGER_MAX_PAGES);
         canvas.style.animationDelay = `${staggerIndex * APPEAR_STAGGER_MS}ms`;
       }
 
@@ -184,7 +189,7 @@ async function renderPages(
       canvases.push(canvas);
     }
 
-    return canvases;
+    return { canvases, pageCount };
   } finally {
     void loadingTask.destroy();
   }

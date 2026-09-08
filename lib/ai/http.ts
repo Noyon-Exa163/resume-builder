@@ -56,6 +56,17 @@ export function parseModelJson(raw: string): unknown {
       try {
         return JSON.parse(fenced[1].trim());
       } catch {
+        // fall through to brace-matching below
+      }
+    }
+    // Last resort: the model wrapped valid JSON in surrounding prose —
+    // grab the outermost {...} span and try that before giving up.
+    const start = trimmed.indexOf("{");
+    const end = trimmed.lastIndexOf("}");
+    if (start !== -1 && end > start) {
+      try {
+        return JSON.parse(trimmed.slice(start, end + 1));
+      } catch {
         return null;
       }
     }

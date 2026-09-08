@@ -86,6 +86,27 @@
   padding-right: 36px;
 }
 
+/* Extra right padding when a custom trailing addon is present — wider than
+   the password toggle since addon content (e.g. a two-option pill) varies. */
+.input-field__input--has-addon.input-field__input--l {
+  padding-right: 96px;
+}
+
+.input-field__input--has-addon.input-field__input--m {
+  padding-right: 88px;
+}
+
+.input-field__input--has-addon.input-field__input--s {
+  padding-right: 80px;
+}
+
+.input-field__addon {
+  position: absolute;
+  right: var(--space-2);
+  display: flex;
+  align-items: center;
+}
+
 /* Password toggle button */
 .input-field__toggle {
   position: absolute;

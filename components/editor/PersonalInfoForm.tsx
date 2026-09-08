@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type ChangeEvent } from "react";
-import type { PersonalInfo } from "@/lib/schema/resume";
+import type { NameCasing, PersonalInfo } from "@/lib/schema/resume";
 import { Input, Button } from "@/components/ui";
 import { User, Upload, Trash2 } from "lucide-react";
 import "./PersonalInfoForm.css";
@@ -9,12 +9,19 @@ import "./PersonalInfoForm.css";
 export interface PersonalInfoFormProps {
   value: PersonalInfo;
   onChange: (patch: Partial<PersonalInfo>) => void;
+  /** How the name renders in the resume document itself — a display
+   *  preference, not part of `value`, which holds the raw typed contact
+   *  fields (see lib/schema/personalInfo.ts). */
+  nameCasing: NameCasing;
+  onNameCasingChange: (casing: NameCasing) => void;
   className?: string;
 }
 
 export function PersonalInfoForm({
   value,
   onChange,
+  nameCasing,
+  onNameCasingChange,
   className,
 }: PersonalInfoFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -128,6 +135,46 @@ export function PersonalInfoForm({
           value={value.fullName || ""}
           onChange={(e) => handleFieldChange("fullName", e.target.value)}
           required
+          trailingAddon={
+            <div
+              className="personal-info-form__casing-toggle"
+              role="radiogroup"
+              aria-label="Name casing in the resume"
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={nameCasing === "uppercase"}
+                title="All caps"
+                className={[
+                  "personal-info-form__casing-option",
+                  nameCasing === "uppercase" &&
+                    "personal-info-form__casing-option--active",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => onNameCasingChange("uppercase")}
+              >
+                AA
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={nameCasing === "titleCase"}
+                title="Title case"
+                className={[
+                  "personal-info-form__casing-option",
+                  nameCasing === "titleCase" &&
+                    "personal-info-form__casing-option--active",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => onNameCasingChange("titleCase")}
+              >
+                Aa
+              </button>
+            </div>
+          }
         />
 
         <Input

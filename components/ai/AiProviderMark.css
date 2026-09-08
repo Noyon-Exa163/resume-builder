@@ -1,0 +1,16 @@
+.ai-provider-mark {
+  display: block;
+  width: var(--space-5);
+  height: var(--space-5);
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.ai-provider-mark--lg {
+  width: var(--space-6);
+  height: var(--space-6);
+}
+
+.dark .ai-provider-mark--ink {
+  filter: invert(1);
+}

@@ -7,5 +7,5 @@ export const minimalMeta: TemplateMeta = {
   thumbnailSrc: "/thumbnails/minimal.png",
   pageSize: "A4",
   description:
-    "A plain single-column layout with no logo or photo — useful when a simpler look is preferred.",
+    "A quieter company resume layout with compact contact details and short section rules.",
 };

@@ -64,7 +64,7 @@ test.describe("auth and dashboard smoke", () => {
     await page.waitForURL((url) => url.pathname === "/");
 
     await expect(
-      page.getByRole("heading", { name: "My Resumes" }),
+      page.getByRole("heading", { name: "Resumes" }),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "New Resume" }),
@@ -77,17 +77,34 @@ test.describe("auth and dashboard smoke", () => {
     const resumeId = page.url().match(/\/editor\/([^/?#]+)/)?.[1];
     expect(resumeId, "expected an editor resume id in the URL").toBeTruthy();
 
+    await expect(page.locator(".live-preview-pane")).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Theme" })).toBeVisible();
+
+    await page.getByRole("tab", { name: "Edit" }).click();
     await expect(
       page.getByRole("heading", { name: "Personal Information" }),
     ).toBeVisible();
-    await expect(page.locator(".live-preview-pane")).toBeVisible();
 
     await page.getByLabel("Full Name").fill("Ada Lovelace");
     await expect(page.locator("canvas.pdf-canvas-viewer__page")).toBeVisible({
       timeout: 30_000,
     });
 
-    await page.getByRole("button", { name: "Back to My Resumes" }).click();
+    await page.getByRole("button", { name: "Export" }).click();
+    await page.getByRole("button", { name: /Choose scale and page/ }).click();
+    const pngDialog = page.getByRole("dialog", { name: "Export as PNG" });
+    await expect(pngDialog).toBeVisible();
+    await expect(
+      pngDialog.getByRole("region", { name: "PNG export preview" }),
+    ).toBeVisible();
+    await expect(
+      pngDialog.getByRole("img", { name: "Page 1" }),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(pngDialog.getByText("Scale")).toBeVisible();
+    await pngDialog.getByRole("button", { name: "Close dialog" }).click();
+    await expect(pngDialog).toBeHidden();
+
+    await page.getByRole("button", { name: "Back to Resumes" }).click();
     await page.waitForURL((url) => url.pathname === "/");
     await expect(
       page.locator(`a.resume-card__link[href="/editor/${resumeId}"]`),

@@ -21,7 +21,10 @@ export type { AddSectionMenuProps } from "./AddSectionMenu";
 
 export { LivePreviewPane } from "./LivePreviewPane";
 
-export { AiResumeBar } from "./AiResumeBar";
-export type { AiResumeBarProps } from "./AiResumeBar";
+export { AiChatPanel } from "./AiChatPanel";
+export type { AiChatPanelProps } from "./AiChatPanel";
 
 export { ExportButtons } from "./ExportButtons";
+
+export { ThemePicker } from "./ThemePicker";
+export type { ThemePickerProps } from "./ThemePicker";

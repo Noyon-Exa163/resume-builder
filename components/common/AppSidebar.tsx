@@ -37,7 +37,7 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
   }
 
   const navItems: NavItem[] = [
-    { href: "/", label: "My Resumes", icon: FileText },
+    { href: "/", label: "Resumes", icon: FileText },
     { href: "/settings/account", label: "Account", icon: User },
     ...(isAdmin
       ? [

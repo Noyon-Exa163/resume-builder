@@ -10,6 +10,7 @@ import {
   Skeleton,
   type SelectOption,
 } from "@/components/ui";
+import { AiProviderMark } from "@/components/ai/AiProviderMark";
 import type { AIProviderId } from "@/lib/ai/types";
 import { templateRegistry } from "@/templates";
 import "./page.css";
@@ -197,7 +198,11 @@ export default function AiSettingsPageClient() {
   // then silently drop for not having a saved API key yet.
   const configuredProviderOptions: SelectOption[] = PROVIDER_ORDER.filter(
     (id) => savedProviders[id].apiKey.trim(),
-  ).map((id) => ({ value: id, label: PROVIDER_LABELS[id] }));
+  ).map((id) => ({
+    value: id,
+    label: PROVIDER_LABELS[id],
+    icon: <AiProviderMark id={id} />,
+  }));
 
   const templateOptions: SelectOption[] = Object.values(templateRegistry).map(
     (t) => ({ value: t.meta.id, label: t.meta.name }),
@@ -425,6 +430,7 @@ export default function AiSettingsPageClient() {
           return (
             <div key={id} className="ai-settings-page__provider">
               <h2 className="ai-settings-page__provider-title">
+                <AiProviderMark id={id} className="ai-provider-mark--lg" />
                 {PROVIDER_LABELS[id]}
               </h2>
               <div className="ai-settings-page__provider-row">

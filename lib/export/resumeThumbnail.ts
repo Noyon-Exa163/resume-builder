@@ -1,6 +1,7 @@
 import type { ResumeData } from "@/lib/schema/resume";
 import { getPdfjs } from "@/lib/pdf/pdfjs";
 import { thumbnailRepository } from "@/lib/storage/thumbnails/thumbnailRepository";
+import { REGISTERED_TEMPLATE_IDS } from "@/templates/ids";
 import { toPdfBlob } from "./toPdfBlob";
 
 /** Rendered wider than any dashboard card actually needs so the cached PNG
@@ -9,62 +10,84 @@ import { toPdfBlob } from "./toPdfBlob";
 const RENDER_WIDTH = 640;
 const MAX_PIXEL_RATIO = 2;
 
+export function thumbnailCacheId(
+  resumeId: string,
+  templateId: string,
+): string {
+  return `${resumeId}:${templateId}`;
+}
+
 /**
- * Every template's header block reads only these fields (see
- * templates/exabyting/ExabyingDocument.tsx's <Header>, templates/minimal's
- * equivalent) — summary and sections never appear in it. The dashboard card
- * preview only shows the very top of page one (see ResumeCardPreview.css),
- * which is exactly this header, so a thumbnail only needs redrawing when
- * one of these fields changes — not on every edit to the resume body.
+ * Header, summary, template, and page size — the fields that paint into the
+ * top of page 1. Sections live further down, so editing them must not bust
+ * this cache (dashboard cards and the theme picker both rely on that).
  */
 export function computeThumbnailKey(resume: ResumeData): string {
   return JSON.stringify({
     templateId: resume.meta.templateId,
     pageSize: resume.meta.pageSize,
+    // Explicit fallback, not just `resume.meta.nameCasing`: JSON.stringify
+    // drops an `undefined` property entirely, so a resume saved before this
+    // field existed would produce the exact same key as before and never
+    // bust the cache — the fallback forces the key to actually change once.
+    nameCasing: resume.meta.nameCasing ?? "uppercase",
+    accentColor: resume.meta.accentColor ?? "cyan",
     personalInfo: resume.personalInfo,
+    summary: resume.summary ?? "",
   });
 }
 
 /**
- * Strips everything the header doesn't render. Laying out a resume's full
- * summary and sections just to throw away everything but the header is the
- * cost this whole cache exists to avoid — so the thumbnail is rendered from
- * a header-only resume in the first place, not cropped out of the full one.
+ * Keeps the header and summary, drops sections. The thumbnail crop never
+ * shows experience/education/etc., and laying those out is the cost this
+ * cache exists to avoid.
  */
-function toHeaderOnlyResume(resume: ResumeData): ResumeData {
-  return { ...resume, summary: undefined, sections: [] };
+function toPreviewResume(resume: ResumeData): ResumeData {
+  return { ...resume, sections: [] };
 }
 
 /**
- * Returns a PNG data URL of the resume's header, from cache if the header
- * hasn't changed since it was last rendered, or freshly drawn (and cached)
- * otherwise. Safe to call as often as needed — a cache hit costs one
- * IndexedDB read and no PDF work at all, so both the dashboard card (on
- * first view) and editorStore.save() (right after every save) call this
- * same function rather than one of them forcing a redraw unconditionally.
+ * Returns a PNG data URL of the top of page 1, from cache if the preview
+ * key hasn't changed since it was last rendered for this resume+template,
+ * or freshly drawn (and cached) otherwise. Safe to call as often as needed
+ * — a cache hit is one IndexedDB read and no PDF work.
+ *
+ * Keyed by resume id AND template id so the editor theme picker can cache
+ * each template side by side without clobbering the dashboard card.
  */
 export async function getResumeThumbnailDataUrl(
   resume: ResumeData,
 ): Promise<string> {
-  const id = resume.meta.id;
-  const headerKey = computeThumbnailKey(resume);
+  const cacheId = thumbnailCacheId(resume.meta.id, resume.meta.templateId);
+  const contentKey = computeThumbnailKey(resume);
 
-  const cached = await thumbnailRepository.get(id);
-  if (cached && cached.headerKey === headerKey) {
+  const cached = await thumbnailRepository.get(cacheId);
+  if (cached && cached.headerKey === contentKey) {
     return cached.dataUrl;
   }
 
-  const dataUrl = await renderThumbnailDataUrl(resume);
-  await thumbnailRepository.set(id, {
-    headerKey,
+  const dataUrl = await renderPageToPng(toPreviewResume(resume));
+  await thumbnailRepository.set(cacheId, {
+    headerKey: contentKey,
     dataUrl,
     updatedAt: new Date().toISOString(),
   });
   return dataUrl;
 }
 
-async function renderThumbnailDataUrl(resume: ResumeData): Promise<string> {
-  const blob = await toPdfBlob(toHeaderOnlyResume(resume));
+/** Drops every cached preview for a resume (all templates, plus the legacy
+ *  un-namespaced key from before template-scoped ids). */
+export async function deleteResumeThumbnails(resumeId: string): Promise<void> {
+  await Promise.all([
+    thumbnailRepository.delete(resumeId),
+    ...REGISTERED_TEMPLATE_IDS.map((templateId) =>
+      thumbnailRepository.delete(thumbnailCacheId(resumeId, templateId)),
+    ),
+  ]);
+}
+
+async function renderPageToPng(resume: ResumeData): Promise<string> {
+  const blob = await toPdfBlob(resume);
   const pdfjs = await getPdfjs();
   const data = await blob.arrayBuffer();
   const loadingTask = pdfjs.getDocument({ data });

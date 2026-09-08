@@ -1,4 +1,5 @@
 import type { ResumeData } from "@/lib/schema/resume";
+import { toTitleCase } from "@/lib/schema/personalInfo";
 
 const INVALID_FILENAME_CHARS = /[\\/:*?"<>|]/g;
 
@@ -14,12 +15,4 @@ export function buildExportFilename(data: ResumeData): string {
   const titleCased = toTitleCase(cleaned) || "Resume";
   const slug = titleCased.replace(/\s+/g, "-");
   return `Exabyting-${slug}-Resume`;
-}
-
-function toTitleCase(value: string): string {
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
 }

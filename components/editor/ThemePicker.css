@@ -1,0 +1,198 @@
+/* Theme cards follow the dashboard resume-card treatment: surface + shadow,
+   inset preview well, page drop-shadow, overflow clipped. Crop is the top
+   of page 1 through the summary (aspect set inline from A4 / Letter). */
+
+.theme-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-4);
+  padding: var(--space-1) var(--space-1) var(--space-10);
+}
+
+.theme-picker__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-1);
+  text-align: left;
+  transition: box-shadow var(--duration-base) var(--ease-default);
+}
+
+.theme-picker__card:hover {
+  box-shadow: var(--shadow-2);
+}
+
+.theme-picker__card[data-selected="true"] {
+  border-color: transparent;
+  box-shadow: var(--shadow-2), 0 0 0 2px var(--color-brand);
+}
+
+.theme-picker__select {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.theme-picker__select:active {
+  transform: scale(0.96);
+}
+
+.theme-picker__select:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.theme-picker__preview {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: var(--space-6) var(--space-6) 0;
+  background-color: var(--color-brand-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.theme-picker__canvas-host {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+}
+
+.theme-picker__canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  box-shadow:
+    1px -4px 20px rgba(7, 12, 17, 0.14),
+    0px -2px 8px rgba(7, 12, 17, 0.1);
+}
+
+.theme-picker__skeleton {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.theme-picker__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.theme-picker__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: var(--leading-ui);
+  letter-spacing: var(--tracking-none);
+  color: var(--color-text-primary);
+}
+
+.theme-picker__check {
+  flex-shrink: 0;
+  color: var(--color-brand);
+}
+
+.theme-picker__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.theme-picker__swatch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-8);
+  height: var(--space-8);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  cursor: pointer;
+}
+
+.theme-picker__swatch::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + var(--space-1));
+  z-index: 1;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-text-primary);
+  color: var(--color-text-inverse);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: var(--leading-caption);
+  letter-spacing: var(--tracking-none);
+  white-space: nowrap;
+  box-shadow: var(--shadow-2);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity var(--duration-fast) var(--ease-default);
+}
+
+.theme-picker__swatch:hover::after,
+.theme-picker__swatch:focus-visible::after {
+  opacity: 1;
+}
+
+.theme-picker__swatch-dot {
+  width: var(--space-5);
+  height: var(--space-5);
+  border-radius: var(--radius-full);
+}
+
+.theme-picker__swatch[aria-checked="true"] .theme-picker__swatch-dot {
+  box-shadow:
+    0 0 0 2px var(--color-surface),
+    0 0 0 4px var(--color-text-primary);
+}
+
+.theme-picker__swatch:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-picker__card {
+    transition: none;
+  }
+
+  .theme-picker__select:active {
+    transform: none;
+  }
+
+  .theme-picker__swatch::after {
+    transition: none;
+  }
+}

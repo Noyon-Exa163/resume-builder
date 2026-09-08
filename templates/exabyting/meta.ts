@@ -2,7 +2,7 @@ import type { TemplateMeta } from "../types";
 
 export const exabytingMeta: TemplateMeta = {
   id: "exabyting",
-  name: "Exabyting",
+  name: "Default",
   /**
    * PLACEHOLDER path — a real thumbnail asset has not been supplied yet
    * (brand art is pending; see docs/HANDOFF.md "Open items"). The settings

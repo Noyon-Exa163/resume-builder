@@ -7,6 +7,7 @@ import {
 } from "./shared";
 import { formatDateRange } from "@/lib/date";
 import { normalizeHeadline } from "@/lib/schema/headline";
+import { formatFullNameForDisplay } from "@/lib/schema/personalInfo";
 
 /**
  * Renders a resume as Markdown — a pure string transform over ResumeData,
@@ -14,10 +15,14 @@ import { normalizeHeadline } from "@/lib/schema/headline";
  * template replica (same spirit as toDocx.ts).
  */
 export function toMarkdown(data: ResumeData): string {
-  const { personalInfo, summary } = data;
+  const { personalInfo, summary, meta } = data;
   const lines: string[] = [];
 
-  if (hasText(personalInfo.fullName)) lines.push(`# ${personalInfo.fullName}`);
+  if (hasText(personalInfo.fullName)) {
+    lines.push(
+      `# ${formatFullNameForDisplay(personalInfo.fullName, meta.nameCasing)}`,
+    );
+  }
   const headline = normalizeHeadline(personalInfo.headline);
   if (hasText(headline)) lines.push(headline);
   const contact = contactLine(personalInfo);

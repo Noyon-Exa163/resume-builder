@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   FilePlus,
   Loader2,
+  Palette,
   Pencil,
   Share2,
   Sparkles,
@@ -21,17 +22,19 @@ import { formatLastSavedLabel } from "@/lib/utils/formatLastSaved";
 import { createBlankResume, type DeepPartial } from "@/lib/schema/normalize";
 import type { ResumeData } from "@/lib/schema/resume";
 import { resumeRepository } from "@/lib/storage/api/resumeRepository";
+import { fetchDefaultTemplateId } from "@/lib/storage/api/appDefaults";
 import { canManageResume } from "@/lib/storage/api/resumeAccess";
 import { Button, Skeleton, TabsField } from "@/components/ui";
 import { ShareDialog } from "@/components/common/ShareDialog";
 import {
-  AiResumeBar,
+  AiChatPanel,
   PersonalInfoForm,
   SummaryForm,
   SectionList,
   AddSectionMenu,
   LivePreviewPane,
   ExportButtons,
+  ThemePicker,
 } from "@/components/editor";
 import "./page.css";
 
@@ -57,6 +60,9 @@ export default function EditorPage() {
     save,
     importInto,
     setTitle,
+    setTemplateId,
+    setAccentColor,
+    setNameCasing,
     setPersonalInfo,
     setSummary,
     addSection,
@@ -109,23 +115,10 @@ export default function EditorPage() {
     };
   }, []);
 
-  // Seed which tab opens first from the freshly loaded resume — a blank one
-  // leads with AI, one that already has content opens straight to Manual
-  // Edit. Only ever seeded once per resume load; afterward the user (or a
-  // completed AI import, below) drives it explicitly.
+  // AI is always the tab the editor opens on — the chat transcript itself
+  // (not a tab switch) is what shows the user what's changed.
   const [activeTab, setActiveTab] = useState("ai");
   const [isCreating, setIsCreating] = useState(false);
-  const hasInitializedActiveTab = useRef(false);
-
-  useEffect(() => {
-    if (hasInitializedActiveTab.current || !hasLoaded || !resume) return;
-    hasInitializedActiveTab.current = true;
-    const hasContent =
-      Boolean(resume.personalInfo.fullName?.trim()) ||
-      Boolean(resume.summary?.trim()) ||
-      resume.sections.length > 0;
-    setActiveTab(hasContent ? "manual" : "ai");
-  }, [hasLoaded, resume]);
 
   // Drag-to-resize the sidebar, dragging from its left edge. The sidebar
   // sits on the right, so its width is the distance from the cursor to the
@@ -194,7 +187,8 @@ export default function EditorPage() {
     setIsCreating(true);
     try {
       await save();
-      const blank = createBlankResume();
+      const templateId = await fetchDefaultTemplateId();
+      const blank = createBlankResume(templateId);
       await resumeRepository.set(blank.meta.id, blank);
       router.push(`/editor/${blank.meta.id}`);
     } finally {
@@ -204,11 +198,10 @@ export default function EditorPage() {
 
   // A completed AI/heuristic extraction is a deliberate, commit-worthy
   // moment — persist right away rather than waiting out the normal
-  // keystroke-debounced autosave. Also switch to the Manual Edit tab so
-  // the newly filled-in fields are actually visible.
+  // keystroke-debounced autosave. Stays on the AI tab: the chat reply
+  // already confirms what changed, right where the user is looking.
   function handleImport(partial: DeepPartial<ResumeData>) {
     importInto(partial);
-    setActiveTab("manual");
     setImportCelebrateKey((key) => key + 1);
     void save();
   }
@@ -254,7 +247,7 @@ export default function EditorPage() {
             size="m"
             onClick={() => router.push("/")}
           >
-            ← Back to My Resumes
+            ← Back to Resumes
           </Button>
         </div>
       </main>
@@ -269,7 +262,7 @@ export default function EditorPage() {
           variant="secondary"
           size="m"
           iconOnly
-          aria-label="Back to My Resumes"
+          aria-label="Back to Resumes"
           onClick={() => void handleBack()}
         >
           <ArrowLeft size={18} />
@@ -383,18 +376,24 @@ export default function EditorPage() {
                   label: "AI",
                   icon: Sparkles,
                   content: (
-                    <AiResumeBar resume={resume} onApply={handleImport} />
+                    <AiChatPanel
+                      key={resume.meta.id}
+                      resume={resume}
+                      onApply={handleImport}
+                    />
                   ),
                 },
                 {
                   value: "manual",
-                  label: "Manual Edit",
+                  label: "Edit",
                   icon: Pencil,
                   content: (
                     <div className="editor-page__manual-edit">
                       <PersonalInfoForm
                         value={resume.personalInfo}
                         onChange={setPersonalInfo}
+                        nameCasing={resume.meta.nameCasing}
+                        onNameCasingChange={setNameCasing}
                       />
                       <SummaryForm
                         value={resume.summary ?? ""}
@@ -412,6 +411,21 @@ export default function EditorPage() {
                       />
                       <AddSectionMenu onAddSection={addSection} />
                     </div>
+                  ),
+                },
+                {
+                  value: "theme",
+                  label: "Theme",
+                  icon: Palette,
+                  content: (
+                    <ThemePicker
+                      resume={resume}
+                      value={resume.meta.templateId}
+                      onChange={setTemplateId}
+                      accentColor={resume.meta.accentColor}
+                      onAccentColorChange={setAccentColor}
+                      active={activeTab === "theme"}
+                    />
                   ),
                 },
               ]}

@@ -114,6 +114,24 @@ export type PersonalInfo = z.infer<typeof PersonalInfoSchema>;
 export const PageSize = z.enum(["A4", "Letter"]);
 export type PageSize = z.infer<typeof PageSize>;
 
+/** How personalInfo.fullName is displayed wherever the resume document
+ *  itself is presented (PDF, DOCX, Markdown) — a pure display preference,
+ *  never applied to the stored name. See lib/schema/personalInfo.ts. */
+export const NameCasing = z.enum(["uppercase", "titleCase"]);
+export type NameCasing = z.infer<typeof NameCasing>;
+
+/** Accent hue for the Universal template. Ignored by Default and Minimal. */
+export const AccentColor = z.enum([
+  "blue",
+  "indigo",
+  "cyan",
+  "green",
+  "orange",
+  "pink",
+  "black",
+]);
+export type AccentColor = z.infer<typeof AccentColor>;
+
 export const ResumeMetaSchema = z.object({
   id: z.string(),
   title: z.string().default("Untitled Resume"),
@@ -121,6 +139,11 @@ export const ResumeMetaSchema = z.object({
   updatedAt: z.string(),
   templateId: z.string().default("exabyting"),
   pageSize: PageSize.default("A4"),
+  nameCasing: NameCasing.default("uppercase"),
+  accentColor: z.preprocess(
+    (value) => (value === "yellow" ? "black" : value),
+    AccentColor.default("cyan"),
+  ),
 });
 
 export const ResumeDataSchema = z.object({

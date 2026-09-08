@@ -141,6 +141,17 @@
   --purple-10: #3c0266;
   --purple-11: #230140;
 
+  --bkash-1: #ffe9f3;
+  --bkash-2: #ffc3dd;
+  --bkash-3: #ff9dc8;
+  --bkash-4: #ff76b2;
+  --bkash-5: #ff509d;
+  --bkash-6: #ff2987;
+  --bkash-7: #e2136e;
+  --bkash-8: #b90152;
+  --bkash-9: #900040;
+  --bkash-10: #68002e;
+
   --black: #000000;
   --white: #ffffff;
 
@@ -169,6 +180,8 @@
   --color-surface: var(--grey-1);
   --color-surface-raised: var(--grey-1);
   --color-surface-inset: var(--grey-3);
+  --color-surface-thumb: var(--neutral-1);
+  --color-surface-preview: var(--grey-5);
   --color-surface-overlay: rgba(7, 12, 17, 0.48);
 
   --color-border: var(--grey-5);
@@ -194,6 +207,7 @@
   --chart-cyan: var(--cyan-5);
   --chart-yellow: var(--ylw-5);
   --chart-mint: var(--mint-5);
+  --chart-pink: var(--bkash-5);
 
   --space-1: 4px;
   --space-2: 8px;
@@ -274,6 +288,8 @@
   --color-surface: oklch(14% 0.022 265);
   --color-surface-raised: oklch(17% 0.025 265);
   --color-surface-inset: var(--neutral-10);
+  --color-surface-thumb: var(--neutral-10);
+  --color-surface-preview: oklch(7% 0.016 265);
   --color-surface-overlay: rgba(0, 0, 0, 0.65);
   --color-border: var(--neutral-9);
   --color-border-strong: var(--neutral-7);

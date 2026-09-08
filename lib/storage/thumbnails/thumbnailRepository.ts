@@ -13,10 +13,9 @@ export interface ThumbnailRecord {
 }
 
 /**
- * One cached thumbnail per resume id, keyed by id and overwritten in place
- * on every regeneration — there is never more than one record per resume,
- * so nothing here needs eviction or garbage collection. Deleting a resume
- * must also delete its row (see DashboardClient's confirmDelete).
+ * One cached thumbnail per resume id + template id, overwritten in place
+ * on every regeneration. Deleting a resume must also delete its rows
+ * (see deleteResumeThumbnails in lib/export/resumeThumbnail.ts).
  */
 export const thumbnailRepository: StorageAdapter<ThumbnailRecord> = {
   async get(id) {

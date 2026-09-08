@@ -7,7 +7,9 @@ import type {
 } from "@/lib/schema/resume";
 import { layoutForSection } from "@/lib/schema/resume";
 import {
+  backfillMetaDefaults,
   createBlankResume,
+  dedupeResumeIds,
   normalizeAndValidate,
   type DeepPartial,
 } from "@/lib/schema/normalize";
@@ -57,7 +59,9 @@ interface EditorState {
 
   setTitle: (title: string) => void;
   setTemplateId: (templateId: string) => void;
+  setAccentColor: (accentColor: ResumeData["meta"]["accentColor"]) => void;
   setPageSize: (pageSize: ResumeData["meta"]["pageSize"]) => void;
+  setNameCasing: (nameCasing: ResumeData["meta"]["nameCasing"]) => void;
   setPersonalInfo: (patch: Partial<ResumeData["personalInfo"]>) => void;
   setSummary: (summary: string) => void;
 
@@ -131,10 +135,19 @@ export const useEditorStore = create<EditorState>((set, get) => {
         return;
       }
 
+      // Self-heal a resume that already has a duplicate section/entry id, or
+      // is missing a `meta` field added after it was saved — both are
+      // no-ops (same reference back) for the overwhelming majority of
+      // resumes that don't need it.
+      const repaired = found
+        ? backfillMetaDefaults(dedupeResumeIds(found.resume))
+        : null;
+      const wasRepaired = found ? repaired !== found.resume : false;
+
       set({
-        resume: found?.resume ?? null,
+        resume: repaired,
         isLoading: false,
-        isDirty: false,
+        isDirty: wasRepaired,
         lastSavedAt: found?.resume.meta.updatedAt ?? null,
         hasLoaded: true,
         access: found?.access ?? null,
@@ -165,6 +178,8 @@ export const useEditorStore = create<EditorState>((set, get) => {
           createdAt: resume.meta.createdAt,
           templateId: partial.meta?.templateId ?? resume.meta.templateId,
           pageSize: partial.meta?.pageSize ?? resume.meta.pageSize,
+          nameCasing: partial.meta?.nameCasing ?? resume.meta.nameCasing,
+          accentColor: partial.meta?.accentColor ?? resume.meta.accentColor,
           title: importedName || partial.meta?.title || resume.meta.title,
         },
       });
@@ -189,11 +204,29 @@ export const useEditorStore = create<EditorState>((set, get) => {
       });
     },
 
+    setAccentColor(accentColor) {
+      const { resume } = get();
+      if (!resume) return;
+      set({
+        resume: touch({ ...resume, meta: { ...resume.meta, accentColor } }),
+        isDirty: true,
+      });
+    },
+
     setPageSize(pageSize) {
       const { resume } = get();
       if (!resume) return;
       set({
         resume: touch({ ...resume, meta: { ...resume.meta, pageSize } }),
+        isDirty: true,
+      });
+    },
+
+    setNameCasing(nameCasing) {
+      const { resume } = get();
+      if (!resume) return;
+      set({
+        resume: touch({ ...resume, meta: { ...resume.meta, nameCasing } }),
         isDirty: true,
       });
     },
@@ -349,7 +382,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
             await resumeRepository.set(valid.meta.id, valid);
             // Warms the dashboard's thumbnail cache right away rather than
             // leaving it for the card's next render to notice the header
-            // changed — a no-op if the header didn't change this save.
+            // or summary changed — a no-op if those fields didn't change.
             // Fire-and-forget: a failure here must never surface as a save
             // failure.
             getResumeThumbnailDataUrl(valid).catch((error) => {

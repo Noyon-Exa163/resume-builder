@@ -1,14 +1,18 @@
 .editor-page {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .editor-page__loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
   font-family: var(--font-body);
   color: var(--color-text-secondary);
 }
@@ -17,6 +21,7 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
+  background-color: var(--color-surface-preview);
 }
 
 .editor-page__sidebar-skeleton {
@@ -141,8 +146,28 @@
   min-height: 0;
   overflow-y: auto;
   background: var(--color-surface);
-  border-left: 1px solid var(--color-border);
   padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scoped to this page only (not components/ui/Tabs.css) — the AI tab's
+   chat transcript needs its own bounded, independently-scrolling region
+   (see AiChatPanel.css) so its composer can sit fixed at the bottom
+   instead of scrolling away with it. Manual/Theme tabs are unaffected:
+   they still just grow and let the sidebar's own overflow-y scroll them,
+   exactly as before — min-height:0 only lets a panel shrink to fit, it
+   doesn't clip anything. */
+.editor-page__sidebar .tabs {
+  flex: 1;
+  min-height: 0;
+}
+
+.editor-page__sidebar .tabs__panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .editor-page__resizer {
@@ -171,9 +196,11 @@
   width: 4px;
   height: 36px;
   border-radius: var(--radius-full);
-  background-color: var(--color-border);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-1);
   transition:
     background-color var(--duration-base) var(--ease-default),
+    box-shadow var(--duration-base) var(--ease-default),
     transform var(--duration-base) var(--ease-default);
 }
 
@@ -196,6 +223,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
+  padding-bottom: var(--space-10);
 }
 
 @media (max-width: 900px) {

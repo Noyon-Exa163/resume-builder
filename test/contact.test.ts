@@ -3,6 +3,7 @@ import {
   SYSTEM_ALTERNATE_PHONE,
   breakContactValue,
   compactProfileLabel,
+  extractEntryContact,
   isSystemAlternatePhone,
   phonesForDisplay,
 } from "@/lib/contact";
@@ -56,6 +57,65 @@ describe("compactProfileLabel", () => {
 
   it("strips the scheme from a generic website", () => {
     expect(compactProfileLabel("https://exabyting.com/")).toBe("exabyting.com");
+  });
+});
+
+describe("extractEntryContact", () => {
+  it("pulls email, phone, and a link out of mixed prose", () => {
+    const extracted = extractEntryContact({
+      description: "Email: ada@example.com  Phone: +880 1711-223344",
+      bullets: ["https://linkedin.com/in/ada"],
+      location: "Dhaka",
+    });
+    expect(extracted.items.map((item) => item.kind)).toEqual([
+      "email",
+      "phone",
+      "link",
+    ]);
+    expect(extracted.items.map((item) => item.value)).toEqual([
+      "ada@example.com",
+      "+880 1711-223344",
+      "https://linkedin.com/in/ada",
+    ]);
+    expect(extracted.description).toBeUndefined();
+    expect(extracted.bullets).toEqual([]);
+    expect(extracted.location).toBe("Dhaka");
+  });
+
+  it("does not treat a year range as a phone number", () => {
+    const extracted = extractEntryContact({
+      description: "Worked together 2019-2021",
+    });
+    expect(extracted.items).toEqual([]);
+    expect(extracted.description).toBe("Worked together 2019-2021");
+  });
+
+  it("deduplicates the same email in two fields", () => {
+    const extracted = extractEntryContact({
+      description: "ada@example.com",
+      bullets: ["ada@example.com"],
+    });
+    expect(extracted.items).toHaveLength(1);
+    expect(extracted.bullets).toEqual([]);
+  });
+
+  it("drops Email/Phone/E:/P:/M: labels from leftover prose", () => {
+    const extracted = extractEntryContact({
+      bullets: [
+        "E: ada@example.com",
+        "P: +8801711223344",
+        "M: +8801811223344",
+        "Email: ada@example.com",
+      ],
+      subtitle: "Director, Acme  Phone: +8801711223344",
+    });
+    expect(extracted.items.map((item) => item.kind).sort()).toEqual([
+      "email",
+      "phone",
+      "phone",
+    ]);
+    expect(extracted.bullets).toEqual([]);
+    expect(extracted.subtitle).toBe("Director, Acme");
   });
 });
 

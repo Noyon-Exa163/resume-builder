@@ -36,11 +36,19 @@ const resume = normalizeAndValidate({
 describe("toMarkdown", () => {
   const markdown = toMarkdown(resume);
 
-  it("renders the name as an H1 and contact info below it", () => {
-    expect(markdown).toContain("# Ada Lovelace");
+  it("renders the name as an all-caps H1 by default, with contact info below it", () => {
+    expect(markdown).toContain("# ADA LOVELACE");
     expect(markdown).toContain("Mathematician");
     expect(markdown).toContain("ada@example.com");
     expect(markdown).toContain("+8801676095674");
+  });
+
+  it("renders the name in title case when nameCasing is set", () => {
+    const titleCased = normalizeAndValidate({
+      ...resume,
+      meta: { ...resume.meta, nameCasing: "titleCase" },
+    });
+    expect(toMarkdown(titleCased)).toContain("# Ada Lovelace");
   });
 
   it("renders the summary under its own heading", () => {

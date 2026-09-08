@@ -1,0 +1,199 @@
+/* Conversation grows upward from a composer fixed at the bottom of the AI
+   tab: the message list is its own scroll region (flex:1 + overflow-y),
+   the composer is a normal, always-visible sibling after it — not a
+   position:sticky element riding along in the same scroll flow, which
+   visually overlaps the last message whenever content is only slightly
+   taller than the panel (verified in browser testing). The page.css rules
+   scoping .editor-page__sidebar .tabs/.tabs__panel to flex:1;min-height:0
+   are what give this panel a real bounded height to scroll within. */
+
+.ai-chat-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.ai-chat-panel__messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ai-chat-panel__thinking {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-surface-inset);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text-tertiary);
+}
+
+.ai-chat-panel__composer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+.ai-chat-panel__composer-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: var(--color-surface-inset);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-3);
+  transition: background-color var(--duration-base) var(--ease-default);
+}
+
+.ai-chat-panel__composer-box:focus-within {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 1px;
+}
+
+.ai-chat-panel__composer-box--dragging {
+  background: var(--color-brand-subtle);
+}
+
+.ai-chat-panel__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  align-self: flex-start;
+  max-width: 100%;
+  background: var(--color-surface);
+  border-radius: var(--radius-full);
+  padding: 4px var(--space-2);
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.ai-chat-panel__chip-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-chat-panel__chip-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-full);
+}
+
+.ai-chat-panel__chip-remove:hover {
+  color: var(--color-text-primary);
+}
+
+.ai-chat-panel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ai-chat-panel__icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-base) var(--ease-default),
+    color var(--duration-base) var(--ease-default);
+}
+
+.ai-chat-panel__icon-button:hover:not(:disabled) {
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.ai-chat-panel__icon-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-chat-panel__icon-button:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.ai-chat-panel__icon-button--send {
+  background-color: var(--color-brand);
+  color: var(--color-text-on-brand);
+}
+
+.ai-chat-panel__icon-button--send:hover:not(:disabled) {
+  background-color: var(--color-brand-hover);
+  color: var(--color-text-on-brand);
+}
+
+.ai-chat-panel__icon-button--send:disabled {
+  background-color: var(--color-border);
+  color: var(--color-text-disabled);
+  opacity: 1;
+}
+
+.ai-chat-panel__textarea {
+  height: 72px;
+  resize: none;
+  overflow: hidden;
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--color-text-primary);
+  text-align: left;
+  vertical-align: top;
+}
+
+.ai-chat-panel__textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.ai-chat-panel__textarea:focus {
+  outline: none;
+}
+
+.ai-chat-panel__file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ai-chat-panel__error {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+}

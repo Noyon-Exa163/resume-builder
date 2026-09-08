@@ -8,6 +8,7 @@ import {
 } from "./shared";
 import { formatDateRange } from "@/lib/date";
 import { normalizeHeadline } from "@/lib/schema/headline";
+import { formatFullNameForDisplay } from "@/lib/schema/personalInfo";
 
 /**
  * Renders a resume as a .docx file — best-effort formatting via the same
@@ -15,14 +16,18 @@ import { normalizeHeadline } from "@/lib/schema/headline";
  * entirely client-side (`docx`'s Packer.toBlob()), no export API route.
  */
 export async function toDocx(data: ResumeData): Promise<Blob> {
-  const { personalInfo, summary } = data;
+  const { personalInfo, summary, meta } = data;
   const children: Paragraph[] = [];
 
   if (hasText(personalInfo.fullName)) {
     children.push(
       new Paragraph({
         heading: HeadingLevel.TITLE,
-        children: [new TextRun(personalInfo.fullName)],
+        children: [
+          new TextRun(
+            formatFullNameForDisplay(personalInfo.fullName, meta.nameCasing),
+          ),
+        ],
       }),
     );
   }
