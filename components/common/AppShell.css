@@ -13,6 +13,10 @@
   overflow-y: auto;
 }
 
+.app-shell__content:has(.dashboard) {
+  background-color: var(--color-surface-thumb);
+}
+
 @media (max-width: 720px) {
   .app-shell {
     flex-direction: column;

@@ -215,21 +215,24 @@ export function PngExportDialog({
                   {(_formatted, values) => `${values[0]}x`}
                 </Slider.Value>
               </div>
-              <Slider.Control className="png-export-dialog__scale-control">
-                <Slider.Track className="png-export-dialog__scale-track">
-                  <Slider.Indicator className="png-export-dialog__scale-indicator" />
-                  <Slider.Thumb className="png-export-dialog__scale-thumb" />
-                </Slider.Track>
+              <div className="png-export-dialog__scale-rail">
+                <Slider.Control className="png-export-dialog__scale-control">
+                  <Slider.Track className="png-export-dialog__scale-track">
+                    <Slider.Indicator className="png-export-dialog__scale-indicator" />
+                    <Slider.Thumb className="png-export-dialog__scale-thumb" />
+                  </Slider.Track>
+                </Slider.Control>
                 <div className="png-export-dialog__scale-stops" aria-hidden="true">
                   {PNG_SCALES.map((s) => (
-                    <span
-                      key={s}
-                      className="png-export-dialog__scale-stop"
-                      data-active={s <= scale ? "" : undefined}
-                    />
+                    <span key={s} className="png-export-dialog__scale-stop">
+                      <span
+                        className="png-export-dialog__scale-bar"
+                        data-active={s <= scale ? "" : undefined}
+                      />
+                    </span>
                   ))}
                 </div>
-              </Slider.Control>
+              </div>
               <div className="png-export-dialog__scale-marks" aria-hidden="true">
                 {PNG_SCALES.map((s) => (
                   <span

@@ -274,13 +274,21 @@
   font-variant-numeric: tabular-nums;
 }
 
-.png-export-dialog__scale-control {
+.png-export-dialog__scale-rail {
   position: relative;
   display: flex;
   align-items: center;
   width: 100%;
-  min-height: var(--space-6);
-  overflow: visible;
+  height: var(--space-6);
+}
+
+.png-export-dialog__scale-control {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
   touch-action: none;
   user-select: none;
 }
@@ -316,7 +324,7 @@
 .png-export-dialog__scale-stops {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -325,23 +333,19 @@
 }
 
 .png-export-dialog__scale-stop {
-  width: 0;
-  height: var(--space-3);
   display: flex;
-  align-items: center;
+  width: 0;
   justify-content: center;
-  overflow: visible;
 }
 
-.png-export-dialog__scale-stop::before {
-  content: "";
+.png-export-dialog__scale-bar {
   width: 2px;
-  height: var(--space-3);
-  background-color: var(--neutral-1);
-  transition: background-color var(--duration-base) var(--ease-default);
+  height: var(--space-4);
+  flex-shrink: 0;
+  background-color: var(--neutral-2);
 }
 
-.png-export-dialog__scale-stop[data-active]::before {
+.png-export-dialog__scale-bar[data-active] {
   background-color: var(--exa-5);
 }
 
@@ -365,12 +369,6 @@
 
 .png-export-dialog__scale-mark[data-current] {
   color: var(--color-text-primary);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .png-export-dialog__scale-stop::before {
-    transition: none;
-  }
 }
 
 .png-export-dialog__pages {
