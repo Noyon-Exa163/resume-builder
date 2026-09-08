@@ -55,7 +55,7 @@ const PROVIDER_LABELS: Record<AIProviderId, string> = {
 /** One-line, per-provider guidance shown under its Model field. */
 const PROVIDER_HINTS: Record<AIProviderId, string> = {
   openrouter:
-    "Leave Model empty to let OpenRouter route each request automatically.",
+    "Leave Model empty to let OpenRouter route each request automatically. Plain questions in the AI chat panel always use a free model regardless of this setting — only edits to the resume use the model configured here.",
   gemini:
     "Model is required — check Google AI Studio for current model ids (e.g. gemini-2.5-flash).",
   anthropic:

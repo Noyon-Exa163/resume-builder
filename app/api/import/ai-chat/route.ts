@@ -2,19 +2,28 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { resolveConfiguredProvider } from "@/lib/ai/resolveConfiguredProvider";
-import { buildChatPrompt, AI_CHAT_HISTORY_LIMIT } from "@/lib/ai/chatPrompt";
+import {
+  buildChatPrompt,
+  buildQaChatPrompt,
+  AI_CHAT_HISTORY_LIMIT,
+} from "@/lib/ai/chatPrompt";
+import { classifyChatIntent, runQaChat } from "@/lib/ai/chatRouting";
 import { EXTRACT_MAX_TOKENS, parseModelJson } from "@/lib/ai/http";
 import { ResumeDataSchema } from "@/lib/schema/resume";
 import { normalizeAndValidate, type DeepPartial } from "@/lib/schema/normalize";
 import type { ResumeData } from "@/lib/schema/resume";
 
 /**
- * POST /api/import/ai-chat — the editor's multi-turn AI chat panel. Sends
- * the current resume, a bounded slice of prior turns, and the new message to
- * the admin's configured provider and asks for a JSON envelope: a
- * conversational reply, plus (only if the model decided this turn warrants
- * one) the full updated resume. Presence of `resume` in the response is the
- * "should this apply" signal — the client applies it directly if present.
+ * POST /api/import/ai-chat — the editor's multi-turn AI chat panel. On
+ * OpenRouter, a cheap classifier call first decides whether the turn is a
+ * plain question or a resume edit (see lib/ai/chatRouting.ts); questions run
+ * a lighter, cheaper Q&A-only prompt, edits go through the full pipeline
+ * below: send the current resume, a bounded slice of prior turns, and the
+ * new message to the admin's configured provider, and ask for a JSON
+ * envelope — a conversational reply, plus (only if the model decided this
+ * turn warrants one) the full updated resume. Presence of `resume` in the
+ * response is the "should this apply" signal — the client applies it
+ * directly if present.
  */
 
 const ChatTurnSchema = z.object({
@@ -32,6 +41,10 @@ const AiChatRequestSchema = z.object({
 const ChatEnvelopeSchema = z.object({
   reply: z.string(),
   resume: z.unknown().optional(),
+});
+
+const QaEnvelopeSchema = z.object({
+  reply: z.string(),
 });
 
 export async function POST(request: Request) {
@@ -65,6 +78,41 @@ export async function POST(request: Request) {
   const { provider, config } = resolved.result;
 
   try {
+    // Route plain Q&A turns to a cheap/free model — only meaningful on
+    // OpenRouter, whose `openrouter/free` router picks a live free model per
+    // request (see lib/ai/chatRouting.ts). An attached file always goes
+    // through the full edit-capable path since it may be a resume to import.
+    const canRouteToQa = provider.id === "openrouter" && !parsed.data.attachedFileText;
+    const intent = canRouteToQa
+      ? await classifyChatIntent(provider, config, parsed.data.message)
+      : "edit";
+
+    if (intent === "question") {
+      const { system, messages } = buildQaChatPrompt({
+        resume: parsed.data.resume,
+        history: parsed.data.history,
+        message: parsed.data.message,
+      });
+      const result = await runQaChat(provider, config, {
+        system,
+        messages,
+        jsonMode: true,
+        temperature: 0,
+      });
+      const json = parseModelJson(result.content);
+      const envelope = QaEnvelopeSchema.safeParse(json);
+      const fallbackReply = result.content.trim();
+      if (!envelope.success && !fallbackReply) {
+        return NextResponse.json(
+          {
+            error: "The AI didn't return a response. Try rephrasing your message.",
+          },
+          { status: 502 },
+        );
+      }
+      return NextResponse.json({ reply: envelope.success ? envelope.data.reply : fallbackReply });
+    }
+
     const { system, messages } = buildChatPrompt({
       resume: parsed.data.resume,
       history: parsed.data.history,

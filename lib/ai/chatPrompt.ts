@@ -63,6 +63,36 @@ function buildChatSystemPrompt(resume: ResumeData, hasAttachment: boolean): stri
   return parts.join("\n");
 }
 
+/**
+ * Lighter prompt for turns already classified as Q&A-only (see
+ * lib/ai/chatRouting.ts) — no resume-editing instructions, no
+ * RESUME_SCHEMA_DESCRIPTION (the model never returns a resume field on this
+ * path), so it costs a fraction of buildChatPrompt's input tokens.
+ */
+export function buildQaChatPrompt(input: {
+  resume: ResumeData;
+  history: AIChatMessage[];
+  message: string;
+}): { system: string; messages: AIChatMessage[] } {
+  return {
+    system: buildQaSystemPrompt(input.resume),
+    messages: [...input.history, { role: "user", content: input.message }],
+  };
+}
+
+function buildQaSystemPrompt(resume: ResumeData): string {
+  return [
+    'Your entire response must be RAW JSON: a single JSON object of exactly this shape, nothing before or after it, no markdown code fences: { "reply": string }',
+    "",
+    "You are a resume-editing assistant embedded in a resume builder's chat panel. The user is asking a question or wants advice — this turn will NOT change the resume, just answer helpfully using the resume below as context.",
+    "",
+    'Keep "reply" concise — 1 to 3 sentences, plain prose (no markdown, no bullet characters like "-" or "*"). Never restate the full resume, never repeat back JSON.',
+    "",
+    "Current resume (JSON):",
+    JSON.stringify(resume),
+  ].join("\n");
+}
+
 function buildUserTurn(input: {
   message: string;
   attachedFileText?: string;

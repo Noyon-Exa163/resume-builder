@@ -4,6 +4,8 @@
 
 export const EXTRACT_MAX_TOKENS = 8192;
 export const DEFAULT_CHAT_MAX_TOKENS = 2048;
+/** Q&A-only chat turns return just `{ reply }` — no resume payload — so they need far fewer tokens than an edit turn. */
+export const QA_CHAT_MAX_TOKENS = 512;
 export const TEST_MAX_TOKENS = 16;
 export const TEST_USER_MESSAGE = "Reply with the single word ok.";
 
