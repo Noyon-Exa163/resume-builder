@@ -6,12 +6,14 @@ import "./page.css";
 import type { ResumeData } from "@/lib/schema/resume";
 import { createBlankResume } from "@/lib/schema/normalize";
 import { resumeRepository } from "@/lib/storage/api/resumeRepository";
+import { thumbnailRepository } from "@/lib/storage/thumbnails/thumbnailRepository";
 import {
   listResumesWithAccess,
   canManageResume,
   type ResumeAccessEntry,
 } from "@/lib/storage/api/resumeAccess";
 import { ResumeCardPreview } from "@/components/dashboard/ResumeCardPreview";
+import { ResumeCardSkeleton } from "@/components/dashboard/ResumeCardSkeleton";
 import { ShareDialog } from "@/components/common/ShareDialog";
 import { formatDisplayDate } from "@/lib/date";
 import { EmptyState, ConfirmDialog, Button } from "@/components/ui";
@@ -82,6 +84,11 @@ export default function DashboardClient() {
     if (!deleteTarget) return;
     const id = deleteTarget.meta.id;
     await resumeRepository.delete(id);
+    // Not awaited alongside the resume delete above: this is a purely local
+    // cache cleanup, not part of the operation the user is waiting on.
+    void thumbnailRepository.delete(id).catch((error) => {
+      console.error("Failed to clear cached resume thumbnail:", error);
+    });
     setEntries((prev) => prev?.filter((e) => e.resume.meta.id !== id) ?? null);
   }
 
@@ -125,7 +132,13 @@ export default function DashboardClient() {
         )}
       </div>
 
-      {entries === null && <p className="dashboard__hint">Loading…</p>}
+      {entries === null && (
+        <ul className="dashboard__list">
+          {Array.from({ length: 6 }, (_, index) => (
+            <ResumeCardSkeleton key={index} />
+          ))}
+        </ul>
+      )}
 
       {entries !== null && entries.length === 0 && (
         <EmptyState

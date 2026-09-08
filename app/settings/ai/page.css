@@ -74,6 +74,16 @@
   gap: var(--space-6);
 }
 
+.ai-settings-page__provider--loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ai-settings-page__provider--loading .ai-settings-page__provider-row {
+  gap: var(--space-4);
+}
+
 .ai-settings-page__provider-footer {
   display: flex;
   flex-wrap: wrap;

@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { CircleCheck, Loader2, PlugZap, Trash2 } from "lucide-react";
-import { Input, Button, SelectField, Badge, type SelectOption } from "@/components/ui";
+import {
+  Input,
+  Button,
+  SelectField,
+  Badge,
+  Skeleton,
+  type SelectOption,
+} from "@/components/ui";
 import type { AIProviderId } from "@/lib/ai/types";
 import { templateRegistry } from "@/templates";
 import "./page.css";
@@ -185,8 +192,11 @@ export default function AiSettingsPageClient() {
     }
   }
 
+  // Built from savedProviders (not the live `providers` form state) so this
+  // never offers a provider as a default choice that persistDefaults would
+  // then silently drop for not having a saved API key yet.
   const configuredProviderOptions: SelectOption[] = PROVIDER_ORDER.filter(
-    (id) => providers[id].apiKey.trim(),
+    (id) => savedProviders[id].apiKey.trim(),
   ).map((id) => ({ value: id, label: PROVIDER_LABELS[id] }));
 
   const templateOptions: SelectOption[] = Object.values(templateRegistry).map(
@@ -359,7 +369,38 @@ export default function AiSettingsPageClient() {
   }
 
   if (isLoading) {
-    return <main className="ai-settings-page">Loading…</main>;
+    return (
+      <div className="ai-settings-page">
+        <h1 className="ai-settings-page__title">AI Settings</h1>
+        <p className="ai-settings-page__intro">
+          Configure the AI providers used for AI-assisted resume import. Keys
+          are stored server-side and are never sent to the browser. Test
+          Connection only checks a key — click Save on a provider to keep it.
+          Default provider and template save as soon as you pick them.
+        </p>
+        <div className="ai-settings-page__layout">
+          <div className="ai-settings-page__providers">
+            {PROVIDER_ORDER.map((id) => (
+              <div
+                key={id}
+                className="ai-settings-page__provider ai-settings-page__provider--loading"
+              >
+                <Skeleton height={20} width="35%" />
+                <div className="ai-settings-page__provider-row">
+                  <Skeleton height={48} />
+                  <Skeleton height={48} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <aside className="ai-settings-page__defaults" aria-label="Settings">
+            <h2 className="ai-settings-page__defaults-title">Settings</h2>
+            <Skeleton height={48} />
+            <Skeleton height={48} />
+          </aside>
+        </div>
+      </div>
+    );
   }
 
   return (
