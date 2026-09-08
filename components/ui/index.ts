@@ -30,3 +30,6 @@ export type { EmptyStateProps } from "./EmptyState";
 
 export { default as ConfirmDialog } from "./ConfirmDialog";
 export type { ConfirmDialogProps } from "./ConfirmDialog";
+
+export { default as Skeleton } from "./Skeleton";
+export type { SkeletonProps } from "./Skeleton";

@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { Button, DialogPopup, DialogRoot, SelectField } from "@/components/ui";
+import {
+  Button,
+  DialogPopup,
+  DialogRoot,
+  SelectField,
+  Skeleton,
+} from "@/components/ui";
 import {
   getResumeShares,
   listShareableUsers,
@@ -136,7 +142,14 @@ export function ShareDialog({
       >
         <div className="share-dialog__body">
           {isLoading ? (
-            <p className="share-dialog__loading">Loading users…</p>
+            <div className="share-dialog__section">
+              {Array.from({ length: 3 }, (_, index) => (
+                <div key={index} className="share-dialog__row">
+                  <Skeleton width="50%" height={14} />
+                  <Skeleton width={130} height={32} radius="md" />
+                </div>
+              ))}
+            </div>
           ) : (
             <>
               {owner && (
