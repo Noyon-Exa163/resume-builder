@@ -9,26 +9,22 @@
 }
 
 .app-sidebar__brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  display: block;
   padding: 0 var(--space-2);
   margin-bottom: var(--space-8);
   text-decoration: none;
 }
 
-.app-sidebar__brand-mark {
-  height: 28px;
-  width: 28px;
+.app-sidebar__brand-logo {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
-.app-sidebar__brand-name {
-  font-family: var(--font-display);
-  font-weight: var(--font-display-weight);
-  font-size: 18px;
-  line-height: var(--leading-ui);
-  letter-spacing: var(--tracking-none);
-  color: var(--color-text-primary);
+.app-sidebar__brand:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .app-sidebar__nav {
@@ -130,6 +126,14 @@
 
   .app-sidebar__brand {
     margin-bottom: 0;
+    width: auto;
+    flex-shrink: 0;
+    padding: 0;
+  }
+
+  .app-sidebar__brand-logo {
+    width: auto;
+    height: var(--space-5);
   }
 
   .app-sidebar__nav {

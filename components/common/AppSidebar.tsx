@@ -51,11 +51,10 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
     <aside className="app-sidebar">
       <Link href="/" className="app-sidebar__brand">
         <img
-          src="/assets/Logos/Exabyting-Logomark.svg"
-          alt=""
-          className="app-sidebar__brand-mark"
+          src="/assets/Logos/ExaResume_Full.svg"
+          alt="ExaResume"
+          className="app-sidebar__brand-logo"
         />
-        <span className="app-sidebar__brand-name">ExaResume</span>
       </Link>
 
       <nav className="app-sidebar__nav" aria-label="Account">
