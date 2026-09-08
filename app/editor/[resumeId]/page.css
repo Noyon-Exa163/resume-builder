@@ -13,6 +13,18 @@
   color: var(--color-text-secondary);
 }
 
+.editor-page__preview-skeleton {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.editor-page__sidebar-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
 .editor-page__not-found {
   display: flex;
   flex-direction: column;
@@ -50,8 +62,8 @@
   box-sizing: border-box;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 16px;
-  line-height: var(--leading-ui);
+  font-size: 18px;
+  line-height: var(--leading-heading);
   letter-spacing: var(--tracking-none);
   padding: var(--space-1) var(--space-2);
   border: 1px solid transparent;
@@ -67,6 +79,9 @@
 .editor-page__title-input {
   width: 100%;
   min-width: 0;
+  appearance: none;
+  font-family: var(--font-display);
+  font-weight: 700;
   color: var(--color-text-primary);
   background: none;
   overflow: hidden;

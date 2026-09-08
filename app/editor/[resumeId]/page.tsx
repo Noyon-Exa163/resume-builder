@@ -21,12 +21,8 @@ import { formatLastSavedLabel } from "@/lib/utils/formatLastSaved";
 import { createBlankResume, type DeepPartial } from "@/lib/schema/normalize";
 import type { ResumeData } from "@/lib/schema/resume";
 import { resumeRepository } from "@/lib/storage/api/resumeRepository";
-import {
-  getResumeAccess,
-  canManageResume,
-  type ResumeAccessLevel,
-} from "@/lib/storage/api/resumeAccess";
-import { Button, TabsField } from "@/components/ui";
+import { canManageResume } from "@/lib/storage/api/resumeAccess";
+import { Button, Skeleton, TabsField } from "@/components/ui";
 import { ShareDialog } from "@/components/common/ShareDialog";
 import {
   AiResumeBar,
@@ -55,6 +51,8 @@ export default function EditorPage() {
     isDirty,
     isSaving,
     lastSavedAt,
+    access,
+    ownerEmail,
     load,
     save,
     importInto,
@@ -75,28 +73,14 @@ export default function EditorPage() {
     if (params.resumeId) void load(params.resumeId);
   }, [params.resumeId, load]);
 
-  const [access, setAccess] = useState<ResumeAccessLevel | null>(null);
-  const [ownerEmail, setOwnerEmail] = useState("");
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [pageCount, setPageCount] = useState<number | null>(null);
+  const [importCelebrateKey, setImportCelebrateKey] = useState(0);
 
-  useEffect(() => {
-    if (!params.resumeId) return;
-    let cancelled = false;
-    getResumeAccess(params.resumeId)
-      .then(({ access, ownerEmail }) => {
-        if (cancelled) return;
-        setAccess(access);
-        setOwnerEmail(ownerEmail);
-      })
-      .catch((err) => {
-        console.error("Failed to load resume access:", err);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [params.resumeId]);
-
+  // access/ownerEmail come from the same request that loads `resume` (see
+  // editorStore.load()) — there is no longer a window where the resume is
+  // loaded but access is still unconfirmed, so failing closed here is just
+  // "haven't loaded yet," the same as the rest of the loading state.
   const isReadOnly = access === "viewer";
 
   useEffect(() => {
@@ -225,11 +209,36 @@ export default function EditorPage() {
   function handleImport(partial: DeepPartial<ResumeData>) {
     importInto(partial);
     setActiveTab("manual");
+    setImportCelebrateKey((key) => key + 1);
     void save();
   }
 
   if (isLoading || !hasLoaded) {
-    return <main className="editor-page__loading">Loading…</main>;
+    return (
+      <main className="editor-page">
+        <header className="editor-page__header">
+          <Skeleton radius="full" width={40} height={40} />
+          <Skeleton width={160} height={20} />
+          <div className="editor-page__header-end">
+            <Skeleton width={140} height={40} radius="md" />
+          </div>
+        </header>
+        <div className="editor-page__body">
+          <Skeleton radius="none" className="editor-page__preview-skeleton" />
+          <div
+            className="editor-page__sidebar"
+            style={{ width: DEFAULT_SIDEBAR_WIDTH }}
+          >
+            <div className="editor-page__sidebar-skeleton">
+              <Skeleton height={36} />
+              <Skeleton height={100} />
+              <Skeleton height={100} />
+              <Skeleton height={100} />
+            </div>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   if (resume === null) {
@@ -336,7 +345,11 @@ export default function EditorPage() {
         onPointerUp={handleResizerPointerUp}
         onPointerCancel={handleResizerPointerUp}
       >
-        <LivePreviewPane data={resume} onPageCountChange={setPageCount} />
+        <LivePreviewPane
+          data={resume}
+          onPageCountChange={setPageCount}
+          celebrateKey={importCelebrateKey}
+        />
         <div
           role="separator"
           tabIndex={0}
@@ -358,7 +371,7 @@ export default function EditorPage() {
         >
           {isReadOnly ? (
             <p className="editor-page__readonly-notice">
-              Shared by {ownerEmail} — view only.
+              {`Shared by ${ownerEmail} — view only.`}
             </p>
           ) : (
             <TabsField

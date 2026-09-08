@@ -8,12 +8,7 @@ const deferred: Array<() => void> = [];
 
 vi.mock("@/lib/storage/api/resumeRepository", () => ({
   resumeRepository: {
-    // Resolves only when the test releases it, so a load can be held in
-    // flight while the draft is edited.
-    get: () =>
-      new Promise<ResumeData>((resolve) => {
-        deferred.push(() => resolve(stored.current));
-      }),
+    get: async () => stored.current,
     set: async (_id: string, value: ResumeData) => {
       stored.current = value;
     },
@@ -21,6 +16,29 @@ vi.mock("@/lib/storage/api/resumeRepository", () => ({
     delete: async () => {},
   },
 }));
+
+// editorStore.load() fetches the resume and the caller's access together
+// (see lib/storage/api/resumeAccess.ts's getResumeWithAccess) — mocked here
+// rather than resumeRepository.get() above, which load() no longer calls.
+vi.mock("@/lib/storage/api/resumeAccess", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/storage/api/resumeAccess")>();
+  return {
+    ...actual,
+    // Resolves only when the test releases it, so a load can be held in
+    // flight while the draft is edited.
+    getResumeWithAccess: () =>
+      new Promise((resolve) => {
+        deferred.push(() =>
+          resolve({
+            resume: stored.current,
+            access: "owner",
+            ownerEmail: "owner@example.com",
+          }),
+        );
+      }),
+  };
+});
 
 const { useEditorStore } = await import("@/lib/store/editorStore");
 
@@ -36,6 +54,8 @@ describe("editorStore.load", () => {
       isDirty: false,
       lastSavedAt: null,
       hasLoaded: false,
+      access: null,
+      ownerEmail: "",
     });
   });
 

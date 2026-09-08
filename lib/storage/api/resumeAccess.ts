@@ -49,15 +49,22 @@ export async function listResumesWithAccess(): Promise<ResumeAccessEntry[]> {
   return readJsonOrThrow<ResumeAccessEntry[]>(res, "Failed to list resumes");
 }
 
-/** The caller's access level for one resume — used by the editor to decide
- * whether to render read-only, and whether share/delete controls appear. */
-export async function getResumeAccess(
-  id: string,
-): Promise<{ access: ResumeAccessLevel; ownerEmail: string }> {
-  const res = await fetch(`/api/resumes/${encodeURIComponent(id)}/access`, {
+/**
+ * A resume plus the caller's access level and the owner's email, in one
+ * request — what the editor needs on load, from the same endpoint
+ * resumeRepository.get() uses (see that file's comment on why it only
+ * returns the resume part). undefined on 404 (not found, or the caller has
+ * no relationship to it), matching resumeRepository.get()'s convention.
+ */
+export async function getResumeWithAccess(id: string): Promise<
+  | { resume: ResumeData; access: ResumeAccessLevel; ownerEmail: string }
+  | undefined
+> {
+  const res = await fetch(`/api/resumes/${encodeURIComponent(id)}`, {
     method: "GET",
   });
-  return readJsonOrThrow(res, "Failed to load resume access");
+  if (res.status === 404) return undefined;
+  return readJsonOrThrow(res, "Failed to load resume");
 }
 
 /** Every other user in the system, for the Share dialog's people list. */

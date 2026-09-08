@@ -12,6 +12,11 @@ import {
   type DeepPartial,
 } from "@/lib/schema/normalize";
 import { resumeRepository } from "@/lib/storage/api/resumeRepository";
+import {
+  getResumeWithAccess,
+  type ResumeAccessLevel,
+} from "@/lib/storage/api/resumeAccess";
+import { getResumeThumbnailDataUrl } from "@/lib/export/resumeThumbnail";
 import { createId } from "@/lib/utils/ids";
 import { replaceHeadlineBars } from "@/lib/schema/headline";
 
@@ -33,6 +38,10 @@ interface EditorState {
   /** True once load() has settled at least once — distinguishes "still
    * loading" from "loaded, and it turned out this resume doesn't exist." */
   hasLoaded: boolean;
+  /** The caller's relationship to `resume`, from the same request that
+   * fetched it — null until load() resolves, or if `resume` is null. */
+  access: ResumeAccessLevel | null;
+  ownerEmail: string;
 
   load: (id: string) => Promise<void>;
   startBlank: (templateId?: string) => ResumeData;
@@ -103,11 +112,13 @@ export const useEditorStore = create<EditorState>((set, get) => {
     isDirty: false,
     lastSavedAt: null,
     hasLoaded: false,
+    access: null,
+    ownerEmail: "",
 
     async load(id) {
       const token = (loadToken += 1);
       set({ isLoading: true });
-      const found = await resumeRepository.get(id);
+      const found = await getResumeWithAccess(id);
 
       // A newer load started while this one was in flight; let that one win.
       if (token !== loadToken) return;
@@ -121,11 +132,13 @@ export const useEditorStore = create<EditorState>((set, get) => {
       }
 
       set({
-        resume: found ?? null,
+        resume: found?.resume ?? null,
         isLoading: false,
         isDirty: false,
-        lastSavedAt: found?.meta.updatedAt ?? null,
+        lastSavedAt: found?.resume.meta.updatedAt ?? null,
         hasLoaded: true,
+        access: found?.access ?? null,
+        ownerEmail: found?.ownerEmail ?? "",
       });
     },
 
@@ -334,6 +347,14 @@ export const useEditorStore = create<EditorState>((set, get) => {
             if (!snapshot) return;
             const valid = normalizeAndValidate(snapshot);
             await resumeRepository.set(valid.meta.id, valid);
+            // Warms the dashboard's thumbnail cache right away rather than
+            // leaving it for the card's next render to notice the header
+            // changed — a no-op if the header didn't change this save.
+            // Fire-and-forget: a failure here must never surface as a save
+            // failure.
+            getResumeThumbnailDataUrl(valid).catch((error) => {
+              console.error("Failed to refresh resume thumbnail:", error);
+            });
             if (get().resume === snapshot) {
               set({
                 resume: valid,

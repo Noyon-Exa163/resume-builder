@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
-import { canManageAllResumes } from "@/lib/auth/permissions";
+import { canManageAllResumes, resolveResumeAccess } from "@/lib/auth/permissions";
 import { ResumeDataSchema } from "@/lib/schema/resume";
 
 interface RouteParams {
@@ -12,12 +12,16 @@ interface ResumeRow {
   id: string;
   user_id: string;
   data: unknown;
-  created_at: string;
-  updated_at: string;
+  owner_email: string;
+  permission: "viewer" | "editor" | null;
 }
 
 /**
  * GET /api/resumes/[id]
+ * Returns the resume together with the caller's access level and the
+ * owner's email — the editor needs both on load (to render, and to decide
+ * whether to render read-only), so this is one round trip instead of a
+ * second GET to /api/resumes/[id]/access.
  * Returns 401 if unauthenticated.
  * Returns 404 if not found, or the caller is neither the owner, a user
  * the resume has been shared with (see db/migrations/0003_resume_shares.sql),
@@ -30,26 +34,34 @@ export async function GET(_request: Request, { params }: RouteParams) {
   }
 
   const { id } = await params;
-  const manageAll = canManageAllResumes(user.email);
 
   const rows = (await sql`
-    SELECT r.id, r.user_id, r.data, r.created_at, r.updated_at
+    SELECT r.id, r.user_id, r.data, u.email AS owner_email, rs.permission
     FROM resumes r
+    JOIN users u ON u.id = r.user_id
     LEFT JOIN resume_shares rs
       ON rs.resume_id = r.id AND rs.shared_with_user_id = ${user.id}
     WHERE r.id = ${id}
-      AND (
-        ${manageAll}
-        OR r.user_id = ${user.id}
-        OR rs.shared_with_user_id = ${user.id}
-      )
   `) as ResumeRow[];
 
-  if (rows.length === 0) {
+  const row = rows[0];
+  if (!row) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const parsed = ResumeDataSchema.safeParse(rows[0].data);
+  const access = resolveResumeAccess({
+    userId: user.id,
+    userEmail: user.email,
+    ownerId: row.user_id,
+    sharePermission: row.permission,
+  });
+  if (!access) {
+    // Same "Not found" as a missing row — a caller with no relationship to
+    // this resume shouldn't learn it exists.
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const parsed = ResumeDataSchema.safeParse(row.data);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Stored resume data corrupted" },
@@ -57,7 +69,11 @@ export async function GET(_request: Request, { params }: RouteParams) {
     );
   }
 
-  return NextResponse.json(parsed.data);
+  return NextResponse.json({
+    resume: parsed.data,
+    access,
+    ownerEmail: row.owner_email,
+  });
 }
 
 /**

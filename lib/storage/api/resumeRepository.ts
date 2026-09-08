@@ -24,7 +24,13 @@ export const resumeRepository: StorageAdapter<ResumeData> = {
       );
     }
 
-    return (await res.json()) as ResumeData;
+    // The route also returns the caller's access level and the owner's
+    // email (see lib/storage/api/resumeAccess.ts's getResumeWithAccess,
+    // which the editor uses instead of this plain StorageAdapter method
+    // when it needs those too) — this adapter's contract is just the
+    // resume, so only that part is returned here.
+    const body = (await res.json()) as { resume: ResumeData };
+    return body.resume;
   },
 
   async list(): Promise<ResumeData[]> {
