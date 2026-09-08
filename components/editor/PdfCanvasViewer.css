@@ -16,8 +16,34 @@
 
 .pdf-canvas-viewer__page {
   display: block;
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-2);
+}
+
+/* One-shot entrance for pages freshly rasterized from AI-parsed content —
+   a deliberate, commit-worthy moment (see AiResumeBar/editor page.tsx), not
+   the routine debounced re-render every keystroke also produces. Each page
+   is staggered via an inline animation-delay set where the class is applied. */
+.pdf-canvas-viewer__page--appear {
+  animation: pdf-page-appear calc(var(--duration-slow) * 1.6) var(--ease-out)
+    both;
+}
+
+@keyframes pdf-page-appear {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pdf-canvas-viewer__page--appear {
+    animation: none;
+  }
 }
 
 .pdf-canvas-viewer__status {

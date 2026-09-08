@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ResumeData } from "@/lib/schema/resume";
 import { toPdfBlob } from "@/lib/export/toPdfBlob";
 import { PdfCanvasViewer } from "./PdfCanvasViewer";
@@ -11,6 +11,10 @@ const DEBOUNCE_MS = 400;
 interface LivePreviewPaneProps {
   data: ResumeData;
   onPageCountChange?: (pageCount: number) => void;
+  /** Bump this after a completed AI/heuristic import lands in `data` — the
+   *  next preview render plays a one-shot appear animation instead of
+   *  swapping in silently like a routine edit does. */
+  celebrateKey?: number;
 }
 
 /**
@@ -21,14 +25,37 @@ interface LivePreviewPaneProps {
 export function LivePreviewPane({
   data,
   onPageCountChange,
+  celebrateKey,
 }: LivePreviewPaneProps) {
-  const [draft, setDraft] = useState(() => ({ key: previewKey(data), data }));
-  const [blob, setBlob] = useState<Blob | null>(null);
+  const [draft, setDraft] = useState(() => ({
+    key: previewKey(data),
+    data,
+    appear: false,
+  }));
+  const [rendered, setRendered] = useState<{
+    blob: Blob | null;
+    appear: boolean;
+  }>({ blob: null, appear: false });
+
+  const lastCelebrateKeyRef = useRef(celebrateKey);
+  const pendingCelebrateRef = useRef(false);
+
+  useEffect(() => {
+    if (celebrateKey !== lastCelebrateKeyRef.current) {
+      lastCelebrateKeyRef.current = celebrateKey;
+      pendingCelebrateRef.current = true;
+    }
+  }, [celebrateKey]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const key = previewKey(data);
-      setDraft((prev) => (prev.key === key ? prev : { key, data }));
+      setDraft((prev) => {
+        if (prev.key === key) return prev;
+        const appear = pendingCelebrateRef.current;
+        pendingCelebrateRef.current = false;
+        return { key, data, appear };
+      });
     }, DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [data]);
@@ -37,7 +64,7 @@ export function LivePreviewPane({
     let isStale = false;
     toPdfBlob(draft.data)
       .then((next) => {
-        if (!isStale) setBlob(next);
+        if (!isStale) setRendered({ blob: next, appear: draft.appear });
       })
       .catch((error) => console.error("Preview render failed:", error));
     return () => {
@@ -47,7 +74,8 @@ export function LivePreviewPane({
 
   return (
     <PdfCanvasViewer
-      blob={blob}
+      blob={rendered.blob}
+      appear={rendered.appear}
       className="live-preview-pane"
       aria-label="Live preview"
       onPageCountChange={onPageCountChange}
