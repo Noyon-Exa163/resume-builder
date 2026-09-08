@@ -1,8 +1,16 @@
 "use client";
 
 import { useState, useEffect, type FormEvent } from "react";
-import { Users, Loader2, Trash2, UserPlus } from "lucide-react";
-import { Input, Button, EmptyState, ConfirmDialog } from "@/components/ui";
+import { Users, Loader2, Trash2, Plus } from "lucide-react";
+import {
+  Input,
+  Button,
+  EmptyState,
+  ConfirmDialog,
+  DialogRoot,
+  DialogPopup,
+  Skeleton,
+} from "@/components/ui";
 import { isProtectedAdmin } from "@/lib/auth/constants";
 import "./page.css";
 
@@ -24,6 +32,8 @@ export default function UsersPageClient() {
   const [isCreating, setIsCreating] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createError, setCreateError] = useState("");
 
   async function fetchUsers() {
     try {
@@ -74,7 +84,7 @@ export default function UsersPageClient() {
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
-    setError("");
+    setCreateError("");
     setIsCreating(true);
 
     try {
@@ -90,18 +100,29 @@ export default function UsersPageClient() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        setError(data?.error || "Could not create user.");
+        setCreateError(data?.error || "Could not create user.");
         return;
       }
 
       setNewEmail("");
       setNewPassword("");
       setNewIsAdmin(false);
+      setIsCreateOpen(false);
       await fetchUsers();
     } catch {
-      setError("Something went wrong creating the user.");
+      setCreateError("Something went wrong creating the user.");
     } finally {
       setIsCreating(false);
+    }
+  }
+
+  function handleCreateDialogChange(open: boolean) {
+    setIsCreateOpen(open);
+    if (!open) {
+      setNewEmail("");
+      setNewPassword("");
+      setNewIsAdmin(false);
+      setCreateError("");
     }
   }
 
@@ -125,68 +146,104 @@ export default function UsersPageClient() {
 
   return (
     <div className="users-page">
-      <h1 className="users-page__title">User Management</h1>
+      <div className="users-page__header">
+        <h1 className="users-page__title">User Management</h1>
+        <Button
+          variant="primary"
+          size="s"
+          onClick={() => setIsCreateOpen(true)}
+        >
+          <Plus size={16} />
+          New User
+        </Button>
+      </div>
 
       {error && <div className="users-page__error">{error}</div>}
 
-      <div className="users-page__create">
-        <h2 className="users-page__create-title">Create User</h2>
-        <form className="users-page__create-form" onSubmit={handleCreate}>
-          <div className="users-page__create-row">
-            <Input
-              label="Email"
-              type="email"
-              size="s"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              required
-              placeholder="user@exabyting.com"
-            />
-            <Input
-              label="Initial Password"
-              type="password"
-              size="s"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-              minLength={6}
-            />
-            <label className="users-page__create-checkbox">
-              <input
-                type="checkbox"
-                checked={newIsAdmin}
-                onChange={(e) => setNewIsAdmin(e.target.checked)}
+      <DialogRoot open={isCreateOpen} onOpenChange={handleCreateDialogChange}>
+        <DialogPopup
+          title="Create User"
+          footer={
+            <>
+              <Button
+                variant="secondary"
+                size="s"
+                onClick={() => handleCreateDialogChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                form="create-user-form"
+                variant="primary"
+                size="s"
+                disabled={isCreating}
+              >
+                {isCreating && <Loader2 size={14} className="button__icon--spin" />}
+                {isCreating ? "Creating..." : "Create User"}
+              </Button>
+            </>
+          }
+        >
+          <form id="create-user-form" className="users-page__create-form" onSubmit={handleCreate}>
+            {createError && (
+              <div className="users-page__error">{createError}</div>
+            )}
+            <div className="users-page__create-row">
+              <Input
+                label="Email"
+                type="email"
+                size="s"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                required
+                placeholder="user@exabyting.com"
               />
-              Admin
-            </label>
-          </div>
-          <div>
-            <Button
-              type="submit"
-              variant="primary"
-              size="s"
-              disabled={isCreating}
-            >
-              {isCreating ? (
-                <Loader2 size={14} className="button__icon--spin" />
-              ) : (
-                <UserPlus size={14} />
-              )}
-              {isCreating ? "Creating..." : "Create User"}
-            </Button>
-          </div>
-        </form>
-      </div>
+              <Input
+                label="Initial Password"
+                type="password"
+                size="s"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+              <label className="users-page__create-checkbox">
+                <input
+                  type="checkbox"
+                  checked={newIsAdmin}
+                  onChange={(e) => setNewIsAdmin(e.target.checked)}
+                />
+                Admin
+              </label>
+            </div>
+          </form>
+        </DialogPopup>
+      </DialogRoot>
 
       <div className="users-page__list">
         <div className="users-page__list-header">
           <h2 className="users-page__list-title">All Users</h2>
-          <span className="users-page__list-count">
-            {isLoading ? "Loading..." : `${users.length} user${users.length !== 1 ? "s" : ""}`}
-          </span>
+          {isLoading ? (
+            <Skeleton width={64} height={13} />
+          ) : (
+            <span className="users-page__list-count">
+              {`${users.length} user${users.length !== 1 ? "s" : ""}`}
+            </span>
+          )}
         </div>
 
-        {isLoading ? null : users.length === 0 ? (
+        {isLoading ? (
+          Array.from({ length: 4 }, (_, index) => (
+            <div key={index} className="users-page__user">
+              <div className="users-page__user-info">
+                <Skeleton width={180} height={14} />
+                <Skeleton width={48} height={18} radius="full" />
+              </div>
+              <Skeleton width={72} height={28} radius="md" />
+            </div>
+          ))
+        ) : users.length === 0 ? (
           <EmptyState icon={Users} title="No users yet." />
         ) : (
           users.map((u) => (
