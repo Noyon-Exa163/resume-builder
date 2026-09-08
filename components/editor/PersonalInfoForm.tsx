@@ -146,6 +146,21 @@ export function PersonalInfoForm({
           onBlur={() => setVisited((prev) => ({ ...prev, email: true }))}
           error={emailError}
         />
+        <div className="personal-info-form__email-chips">
+          {EMAIL_DOMAINS.map((domain) => (
+            <button
+              key={domain}
+              type="button"
+              className="personal-info-form__email-chip"
+              onClick={() => {
+                const local = (value.email ?? "").split("@")[0];
+                onChange({ email: `${local}${domain}` });
+              }}
+            >
+              {domain}
+            </button>
+          ))}
+        </div>
 
         <Input
           label="Phone Number"
@@ -191,6 +206,8 @@ export function PersonalInfoForm({
     </div>
   );
 }
+
+const EMAIL_DOMAINS = ["@exabyting.com", "@gmail.com"] as const;
 
 /** Empty is always acceptable — these fields are optional. */
 function isEmailLike(value: string | undefined): boolean {
