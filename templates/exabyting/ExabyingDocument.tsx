@@ -559,6 +559,9 @@ function sectionNodes(section: ResumeSection): ReactElement[] {
 
   if (section.layout === "tags") {
     const rows = skillRows(section.id, entries);
+    // entries can pass entryHasContent (e.g. via a startDate) while none of
+    // them carry a title or tags, which skillRows renders as zero rows.
+    if (rows.length === 0) return [heading];
     return [
       <View key={`${section.id}-lead`} wrap={false}>
         {heading}

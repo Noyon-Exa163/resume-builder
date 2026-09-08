@@ -87,7 +87,7 @@ test.describe("auth and dashboard smoke", () => {
       timeout: 30_000,
     });
 
-    await page.getByRole("button", { name: "← My Resumes" }).click();
+    await page.getByRole("button", { name: "Back to My Resumes" }).click();
     await page.waitForURL((url) => url.pathname === "/");
     await expect(
       page.locator(`a.resume-card__link[href="/editor/${resumeId}"]`),

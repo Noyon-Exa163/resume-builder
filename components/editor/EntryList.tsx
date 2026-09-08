@@ -14,6 +14,7 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
+  arrayMove,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
@@ -197,9 +198,7 @@ export function EntryList({
     const newIndex = entries.findIndex((e) => e.id === over.id);
 
     if (oldIndex !== -1 && newIndex !== -1) {
-      const reordered = [...entries];
-      const [moved] = reordered.splice(oldIndex, 1);
-      reordered.splice(newIndex, 0, moved);
+      const reordered = arrayMove(entries, oldIndex, newIndex);
       onReorderEntries(reordered.map((e) => e.id));
     }
   };
