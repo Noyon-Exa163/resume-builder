@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from "react";
+import type { ComponentProps, ReactElement, ReactNode } from "react";
 import { createContext, useContext } from "react";
 import {
   Circle,
@@ -1086,7 +1086,9 @@ function AccentLink({
   children,
 }: {
   src: string;
-  style: object | object[];
+  // Derived from Link itself rather than hand-typing react-pdf's internal
+  // StyleProp union — stays correct if that type ever changes shape.
+  style: ComponentProps<typeof Link>["style"];
   children: ReactNode;
 }) {
   const accent = useAccent();
