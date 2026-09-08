@@ -1,7 +1,19 @@
 import { createElement } from "react";
-import { pdf } from "@react-pdf/renderer";
+import type { pdf as PdfFn } from "@react-pdf/renderer";
 import type { ResumeData } from "@/lib/schema/resume";
 import { getTemplate } from "@/templates";
+
+let pdfPromise: Promise<typeof PdfFn> | null = null;
+
+/**
+ * react-pdf's full layout engine is only needed once a resume is actually
+ * being rendered (preview or export) — load it lazily so it never lands in
+ * the initial route bundle, mirroring lib/pdf/pdfjs.ts's getPdfjs().
+ */
+function getPdf(): Promise<typeof PdfFn> {
+  pdfPromise ??= import("@react-pdf/renderer").then((mod) => mod.pdf);
+  return pdfPromise;
+}
 
 /**
  * Renders a resume to a PDF Blob using the template's Document component —
@@ -11,6 +23,7 @@ import { getTemplate } from "@/templates";
  * Runs entirely client-side. No API routes needed.
  */
 export async function toPdfBlob(data: ResumeData): Promise<Blob> {
+  const pdf = await getPdf();
   const { Document } = getTemplate(data.meta.templateId);
   // The template's Document wraps react-pdf's <Document> internally.
   // pdf() expects ReactElement<DocumentProps> but the template's prop type
