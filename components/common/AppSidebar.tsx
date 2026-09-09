@@ -24,7 +24,7 @@ interface NavItem {
 
 /**
  * Persistent left nav for every authenticated page (dashboard, Account,
- * Manage Users). Page-specific actions (e.g. "New Resume") stay in each
+ * Users). Page-specific actions (e.g. "New Resume") stay in each
  * page's own header — this only owns account-level navigation.
  */
 export function AppSidebar({ isAdmin }: AppSidebarProps) {
@@ -41,7 +41,7 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
     { href: "/settings/account", label: "Account", icon: User },
     ...(isAdmin
       ? [
-          { href: "/settings/users", label: "Manage Users", icon: Users },
+          { href: "/settings/users", label: "Users", icon: Users },
           { href: "/settings/ai", label: "AI Settings", icon: Sparkles },
         ]
       : []),
