@@ -3,6 +3,7 @@ export {
   isSystemAlternatePhone,
   phonesForDisplay,
 } from "./system";
+export { formatBangladeshiPhone } from "./formatPhone";
 export {
   breakContactValue,
   compactProfileLabel,

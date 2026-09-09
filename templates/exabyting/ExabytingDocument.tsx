@@ -17,6 +17,7 @@ import {
   breakContactValue,
   compactProfileLabel,
   extractEntryContact,
+  formatBangladeshiPhone,
   isSystemAlternatePhone,
   maxCharsForWidth,
   phonesForDisplay,
@@ -1272,7 +1273,11 @@ function ReferenceContactList({ items }: { items: EntryContactItem[] }) {
       {items.map((item, index) => {
         const href = contactHref(item);
         const label =
-          item.kind === "link" ? compactProfileLabel(item.value) : item.value;
+          item.kind === "link"
+            ? compactProfileLabel(item.value)
+            : item.kind === "phone"
+              ? formatBangladeshiPhone(item.value)
+              : item.value;
         return (
           <Link
             key={`${item.kind}-${index}`}

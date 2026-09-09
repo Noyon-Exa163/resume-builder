@@ -3,6 +3,7 @@
 import { useRef, useState, type ChangeEvent } from "react";
 import type { NameCasing, PersonalInfo } from "@/lib/schema/resume";
 import { Input, Button } from "@/components/ui";
+import { formatBangladeshiPhone } from "@/lib/contact";
 import { User, Upload, Trash2 } from "lucide-react";
 import "./PersonalInfoForm.css";
 
@@ -212,9 +213,16 @@ export function PersonalInfoForm({
         <Input
           label="Phone Number"
           type="tel"
-          placeholder="e.g. +1 (555) 000-0000"
+          placeholder="e.g. +880 1712 345 678"
+          helperText="Separate more than one number with |, e.g. 01712-345678 | 01812-345678."
           value={value.phone || ""}
           onChange={(e) => handleFieldChange("phone", e.target.value)}
+          onBlur={() => {
+            const formatted = formatBangladeshiPhone(value.phone || "");
+            if (formatted !== (value.phone || "")) {
+              handleFieldChange("phone", formatted);
+            }
+          }}
         />
 
         <Input

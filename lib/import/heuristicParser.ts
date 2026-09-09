@@ -6,6 +6,7 @@ import {
   type SectionKind,
 } from "@/lib/schema/resume";
 import type { DeepPartial } from "@/lib/schema/normalize";
+import { formatBangladeshiPhone } from "@/lib/contact";
 
 export type HeuristicSourceFormat = "pdf" | "docx" | "markdown" | "text";
 
@@ -232,7 +233,7 @@ function extractPersonalInfo(
 
     const phoneMatch = text.match(PHONE_RE);
     if (phoneMatch && phoneMatch[0].replace(/\D/g, "").length >= 7) {
-      if (!info.phone) info.phone = phoneMatch[0].trim();
+      if (!info.phone) info.phone = formatBangladeshiPhone(phoneMatch[0].trim());
       continue;
     }
 

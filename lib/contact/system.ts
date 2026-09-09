@@ -1,3 +1,5 @@
+import { formatBangladeshiPhone } from "./formatPhone";
+
 /**
  * Company contact that every Exabyting resume prints, regardless of what
  * the author typed. Kept out of stored personalInfo so it can't be deleted
@@ -20,7 +22,7 @@ export function phonesForDisplay(personalPhone?: string): string[] {
   if (!phones.some((phone) => digitsOnly(phone) === alternateDigits)) {
     phones.push(SYSTEM_ALTERNATE_PHONE);
   }
-  return phones;
+  return phones.map(formatBangladeshiPhone);
 }
 
 function splitPersonalPhones(personalPhone?: string): string[] {

@@ -40,7 +40,7 @@ describe("toMarkdown", () => {
     expect(markdown).toContain("# ADA LOVELACE");
     expect(markdown).toContain("Mathematician");
     expect(markdown).toContain("ada@example.com");
-    expect(markdown).toContain("+8801676095674");
+    expect(markdown).toContain("+880 1676 095 674");
   });
 
   it("renders the name in title case when nameCasing is set", () => {

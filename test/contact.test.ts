@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  SYSTEM_ALTERNATE_PHONE,
   breakContactValue,
   compactProfileLabel,
   extractEntryContact,
@@ -10,26 +9,26 @@ import {
 
 describe("phonesForDisplay", () => {
   it("always includes the system alternate number", () => {
-    expect(phonesForDisplay()).toEqual([SYSTEM_ALTERNATE_PHONE]);
-    expect(phonesForDisplay("")).toEqual([SYSTEM_ALTERNATE_PHONE]);
+    expect(phonesForDisplay()).toEqual(["+880 1676 095 674"]);
+    expect(phonesForDisplay("")).toEqual(["+880 1676 095 674"]);
   });
 
   it("puts a personal number first, then the alternate", () => {
     expect(phonesForDisplay("01700-000000")).toEqual([
-      "01700-000000",
-      SYSTEM_ALTERNATE_PHONE,
+      "+880 1700 000 000",
+      "+880 1676 095 674",
     ]);
   });
 
   it("does not duplicate the alternate when the author already entered it", () => {
-    expect(phonesForDisplay("+880 1676-095674")).toEqual(["+880 1676-095674"]);
+    expect(phonesForDisplay("+880 1676-095674")).toEqual(["+880 1676 095 674"]);
   });
 
   it("splits a personal field that listed two numbers with a bar", () => {
     expect(phonesForDisplay("01770-222555 | 01516-162250")).toEqual([
-      "01770-222555",
-      "01516-162250",
-      SYSTEM_ALTERNATE_PHONE,
+      "+880 1770 222 555",
+      "+880 1516 162 250",
+      "+880 1676 095 674",
     ]);
   });
 });

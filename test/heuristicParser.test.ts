@@ -86,6 +86,20 @@ describe("parseResumeHeuristically (plain text)", () => {
     expect(section?.kind).toBe("custom");
     expect(section?.layout).toBe("grid");
   });
+
+  it("canonicalizes Bangladeshi phone numbers on import and preserves non-BD numbers", () => {
+    const bdDraft = parseResumeHeuristically(
+      "Rahim Ahmed\n01712-345678\nrahim@example.com",
+      "text",
+    );
+    expect(bdDraft.personalInfo?.phone).toBe("+880 1712 345 678");
+
+    const nonBdDraft = parseResumeHeuristically(
+      "John Smith\n+1 (555) 123-4567\njohn@example.com",
+      "text",
+    );
+    expect(nonBdDraft.personalInfo?.phone).toBe("+1 (555) 123-4567");
+  });
 });
 
 describe("parseResumeHeuristically (docx html)", () => {
