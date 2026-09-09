@@ -1,0 +1,54 @@
+/* Floating HUD docked to the preview pane. Outer radius is concentric with
+   the size-m icon buttons (radius-md + space-1 padding = radius-lg). */
+
+.preview-zoom-toolbar {
+  position: absolute;
+  z-index: var(--z-floating);
+  bottom: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: calc(100% - var(--space-8));
+  padding: var(--space-1);
+  background-color: var(--color-surface-raised);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+}
+
+.preview-zoom-toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.preview-zoom-toolbar__level {
+  min-width: 5ch;
+  padding: 0 var(--space-1);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+.preview-zoom-toolbar__level:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.preview-zoom-toolbar__divider {
+  width: 1px;
+  height: var(--space-5);
+  margin: 0 var(--space-1);
+  background-color: var(--color-border);
+  flex-shrink: 0;
+}
+
+.preview-zoom-toolbar__mode[aria-pressed="true"] {
+  background-color: var(--color-brand-subtle);
+  color: var(--color-brand);
+}
+
+.preview-zoom-toolbar__mode[aria-pressed="true"]:hover:not(:disabled) {
+  background-color: var(--color-brand-muted);
+}
