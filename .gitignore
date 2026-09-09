@@ -36,6 +36,7 @@ yarn-error.log*
 
 # local tooling metadata, not part of the project
 /.commandcode/
+/.claude/scheduled_tasks.lock
 
 # vercel
 .vercel
