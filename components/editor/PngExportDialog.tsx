@@ -48,8 +48,11 @@ export function PngExportDialog({
 
   useEffect(() => {
     if (!open) {
-      setPageImages([]);
-      setNumPages(null);
+      const reset = () => {
+        setPageImages([]);
+        setNumPages(null);
+      };
+      reset();
       return;
     }
 

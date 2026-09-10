@@ -85,7 +85,9 @@ export function PdfCanvasViewer({
   const [zoomPercent, setZoomPercent] = useState(ZOOM_DEFAULT);
   const [pageCount, setPageCount] = useState(0);
 
-  onPageCountChangeRef.current = onPageCountChange;
+  useEffect(() => {
+    onPageCountChangeRef.current = onPageCountChange;
+  }, [onPageCountChange]);
 
   useEffect(() => {
     const scroller = scrollRef.current;

@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local Netlify CLI build/deploy cache — gitignored, but not swept up
+    // by the defaults above, so a local `netlify deploy` run leaves behind
+    // a compiled bundle that previously drowned real lint output in noise.
+    ".netlify/**",
   ]),
 ]);
 
