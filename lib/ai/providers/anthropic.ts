@@ -5,6 +5,7 @@ import {
   EXTRACT_MAX_TOKENS,
   TEST_MAX_TOKENS,
   TEST_USER_MESSAGE,
+  fetchWithTimeout,
   httpError,
   parseModelJson,
   readErrorMessage,
@@ -67,7 +68,7 @@ async function postMessages(args: {
   if (args.tools) body.tools = args.tools;
   if (args.toolChoice) body.tool_choice = args.toolChoice;
 
-  const response = await fetch(messagesUrl(args.baseUrl), {
+  const response = await fetchWithTimeout(messagesUrl(args.baseUrl), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

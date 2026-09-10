@@ -87,3 +87,37 @@ export function chatCompletionsUrl(baseUrl: string): string {
   if (trimmed.endsWith("/chat/completions")) return trimmed;
   return `${trimmed}/chat/completions`;
 }
+
+/**
+ * Netlify kills a synchronous function around the 10s mark with a bare 504
+ * (no JSON body, no message) — this fires well before that so our own
+ * catch blocks get a chance to return a clear, actionable error instead.
+ */
+export const PROVIDER_FETCH_TIMEOUT_MS = 8_000;
+
+/**
+ * Every provider adapter's single fetch call site should go through this
+ * instead of the global `fetch` — an AI provider hanging (slow model, dead
+ * connection) would otherwise hold the request open until the platform
+ * itself times it out with an unhelpful bare 504.
+ */
+export async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number = PROVIDER_FETCH_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(
+        "The AI provider took too long to respond. Try again — if it keeps happening, try a shorter message or a smaller file.",
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}

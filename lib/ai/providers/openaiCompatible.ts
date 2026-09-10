@@ -5,6 +5,7 @@ import {
   TEST_MAX_TOKENS,
   TEST_USER_MESSAGE,
   chatCompletionsUrl,
+  fetchWithTimeout,
   httpError,
   parseModelJson,
   readErrorMessage,
@@ -90,7 +91,7 @@ export function createOpenAICompatibleProvider(
       body.response_format = { type: "json_object" };
     }
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${args.apiKey}`,

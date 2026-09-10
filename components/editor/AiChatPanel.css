@@ -23,6 +23,13 @@
   overflow-y: auto;
 }
 
+/* The empty-state prompt is the only child of .ai-chat-panel__messages when
+   there's no history yet — push it down to sit just above the composer's
+   divider instead of stranding it at the top of an empty scroll region. */
+.ai-chat-panel__empty-state {
+  margin-top: auto;
+}
+
 .ai-chat-panel__thinking {
   align-self: flex-start;
   display: inline-flex;
@@ -190,10 +197,45 @@
 }
 
 .ai-chat-panel__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   font-family: var(--font-body);
   font-size: 13px;
   color: var(--color-danger-text);
   background-color: var(--color-danger-subtle);
   border-radius: var(--radius-md);
   padding: var(--space-2) var(--space-3);
+}
+
+.ai-chat-panel__retry {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--space-1);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-danger-text);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ai-chat-panel__retry:hover:not(:disabled) {
+  color: var(--color-danger);
+}
+
+.ai-chat-panel__retry:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-chat-panel__retry:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }

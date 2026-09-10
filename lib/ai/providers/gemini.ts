@@ -5,6 +5,7 @@ import {
   EXTRACT_MAX_TOKENS,
   TEST_MAX_TOKENS,
   TEST_USER_MESSAGE,
+  fetchWithTimeout,
   httpError,
   parseModelJson,
   readErrorMessage,
@@ -104,7 +105,7 @@ async function generateContent(args: {
     body.systemInstruction = { parts: [{ text: args.system }] };
   }
 
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     generateContentUrl(args.model, args.apiKey, args.baseUrl),
     {
       method: "POST",

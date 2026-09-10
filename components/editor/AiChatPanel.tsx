@@ -7,7 +7,15 @@ import {
   type DragEvent,
   type KeyboardEvent,
 } from "react";
-import { FileText, Loader2, Paperclip, Send, Sparkles, X } from "lucide-react";
+import {
+  FileText,
+  Loader2,
+  Paperclip,
+  RotateCcw,
+  Send,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { ConfirmDialog, EmptyState } from "@/components/ui";
 import type { ResumeData } from "@/lib/schema/resume";
 import type { DeepPartial } from "@/lib/schema/normalize";
@@ -41,6 +49,14 @@ interface PendingTurn {
   resumeUpdate: DeepPartial<ResumeData>;
 }
 
+interface RequestTurnArgs {
+  currentResume: ResumeData;
+  baseMessages: ChatMessage[];
+  userMessage: ChatMessage;
+  attachedFileText?: string;
+  gateOverwrite: boolean;
+}
+
 function hasExistingContent(resume: ResumeData): boolean {
   return (
     Boolean(resume.personalInfo.fullName?.trim()) ||
@@ -68,6 +84,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [pendingTurn, setPendingTurn] = useState<PendingTurn | null>(null);
+  const [failedRequest, setFailedRequest] = useState<RequestTurnArgs | null>(null);
 
   // Keyed by resume.meta.id from the parent (see page.tsx) so navigating to
   // a different resume remounts this panel with fresh initial state,
@@ -126,17 +143,12 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
     commitMessages([...withUserMessage, assistantMessage]);
   }
 
-  async function requestTurn(args: {
-    currentResume: ResumeData;
-    baseMessages: ChatMessage[];
-    userMessage: ChatMessage;
-    attachedFileText?: string;
-    gateOverwrite: boolean;
-  }) {
+  async function requestTurn(args: RequestTurnArgs) {
     const withUserMessage = [...args.baseMessages, args.userMessage];
     commitMessages(withUserMessage);
     setStatus("sending");
     setErrorMessage("");
+    setFailedRequest(null);
 
     try {
       const wireHistory: AIChatMessage[] = args.baseMessages
@@ -167,9 +179,15 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       setErrorMessage(
         err instanceof Error ? err.message : "Something went wrong.",
       );
+      setFailedRequest(args);
     } finally {
       setStatus("idle");
     }
+  }
+
+  function handleRetry() {
+    if (status !== "idle" || !failedRequest) return;
+    void requestTurn(failedRequest);
   }
 
   function handleDirectImport(
@@ -203,6 +221,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
     const currentFile = file;
     if (!currentFile && !trimmedInstruction) return;
     setErrorMessage("");
+    setFailedRequest(null);
 
     let attachment: ChatFileAttachment | undefined;
     let attachedFileText: string | undefined;
@@ -373,9 +392,10 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       <div className="ai-chat-panel__messages">
         {isHistoryLoaded && messages.length === 0 && (
           <EmptyState
+            className="ai-chat-panel__empty-state"
             icon={Sparkles}
-            title="Ask AI to build or refine your resume"
-            description="Type an instruction, or attach a resume file to import it."
+            title="Upload a PDF to create your Exabyting-branded resume!"
+            description="Attach your resume as a PDF and AI will rebuild it with Exabyting's branding — or just type what you'd like to change."
           />
         )}
 
@@ -478,7 +498,20 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
         </div>
 
         {errorMessage && (
-          <div className="ai-chat-panel__error">{errorMessage}</div>
+          <div className="ai-chat-panel__error">
+            <span>{errorMessage}</span>
+            {failedRequest && (
+              <button
+                type="button"
+                className="ai-chat-panel__retry"
+                disabled={isBusy}
+                onClick={handleRetry}
+              >
+                <RotateCcw size={13} />
+                Retry
+              </button>
+            )}
+          </div>
         )}
       </div>
 
