@@ -43,6 +43,7 @@ yarn-error.log*
 
 # netlify
 .netlify
+deno.lock
 
 # playwright
 /test-results/
