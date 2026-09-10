@@ -16,7 +16,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { ConfirmDialog, EmptyState } from "@/components/ui";
+import { ConfirmDialog, EmptyState, Tooltip } from "@/components/ui";
 import type { ResumeData } from "@/lib/schema/resume";
 import type { DeepPartial } from "@/lib/schema/normalize";
 import type { ChatFileAttachment, ChatMessage } from "@/lib/ai/chatTypes";
@@ -33,6 +33,7 @@ import { AiChatMessageBubble } from "./AiChatMessageBubble";
 import "./AiChatPanel.css";
 
 type Status = "idle" | "sending";
+type LoadingStage = "reading" | "thinking" | null;
 
 const ACCEPTED_EXTENSIONS = ".pdf,.docx,.md,.markdown,.txt,.json";
 
@@ -80,11 +81,17 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
   const [file, setFile] = useState<File | null>(null);
   const [instruction, setInstruction] = useState("");
   const [status, setStatus] = useState<Status>("idle");
+  const [loadingStage, setLoadingStage] = useState<LoadingStage>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [pendingTurn, setPendingTurn] = useState<PendingTurn | null>(null);
   const [failedRequest, setFailedRequest] = useState<RequestTurnArgs | null>(null);
+  // The one assistant message that should type itself out — set only when a
+  // reply just arrived this session, never for history loaded from storage,
+  // so reopening a resume doesn't replay the animation for old messages.
+  const [animateMessageId, setAnimateMessageId] = useState<string | null>(null);
 
   // Keyed by resume.meta.id from the parent (see page.tsx) so navigating to
   // a different resume remounts this panel with fresh initial state,
@@ -110,6 +117,21 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: "end" });
   }, [messages.length, status]);
+
+  // Ticks continuously across the reading→thinking handoff (loadingStage
+  // changes but never goes through null in between) so the counter reflects
+  // total time spent on this turn so far, not time in the current stage.
+  useEffect(() => {
+    if (!loadingStage) {
+      const reset = () => setElapsedSeconds(0);
+      reset();
+      return;
+    }
+    const intervalId = window.setInterval(() => {
+      setElapsedSeconds((s) => s + 1);
+    }, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [loadingStage]);
 
   function commitMessages(next: ChatMessage[]) {
     setMessages(next);
@@ -140,6 +162,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       createdAt: new Date().toISOString(),
       appliedChange: resumeUpdate ? { previousResume: currentResume } : undefined,
     };
+    setAnimateMessageId(assistantMessage.id);
     commitMessages([...withUserMessage, assistantMessage]);
   }
 
@@ -147,6 +170,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
     const withUserMessage = [...args.baseMessages, args.userMessage];
     commitMessages(withUserMessage);
     setStatus("sending");
+    setLoadingStage("thinking");
     setErrorMessage("");
     setFailedRequest(null);
 
@@ -182,6 +206,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       setFailedRequest(args);
     } finally {
       setStatus("idle");
+      setLoadingStage(null);
     }
   }
 
@@ -237,6 +262,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       }
       attachment = { name: currentFile.name, format };
       setStatus("sending");
+      setLoadingStage("reading");
       try {
         if (format === "json") {
           directResumeUpdate = JSON.parse(
@@ -247,6 +273,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
           if (!rawText.trim()) {
             setErrorMessage("Couldn't find any readable text in that file.");
             setStatus("idle");
+            setLoadingStage(null);
             return;
           }
           attachedFileText = rawText;
@@ -254,6 +281,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       } catch {
         setErrorMessage("Couldn't read that file — try a different one.");
         setStatus("idle");
+        setLoadingStage(null);
         return;
       }
     }
@@ -271,6 +299,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
     if (directResumeUpdate) {
       handleDirectImport(resume, baseMessages, userMessage, directResumeUpdate);
       setStatus("idle");
+      setLoadingStage(null);
       return;
     }
 
@@ -362,6 +391,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       content: pendingTurn.reply,
       createdAt: new Date().toISOString(),
     };
+    setAnimateMessageId(assistantMessage.id);
     commitMessages([...pendingTurn.withUserMessage, assistantMessage]);
     setPendingTurn(null);
   }
@@ -395,7 +425,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
             className="ai-chat-panel__empty-state"
             icon={Sparkles}
             title="Upload a PDF to create your Exabyting-branded resume!"
-            description="Attach your resume as a PDF and AI will rebuild it with Exabyting's branding — or just type what you'd like to change."
+            description="Attach a PDF, DOCX, Markdown, or text file and AI will rebuild it with Exabyting's branding — or a previously exported .json project file to restore it. You can also just type what you'd like to change."
           />
         )}
 
@@ -406,6 +436,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
             isEditing={editingMessageId === message.id}
             isLatestAssistant={message.id === latestAssistantId}
             isBusy={isBusy}
+            shouldAnimate={message.id === animateMessageId}
             onCopy={handleCopy}
             onEditStart={setEditingMessageId}
             onEditSubmit={handleEditSubmit}
@@ -414,9 +445,39 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
           />
         ))}
 
-        {status === "sending" && (
+        {status === "sending" && loadingStage && (
           <div className="ai-chat-panel__thinking" aria-live="polite">
             <Loader2 size={16} className="button__icon--spin" />
+            <span className="ai-chat-panel__thinking-label">
+              {loadingStage === "reading"
+                ? "Reading your file…"
+                : "Talking to AI…"}
+            </span>
+            <span className="ai-chat-panel__thinking-elapsed">
+              {elapsedSeconds}s
+            </span>
+          </div>
+        )}
+
+        {status === "idle" && errorMessage && failedRequest && (
+          <div
+            className="ai-chat-message ai-chat-message--assistant ai-chat-message--error"
+            aria-live="polite"
+          >
+            <div className="ai-chat-message__bubble">
+              <p className="ai-chat-message__text">{errorMessage}</p>
+            </div>
+            <div className="ai-chat-message__footer">
+              <button
+                type="button"
+                className="ai-chat-panel__retry"
+                disabled={isBusy}
+                onClick={handleRetry}
+              >
+                <RotateCcw size={13} />
+                Retry
+              </button>
+            </div>
           </div>
         )}
 
@@ -442,14 +503,16 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
             <div className="ai-chat-panel__chip">
               <FileText size={14} />
               <span className="ai-chat-panel__chip-name">{file.name}</span>
-              <button
-                type="button"
-                className="ai-chat-panel__chip-remove"
-                aria-label="Remove attached file"
-                onClick={() => setFile(null)}
-              >
-                <X size={12} />
-              </button>
+              <Tooltip label="Remove File">
+                <button
+                  type="button"
+                  className="ai-chat-panel__chip-remove"
+                  aria-label="Remove File"
+                  onClick={() => setFile(null)}
+                >
+                  <X size={12} />
+                </button>
+              </Tooltip>
             </div>
           )}
 
@@ -463,29 +526,33 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
           />
 
           <div className="ai-chat-panel__row">
-            <button
-              type="button"
-              className="ai-chat-panel__icon-button"
-              aria-label="Attach a resume file"
-              disabled={isBusy}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Paperclip size={18} />
-            </button>
+            <Tooltip label="Attach File">
+              <button
+                type="button"
+                className="ai-chat-panel__icon-button"
+                aria-label="Attach File"
+                disabled={isBusy}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip size={18} />
+              </button>
+            </Tooltip>
 
-            <button
-              type="button"
-              className="ai-chat-panel__icon-button ai-chat-panel__icon-button--send"
-              aria-label="Send"
-              disabled={!canSend}
-              onClick={() => void handleSend()}
-            >
-              {isBusy ? (
-                <Loader2 size={18} className="button__icon--spin" />
-              ) : (
-                <Send size={18} />
-              )}
-            </button>
+            <Tooltip label="Send">
+              <button
+                type="button"
+                className="ai-chat-panel__icon-button ai-chat-panel__icon-button--send"
+                aria-label="Send"
+                disabled={!canSend}
+                onClick={() => void handleSend()}
+              >
+                {isBusy ? (
+                  <Loader2 size={18} className="button__icon--spin" />
+                ) : (
+                  <Send size={18} />
+                )}
+              </button>
+            </Tooltip>
 
             <input
               ref={fileInputRef}
@@ -497,20 +564,9 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
           </div>
         </div>
 
-        {errorMessage && (
+        {errorMessage && !failedRequest && (
           <div className="ai-chat-panel__error">
             <span>{errorMessage}</span>
-            {failedRequest && (
-              <button
-                type="button"
-                className="ai-chat-panel__retry"
-                disabled={isBusy}
-                onClick={handleRetry}
-              >
-                <RotateCcw size={13} />
-                Retry
-              </button>
-            )}
           </div>
         )}
       </div>

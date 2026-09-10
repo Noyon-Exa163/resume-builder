@@ -19,7 +19,7 @@ import { ResumeCardSkeleton } from "@/components/dashboard/ResumeCardSkeleton";
 import { ShareDialog } from "@/components/common/ShareDialog";
 import { formatDisplayDate } from "@/lib/date";
 import { toTitleCase } from "@/lib/schema/personalInfo";
-import { EmptyState, ConfirmDialog, Button } from "@/components/ui";
+import { EmptyState, ConfirmDialog, Button, Tooltip } from "@/components/ui";
 import { toPdfBlob } from "@/lib/export/toPdfBlob";
 import { buildExportFilename } from "@/lib/export/filename";
 import { triggerDownload } from "@/lib/export/triggerDownload";
@@ -167,7 +167,7 @@ export default function DashboardClient() {
 
       {filteredEntries !== null && filteredEntries.length > 0 && (
         <ul className="dashboard__list">
-          {filteredEntries.map(({ resume, access }) => (
+          {filteredEntries.map(({ resume, access, ownerEmail }) => (
             <li key={resume.meta.id} className="resume-card">
               <a
                 href={`/editor/${resume.meta.id}`}
@@ -185,38 +185,48 @@ export default function DashboardClient() {
               </a>
               <div className="resume-card__actions">
                 <div className="resume-card__actions-group">
-                  <button
-                    type="button"
-                    className="resume-card__icon-button resume-card__icon-button--download"
-                    aria-label={`Download ${resume.meta.title} as PDF`}
-                    disabled={downloadingId === resume.meta.id}
-                    onClick={() => void handleDownload(resume)}
-                  >
-                    {downloadingId === resume.meta.id ? (
-                      <Loader2
-                        size={16}
-                        className="button__icon--spin"
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      <Download size={16} aria-hidden="true" />
-                    )}
-                  </button>
-                  {canManageResume(access) && (
+                  <Tooltip label="Download PDF">
                     <button
                       type="button"
-                      className="resume-card__icon-button resume-card__icon-button--share"
-                      aria-label={`Share ${resume.meta.title}`}
-                      onClick={() => setShareTarget(resume)}
+                      className="resume-card__icon-button resume-card__icon-button--download"
+                      aria-label={`Download ${resume.meta.title} as PDF`}
+                      disabled={downloadingId === resume.meta.id}
+                      onClick={() => void handleDownload(resume)}
                     >
-                      <Share2 size={16} aria-hidden="true" />
+                      {downloadingId === resume.meta.id ? (
+                        <Loader2
+                          size={16}
+                          className="button__icon--spin"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <Download size={16} aria-hidden="true" />
+                      )}
                     </button>
+                  </Tooltip>
+                  {canManageResume(access) && (
+                    <Tooltip label="Share">
+                      <button
+                        type="button"
+                        className="resume-card__icon-button resume-card__icon-button--share"
+                        aria-label={`Share ${resume.meta.title}`}
+                        onClick={() => setShareTarget(resume)}
+                      >
+                        <Share2 size={16} aria-hidden="true" />
+                      </button>
+                    </Tooltip>
                   )}
                 </div>
                 <div className="resume-card__actions-group resume-card__actions-group--end">
                   {access !== "owner" && (
                     <span
                       className={`resume-card__badge resume-card__badge--${access}`}
+                      title={
+                        // No display name yet — email is the best we have.
+                        access === "admin"
+                          ? `Owned by ${ownerEmail}`
+                          : `Shared by ${ownerEmail}`
+                      }
                     >
                       {access === "editor"
                         ? "Shared • Editor"
@@ -226,14 +236,16 @@ export default function DashboardClient() {
                     </span>
                   )}
                   {canManageResume(access) && (
-                    <button
-                      type="button"
-                      className="resume-card__icon-button resume-card__icon-button--delete"
-                      aria-label={`Delete ${resume.meta.title}`}
-                      onClick={() => setDeleteTarget(resume)}
-                    >
-                      <Trash2 size={16} aria-hidden="true" />
-                    </button>
+                    <Tooltip label="Delete">
+                      <button
+                        type="button"
+                        className="resume-card__icon-button resume-card__icon-button--delete"
+                        aria-label={`Delete ${resume.meta.title}`}
+                        onClick={() => setDeleteTarget(resume)}
+                      >
+                        <Trash2 size={16} aria-hidden="true" />
+                      </button>
+                    </Tooltip>
                   )}
                 </div>
               </div>

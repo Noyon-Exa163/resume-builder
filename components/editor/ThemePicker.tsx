@@ -13,7 +13,7 @@ import {
   resolveAccent,
 } from "@/templates/cyan/accents";
 import { CircleCheck } from "lucide-react";
-import { Skeleton } from "@/components/ui";
+import { Skeleton, Tooltip } from "@/components/ui";
 import "./ThemePicker.css";
 
 export interface ThemePickerProps {
@@ -240,22 +240,22 @@ function AccentSwatches({
       {ACCENT_PRESETS.map((preset) => {
         const selected = preset.id === value;
         return (
-          <button
-            key={preset.id}
-            type="button"
-            role="radio"
-            aria-label={preset.name}
-            aria-checked={selected}
-            tabIndex={selected ? 0 : -1}
-            className="theme-picker__swatch"
-            data-tooltip={preset.name}
-            onClick={() => onChange(preset.id)}
-          >
-            <span
-              className="theme-picker__swatch-dot"
-              style={{ backgroundColor: preset.brand }}
-            />
-          </button>
+          <Tooltip key={preset.id} label={preset.name}>
+            <button
+              type="button"
+              role="radio"
+              aria-label={preset.name}
+              aria-checked={selected}
+              tabIndex={selected ? 0 : -1}
+              className="theme-picker__swatch"
+              onClick={() => onChange(preset.id)}
+            >
+              <span
+                className="theme-picker__swatch-dot"
+                style={{ backgroundColor: preset.brand }}
+              />
+            </button>
+          </Tooltip>
         );
       })}
     </div>

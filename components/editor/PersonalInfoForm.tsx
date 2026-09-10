@@ -1,10 +1,9 @@
 "use client";
 
-import { useRef, useState, type ChangeEvent } from "react";
+import { useState } from "react";
 import type { NameCasing, PersonalInfo } from "@/lib/schema/resume";
-import { Input, Button } from "@/components/ui";
+import { Input, Tooltip } from "@/components/ui";
 import { formatBangladeshiPhone } from "@/lib/contact";
-import { User, Upload, Trash2 } from "lucide-react";
 import "./PersonalInfoForm.css";
 
 export interface PersonalInfoFormProps {
@@ -25,7 +24,6 @@ export function PersonalInfoForm({
   onNameCasingChange,
   className,
 }: PersonalInfoFormProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   // Format problems are only worth raising once someone has left the field —
   // flagging "j" as a bad email address while they type is just noise.
   const [visited, setVisited] = useState({ email: false, website: false });
@@ -44,26 +42,6 @@ export function PersonalInfoForm({
       ? "Enter a web address like https://janedoe.dev."
       : undefined;
 
-  const handlePhotoUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Convert image to data URL
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        onChange({ photoDataUrl: reader.result });
-      }
-    };
-    reader.readAsDataURL(file);
-    // Reset file input value so re-selecting same file triggers onChange
-    e.target.value = "";
-  };
-
-  const handleRemovePhoto = () => {
-    onChange({ photoDataUrl: undefined });
-  };
-
   return (
     <div className={["personal-info-form", className].filter(Boolean).join(" ")}>
       <div className="personal-info-form__header">
@@ -71,62 +49,6 @@ export function PersonalInfoForm({
         <p className="personal-info-form__description">
           Add your contact details and professional links.
         </p>
-      </div>
-
-      <div
-        className="personal-info-form__photo-section"
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <div className="personal-info-form__photo-preview">
-          {value.photoDataUrl ? (
-            <img
-              src={value.photoDataUrl}
-              alt={value.fullName ? `${value.fullName} headshot` : "Headshot"}
-              className="personal-info-form__photo-img"
-            />
-          ) : (
-            <User size={28} />
-          )}
-        </div>
-        <div className="personal-info-form__photo-actions">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="personal-info-form__file-input"
-            onChange={handlePhotoUpload}
-            aria-label="Upload photo"
-          />
-          <span className="personal-info-form__photo-help">
-            Recommended: square image, PNG or JPG
-          </span>
-          <div
-            className="personal-info-form__photo-btn-row"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Button
-              type="button"
-              variant="tertiary"
-              size="s"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload size={14} />
-              {value.photoDataUrl ? "Change Photo" : "Upload Photo"}
-            </Button>
-            {value.photoDataUrl && (
-              <Button
-                type="button"
-                variant="tertiary"
-                size="s"
-                onClick={handleRemovePhoto}
-                aria-label="Remove photo"
-              >
-                <Trash2 size={14} />
-                Remove
-              </Button>
-            )}
-          </div>
-        </div>
       </div>
 
       <div className="personal-info-form__grid">
@@ -142,38 +64,42 @@ export function PersonalInfoForm({
               role="radiogroup"
               aria-label="Name casing in the resume"
             >
-              <button
-                type="button"
-                role="radio"
-                aria-checked={nameCasing === "uppercase"}
-                title="All caps"
-                className={[
-                  "personal-info-form__casing-option",
-                  nameCasing === "uppercase" &&
-                    "personal-info-form__casing-option--active",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                onClick={() => onNameCasingChange("uppercase")}
-              >
-                AA
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={nameCasing === "titleCase"}
-                title="Title case"
-                className={[
-                  "personal-info-form__casing-option",
-                  nameCasing === "titleCase" &&
-                    "personal-info-form__casing-option--active",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                onClick={() => onNameCasingChange("titleCase")}
-              >
-                Aa
-              </button>
+              <Tooltip label="All Caps">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={nameCasing === "uppercase"}
+                  aria-label="All Caps"
+                  className={[
+                    "personal-info-form__casing-option",
+                    nameCasing === "uppercase" &&
+                      "personal-info-form__casing-option--active",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  onClick={() => onNameCasingChange("uppercase")}
+                >
+                  AA
+                </button>
+              </Tooltip>
+              <Tooltip label="Title Case">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={nameCasing === "titleCase"}
+                  aria-label="Title Case"
+                  className={[
+                    "personal-info-form__casing-option",
+                    nameCasing === "titleCase" &&
+                      "personal-info-form__casing-option--active",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  onClick={() => onNameCasingChange("titleCase")}
+                >
+                  Aa
+                </button>
+              </Tooltip>
             </div>
           }
         />

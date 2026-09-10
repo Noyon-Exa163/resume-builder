@@ -1,3 +1,5 @@
+"use client";
+
 import {
   forwardRef,
   useState,
@@ -7,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { Tooltip } from "./Tooltip";
 import "./Input.css";
 
 export interface InputProps
@@ -22,6 +25,9 @@ export interface InputProps
    *  make room, the same treatment as the built-in password show/hide
    *  button. Ignored for `type="password"`, which already uses this slot. */
   trailingAddon?: ReactNode;
+  /** Noun in the show/hide control for `type="password"` fields.
+   *  API keys use "API Key"; login and account fields keep "Password". */
+  revealLabel?: string;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -36,6 +42,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       type,
       stripWhitespace,
       trailingAddon,
+      revealLabel = "Password",
       onChange,
       onKeyDown,
       ...rest
@@ -46,6 +53,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     const isPassword = type === "password";
     const shouldStripWhitespace = Boolean(stripWhitespace) || type === "url";
     const [showPassword, setShowPassword] = useState(false);
+    const toggleLabel = showPassword
+      ? `Hide ${revealLabel}`
+      : `Show ${revealLabel}`;
 
     const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
       if (
@@ -94,15 +104,17 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             onChange={handleChange}
           />
           {isPassword ? (
-            <button
-              type="button"
-              className="input-field__toggle"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              tabIndex={-1}
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
+            <Tooltip label={toggleLabel}>
+              <button
+                type="button"
+                className="input-field__toggle"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={toggleLabel}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </Tooltip>
           ) : trailingAddon ? (
             <div className="input-field__addon">{trailingAddon}</div>
           ) : null}

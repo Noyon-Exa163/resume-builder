@@ -3,6 +3,7 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { X } from "lucide-react";
 import { forwardRef, type ReactNode } from "react";
+import { Tooltip } from "./Tooltip";
 import "./Dialog.css";
 
 export interface DialogProps {
@@ -38,12 +39,11 @@ function DialogPopup({
       >
         <div className="dialog-header">
           {title && <Dialog.Title className="dialog-title">{title}</Dialog.Title>}
-          <Dialog.Close
-            className="dialog-close"
-            aria-label="Close dialog"
-          >
-            <X size={18} />
-          </Dialog.Close>
+          <Tooltip label="Close">
+            <Dialog.Close className="dialog-close" aria-label="Close dialog">
+              <X size={18} />
+            </Dialog.Close>
+          </Tooltip>
         </div>
         {description && (
           <Dialog.Description className="dialog-description">

@@ -8,6 +8,7 @@ import {
   Textarea,
   Button,
   SwitchField,
+  Tooltip,
 } from "@/components/ui";
 import { Plus, Trash2, X } from "lucide-react";
 import "./EntryForm.css";
@@ -201,14 +202,16 @@ export function EntryForm({
                 placeholder="Action verb + context + measurable result..."
                 className="entry-form__bullet-input"
               />
-              <button
-                type="button"
-                className="entry-form__icon-btn"
-                onClick={() => handleRemoveBullet(idx)}
-                aria-label={`Remove bullet ${idx + 1}`}
-              >
-                <Trash2 size={16} />
-              </button>
+              <Tooltip label="Remove Bullet">
+                <button
+                  type="button"
+                  className="entry-form__icon-btn"
+                  onClick={() => handleRemoveBullet(idx)}
+                  aria-label={`Remove bullet ${idx + 1}`}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </Tooltip>
             </div>
           ))}
 
@@ -237,14 +240,16 @@ export function EntryForm({
             {value.tags.map((tag) => (
               <span key={tag} className="entry-form__tag-pill">
                 {tag}
-                <button
-                  type="button"
-                  className="entry-form__tag-remove"
-                  onClick={() => handleRemoveTag(tag)}
-                  aria-label={`Remove tag ${tag}`}
-                >
-                  <X size={12} />
-                </button>
+                <Tooltip label="Remove Tag">
+                  <button
+                    type="button"
+                    className="entry-form__tag-remove"
+                    onClick={() => handleRemoveTag(tag)}
+                    aria-label={`Remove tag ${tag}`}
+                  >
+                    <X size={12} />
+                  </button>
+                </Tooltip>
               </span>
             ))}
           </div>

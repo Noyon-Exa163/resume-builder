@@ -33,3 +33,6 @@ export type { ConfirmDialogProps } from "./ConfirmDialog";
 
 export { default as Skeleton } from "./Skeleton";
 export type { SkeletonProps } from "./Skeleton";
+
+export { Tooltip, TooltipProvider } from "./Tooltip";
+export type { TooltipProps, TooltipProviderProps } from "./Tooltip";

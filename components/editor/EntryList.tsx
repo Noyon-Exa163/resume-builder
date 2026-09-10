@@ -21,7 +21,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, ChevronDown, ChevronUp, Trash2, ListOrdered } from "lucide-react";
-import { EmptyState, ConfirmDialog } from "@/components/ui";
+import { EmptyState, ConfirmDialog, Tooltip } from "@/components/ui";
 import { formatDateRange } from "@/lib/date";
 import "./EntryList.css";
 
@@ -84,15 +84,17 @@ function SortableEntryItem({
         .join(" ")}
     >
       <div className="entry-list__header">
-        <button
-          type="button"
-          className="entry-list__drag-handle"
-          aria-label={`Reorder entry ${displayTitle}`}
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical size={16} />
-        </button>
+        <Tooltip label="Reorder Entry">
+          <button
+            type="button"
+            className="entry-list__drag-handle"
+            aria-label={`Reorder entry ${displayTitle}`}
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical size={16} />
+          </button>
+        </Tooltip>
 
         <div
           className="entry-list__summary"
@@ -114,22 +116,26 @@ function SortableEntryItem({
         </div>
 
         <div className="entry-list__actions">
-          <button
-            type="button"
-            className="entry-list__icon-btn"
-            onClick={onToggleExpand}
-            aria-label={isExpanded ? "Collapse entry" : "Expand entry"}
-          >
-            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
-          <button
-            type="button"
-            className="entry-list__icon-btn entry-list__icon-btn--danger"
-            onClick={() => setConfirmDeleteOpen(true)}
-            aria-label={`Delete entry ${displayTitle}`}
-          >
-            <Trash2 size={16} />
-          </button>
+          <Tooltip label={isExpanded ? "Collapse" : "Expand"}>
+            <button
+              type="button"
+              className="entry-list__icon-btn"
+              onClick={onToggleExpand}
+              aria-label={isExpanded ? "Collapse Entry" : "Expand Entry"}
+            >
+              {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+          </Tooltip>
+          <Tooltip label="Delete Entry">
+            <button
+              type="button"
+              className="entry-list__icon-btn entry-list__icon-btn--danger"
+              onClick={() => setConfirmDeleteOpen(true)}
+              aria-label={`Delete entry ${displayTitle}`}
+            >
+              <Trash2 size={16} />
+            </button>
+          </Tooltip>
         </div>
       </div>
 

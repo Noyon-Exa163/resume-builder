@@ -301,7 +301,7 @@ export default function EditorPage() {
                 variant="secondary"
                 size="m"
                 iconOnly
-                aria-label="Share resume"
+                aria-label="Share Resume"
                 onClick={() => setIsShareOpen(true)}
               >
                 <Share2 size={18} />

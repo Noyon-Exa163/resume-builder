@@ -1,0 +1,46 @@
+/* Tooltip — inverted surface matching ThemePicker swatch hints.
+   Positioner carries z-index (Base UI portals to body; see Select.css). */
+
+.tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tooltip-positioner {
+  z-index: var(--z-floating);
+}
+
+.tooltip-popup {
+  box-sizing: border-box;
+  max-width: 240px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-text-primary);
+  color: var(--color-text-inverse);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: var(--leading-caption);
+  letter-spacing: var(--tracking-none);
+  white-space: nowrap;
+  box-shadow: var(--shadow-2);
+  transform-origin: var(--transform-origin);
+  transition: opacity var(--duration-fast) var(--ease-default);
+}
+
+.tooltip-popup[data-starting-style],
+.tooltip-popup[data-ending-style] {
+  opacity: 0;
+}
+
+.tooltip-popup[data-instant] {
+  transition-duration: 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltip-popup {
+    transition: none;
+  }
+}

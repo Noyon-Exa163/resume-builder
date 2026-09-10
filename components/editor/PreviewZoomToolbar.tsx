@@ -76,7 +76,7 @@ export function PreviewZoomToolbar({
           aria-label="Reset Zoom"
           aria-live="polite"
           aria-atomic="true"
-          title={zoomDisabledTitle}
+          tooltip={zoomDisabledTitle ?? "Reset Zoom"}
           disabled={!zoomEnabled || !canResetZoom}
           className="preview-zoom-toolbar__level"
           onClick={onZoomReset}

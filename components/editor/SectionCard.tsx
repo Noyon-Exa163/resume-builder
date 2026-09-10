@@ -7,7 +7,7 @@ import type {
   SectionKind,
 } from "@/lib/schema/resume";
 import { EntryList } from "./EntryList";
-import { Button, SwitchField, ConfirmDialog } from "@/components/ui";
+import { Button, SwitchField, ConfirmDialog, Tooltip } from "@/components/ui";
 import {
   Briefcase,
   GraduationCap,
@@ -81,14 +81,16 @@ export function SectionCard({
     <div className={cardClasses}>
       <div className="section-card__header">
         {dragHandleProps && (
-          <button
-            type="button"
-            className="section-card__drag-handle"
-            aria-label={`Reorder ${section.title} section`}
-            {...dragHandleProps}
-          >
-            <GripVertical size={18} />
-          </button>
+          <Tooltip label="Reorder Section">
+            <button
+              type="button"
+              className="section-card__drag-handle"
+              aria-label={`Reorder ${section.title} section`}
+              {...dragHandleProps}
+            >
+              <GripVertical size={18} />
+            </button>
+          </Tooltip>
         )}
 
         <div className="section-card__icon" aria-hidden="true">
@@ -112,26 +114,39 @@ export function SectionCard({
           <SwitchField
             checked={section.visible}
             onCheckedChange={(checked) => onUpdateSection({ visible: checked })}
-            aria-label={`Toggle visibility of ${section.title}`}
+            aria-label={
+              section.visible
+                ? `Hide ${section.title} section`
+                : `Show ${section.title} section`
+            }
+            tooltip={section.visible ? "Hide Section" : "Show Section"}
           />
 
-          <button
-            type="button"
-            className="section-card__icon-btn"
-            onClick={() => setIsExpanded(!isExpanded)}
-            aria-label={isExpanded ? `Collapse ${section.title}` : `Expand ${section.title}`}
-          >
-            {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-          </button>
+          <Tooltip label={isExpanded ? "Collapse" : "Expand"}>
+            <button
+              type="button"
+              className="section-card__icon-btn"
+              onClick={() => setIsExpanded(!isExpanded)}
+              aria-label={
+                isExpanded
+                  ? `Collapse ${section.title}`
+                  : `Expand ${section.title}`
+              }
+            >
+              {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </button>
+          </Tooltip>
 
-          <button
-            type="button"
-            className="section-card__icon-btn section-card__icon-btn--danger"
-            onClick={() => setConfirmDeleteOpen(true)}
-            aria-label={`Delete section ${section.title}`}
-          >
-            <Trash2 size={18} />
-          </button>
+          <Tooltip label="Delete Section">
+            <button
+              type="button"
+              className="section-card__icon-btn section-card__icon-btn--danger"
+              onClick={() => setConfirmDeleteOpen(true)}
+              aria-label={`Delete section ${section.title}`}
+            >
+              <Trash2 size={18} />
+            </button>
+          </Tooltip>
         </div>
       </div>
 

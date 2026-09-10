@@ -107,10 +107,15 @@
   align-items: center;
 }
 
-/* Password toggle button */
-.input-field__toggle {
+/* Tooltip wraps the password toggle; the trigger span is the positioned
+   element so the hint still anchors to the icon. */
+.input-field__wrapper > .tooltip-trigger {
   position: absolute;
   right: var(--space-2);
+}
+
+/* Password toggle button */
+.input-field__toggle {
   display: flex;
   align-items: center;
   justify-content: center;

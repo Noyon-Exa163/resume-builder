@@ -437,6 +437,7 @@ export default function AiSettingsPageClient() {
                 <Input
                   label="API Key"
                   type="password"
+                  revealLabel="API Key"
                   size="s"
                   value={config.apiKey}
                   onChange={(e) =>
@@ -509,7 +510,10 @@ export default function AiSettingsPageClient() {
                     </span>
                   )}
                   {status?.state === "ok" && (
-                    <Badge variant="default">Connected</Badge>
+                    <Badge variant="default">
+                      <CircleCheck size={12} aria-hidden="true" />
+                      Connected
+                    </Badge>
                   )}
                   {status?.state === "error" && (
                     <span className="ai-settings-page__provider-error">
