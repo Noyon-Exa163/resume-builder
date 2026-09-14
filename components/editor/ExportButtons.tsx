@@ -2,9 +2,16 @@
 
 import { useCallback, useState } from "react";
 import { Popover } from "@base-ui/react/popover";
-import { ChevronDown, Download, FileImage, FileText } from "lucide-react";
+import {
+  ChevronDown,
+  Download,
+  FileCode,
+  FileImage,
+  FileText,
+} from "lucide-react";
 import { Button } from "@/components/ui";
 import { toPdfBlob } from "@/lib/export/toPdfBlob";
+import { toMarkdown } from "@/lib/export/toMarkdown";
 import { buildExportFilename } from "@/lib/export/filename";
 import { triggerDownload } from "@/lib/export/triggerDownload";
 import type { ResumeData } from "@/lib/schema/resume";
@@ -35,6 +42,14 @@ export function ExportButtons({ data }: ExportButtonsProps) {
     } finally {
       setIsExportingPdf(false);
     }
+  }, [data]);
+
+  const handleExportMarkdown = useCallback(() => {
+    const markdown = toMarkdown(data);
+    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+    const name = buildExportFilename(data);
+    triggerDownload(blob, `${name}.md`);
+    setIsMenuOpen(false);
   }, [data]);
 
   function handleOpenPngDialog() {
@@ -85,6 +100,26 @@ export function ExportButtons({ data }: ExportButtonsProps) {
                   <span className="export-buttons__option-label">PDF</span>
                   <span className="export-buttons__option-desc">
                     Selectable text, vector graphics
+                  </span>
+                </span>
+              </button>
+
+              <div className="export-buttons__separator" />
+
+              <button
+                type="button"
+                className="export-buttons__option"
+                onClick={handleExportMarkdown}
+              >
+                <span className="export-buttons__option-icon">
+                  <FileCode size={16} />
+                </span>
+                <span className="export-buttons__option-body">
+                  <span className="export-buttons__option-label">
+                    Markdown
+                  </span>
+                  <span className="export-buttons__option-desc">
+                    Plain text, no images
                   </span>
                 </span>
               </button>
