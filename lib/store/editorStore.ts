@@ -60,6 +60,7 @@ interface EditorState {
   setTitle: (title: string) => void;
   setTemplateId: (templateId: string) => void;
   setAccentColor: (accentColor: ResumeData["meta"]["accentColor"]) => void;
+  setShowAlternatePhone: (show: boolean) => void;
   setPageSize: (pageSize: ResumeData["meta"]["pageSize"]) => void;
   setNameCasing: (nameCasing: ResumeData["meta"]["nameCasing"]) => void;
   setPersonalInfo: (patch: Partial<ResumeData["personalInfo"]>) => void;
@@ -180,6 +181,8 @@ export const useEditorStore = create<EditorState>((set, get) => {
           pageSize: partial.meta?.pageSize ?? resume.meta.pageSize,
           nameCasing: partial.meta?.nameCasing ?? resume.meta.nameCasing,
           accentColor: partial.meta?.accentColor ?? resume.meta.accentColor,
+          showAlternatePhone:
+            partial.meta?.showAlternatePhone ?? resume.meta.showAlternatePhone,
           title: importedName || partial.meta?.title || resume.meta.title,
         },
       });
@@ -209,6 +212,18 @@ export const useEditorStore = create<EditorState>((set, get) => {
       if (!resume) return;
       set({
         resume: touch({ ...resume, meta: { ...resume.meta, accentColor } }),
+        isDirty: true,
+      });
+    },
+
+    setShowAlternatePhone(show) {
+      const { resume } = get();
+      if (!resume) return;
+      set({
+        resume: touch({
+          ...resume,
+          meta: { ...resume.meta, showAlternatePhone: show },
+        }),
         isDirty: true,
       });
     },

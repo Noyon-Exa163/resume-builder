@@ -144,6 +144,11 @@ export const ResumeMetaSchema = z.object({
     (value) => (value === "yellow" ? "black" : value),
     AccentColor.default("cyan"),
   ),
+  /** Whether to also print Exabyting's system alternate phone number (see
+   *  lib/contact/system.ts) on the document. Only surfaced as a toggle for
+   *  the Universal template — Default and Minimal always print it
+   *  regardless of this flag, per company policy. */
+  showAlternatePhone: z.boolean().default(false),
 });
 
 export const ResumeDataSchema = z.object({

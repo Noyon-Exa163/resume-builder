@@ -523,6 +523,7 @@ export function CyanDocument({ data }: ResumeTemplateProps) {
               personalInfo={personalInfo}
               pageSize={meta.pageSize}
               nameCasing={meta.nameCasing}
+              showAlternatePhone={meta.showAlternatePhone}
             />
           </View>
           {hasText(summary) ? (
@@ -554,10 +555,12 @@ function Header({
   personalInfo,
   pageSize,
   nameCasing,
+  showAlternatePhone,
 }: {
   personalInfo: ResumeTemplateProps["data"]["personalInfo"];
   pageSize: PageSize;
   nameCasing: ResumeTemplateProps["data"]["meta"]["nameCasing"];
+  showAlternatePhone: boolean;
 }) {
   const photoSrc = isRenderableImageSrc(personalInfo.photoDataUrl)
     ? personalInfo.photoDataUrl.trim()
@@ -587,7 +590,11 @@ function Header({
           </View>
         </View>
       </View>
-      <ContactFlow personalInfo={personalInfo} pageSize={pageSize} />
+      <ContactFlow
+        personalInfo={personalInfo}
+        pageSize={pageSize}
+        showAlternatePhone={showAlternatePhone}
+      />
     </View>
   );
 }
@@ -602,12 +609,14 @@ interface ContactItem {
 function ContactFlow({
   personalInfo,
   pageSize,
+  showAlternatePhone,
 }: {
   personalInfo: ResumeTemplateProps["data"]["personalInfo"];
   pageSize: PageSize;
+  showAlternatePhone: boolean;
 }) {
   const accent = useAccent();
-  const items = buildContactItems(personalInfo, accent.brand);
+  const items = buildContactItems(personalInfo, accent.brand, showAlternatePhone);
   if (items.length === 0) return null;
 
   const flowWidth = pageContentWidth(pageSize);
@@ -735,6 +744,7 @@ function profileCaption(url: string): string {
 function buildContactItems(
   info: ResumeTemplateProps["data"]["personalInfo"],
   brand: string,
+  showAlternatePhone: boolean,
 ): ContactItem[] {
   const items: ContactItem[] = [];
   const glyph = brand;
@@ -747,7 +757,7 @@ function buildContactItems(
       caption: "Email",
     });
   }
-  for (const phone of phonesForDisplay(info.phone)) {
+  for (const phone of phonesForDisplay(info.phone, showAlternatePhone)) {
     items.push({
       icon: contactBadge(<PhoneIcon size={glyphSize} color={glyph} />),
       value: phone,

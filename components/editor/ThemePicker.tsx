@@ -13,7 +13,7 @@ import {
   resolveAccent,
 } from "@/templates/cyan/accents";
 import { CircleCheck } from "lucide-react";
-import { Skeleton, Tooltip } from "@/components/ui";
+import { Skeleton, SwitchField, Tooltip } from "@/components/ui";
 import "./ThemePicker.css";
 
 export interface ThemePickerProps {
@@ -22,6 +22,8 @@ export interface ThemePickerProps {
   onChange: (templateId: string) => void;
   accentColor: AccentColor;
   onAccentColorChange: (accentColor: AccentColor) => void;
+  showAlternatePhone: boolean;
+  onShowAlternatePhoneChange: (show: boolean) => void;
   /** Skip PDF work while another sidebar tab is showing. */
   active?: boolean;
 }
@@ -48,6 +50,8 @@ export function ThemePicker({
   onChange,
   accentColor,
   onAccentColorChange,
+  showAlternatePhone,
+  onShowAlternatePhoneChange,
   active = true,
 }: ThemePickerProps) {
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -190,6 +194,14 @@ export function ThemePicker({
                   }
                   onAccentColorChange(next);
                 }}
+              />
+            ) : null}
+            {isUniversal && selected ? (
+              <SwitchField
+                checked={showAlternatePhone}
+                onCheckedChange={onShowAlternatePhoneChange}
+                label="Show Alternate Phone Number"
+                className="theme-picker__alternate-phone-toggle"
               />
             ) : null}
           </div>

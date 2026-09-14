@@ -32,6 +32,10 @@ export function computeThumbnailKey(resume: ResumeData): string {
     // bust the cache — the fallback forces the key to actually change once.
     nameCasing: resume.meta.nameCasing ?? "uppercase",
     accentColor: resume.meta.accentColor ?? "cyan",
+    // Affects the Universal template's contact row (see
+    // components/editor/ThemePicker.tsx's toggle) — without this, flipping
+    // it wouldn't bust the cached header crop.
+    showAlternatePhone: resume.meta.showAlternatePhone ?? false,
     personalInfo: resume.personalInfo,
     summary: resume.summary ?? "",
   });

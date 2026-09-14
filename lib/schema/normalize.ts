@@ -77,6 +77,7 @@ export function normalizeAndValidate(
       pageSize: partial.meta?.pageSize ?? "A4",
       nameCasing: partial.meta?.nameCasing ?? "uppercase",
       accentColor: partial.meta?.accentColor ?? "cyan",
+      showAlternatePhone: partial.meta?.showAlternatePhone ?? false,
     },
     personalInfo: {
       fullName: partial.personalInfo?.fullName ?? "",

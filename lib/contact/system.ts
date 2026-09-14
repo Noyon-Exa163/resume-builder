@@ -13,10 +13,17 @@ function digitsOnly(value: string): string {
 
 /**
  * Personal phone first (when present), then the system alternate — unless
- * the author already entered that same number.
+ * the author already entered that same number. `includeAlternate` defaults
+ * to true (Default and Minimal always print the company number); the
+ * Universal template passes its own `meta.showAlternatePhone` toggle
+ * instead (see components/editor/ThemePicker.tsx).
  */
-export function phonesForDisplay(personalPhone?: string): string[] {
+export function phonesForDisplay(
+  personalPhone?: string,
+  includeAlternate = true,
+): string[] {
   const phones = splitPersonalPhones(personalPhone);
+  if (!includeAlternate) return phones.map(formatBangladeshiPhone);
 
   const alternateDigits = digitsOnly(SYSTEM_ALTERNATE_PHONE);
   if (!phones.some((phone) => digitsOnly(phone) === alternateDigits)) {

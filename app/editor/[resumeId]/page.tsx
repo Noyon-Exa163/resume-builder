@@ -62,6 +62,7 @@ export default function EditorPage() {
     setTitle,
     setTemplateId,
     setAccentColor,
+    setShowAlternatePhone,
     setNameCasing,
     setPersonalInfo,
     setSummary,
@@ -424,6 +425,8 @@ export default function EditorPage() {
                       onChange={setTemplateId}
                       accentColor={resume.meta.accentColor}
                       onAccentColorChange={setAccentColor}
+                      showAlternatePhone={resume.meta.showAlternatePhone}
+                      onShowAlternatePhoneChange={setShowAlternatePhone}
                       active={activeTab === "theme"}
                     />
                   ),
