@@ -1,27 +1,17 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
-import {
-  canManageAllResumes,
-  resolveResumeAccess,
-} from "@/lib/auth/permissions";
+import { canManageAllResumes } from "@/lib/auth/permissions";
 import { ResumeDataSchema } from "@/lib/schema/resume";
-import type { ResumeAccessEntry } from "@/lib/storage/api/resumeAccess";
-
-interface ResumeAccessRow {
-  id: string;
-  data: unknown;
-  owner_id: string;
-  owner_email: string;
-  permission: "viewer" | "editor" | null;
-}
+import { listResumesForUser } from "@/lib/db/resumeQueries";
 
 /**
- * GET /api/resumes — every resume the current user owns or has been shared
- * (see db/migrations/0003_resume_shares.sql), newest-updated first.
- * The protected Super Admin also receives every resume in the system
- * with full edit / share / delete (ownership stays with the creator).
- * Rejects with 401 if unauthenticated.
+ * GET /api/resumes — every resume the current user owns or has been shared,
+ * newest-updated first (see lib/db/resumeQueries.ts for the query and why
+ * section bodies are stripped for this list view). Rejects with 401 if
+ * unauthenticated. Kept as a route (rather than inlined into the dashboard
+ * server render) because mutation flows still call it, and it's the same
+ * endpoint the client-side StorageAdapter contract expects.
  */
 export async function GET() {
   const user = await getCurrentUser();
@@ -29,38 +19,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const manageAll = canManageAllResumes(user.email);
-
-  const rows = (await sql`
-    SELECT r.id, r.data, r.user_id AS owner_id, u.email AS owner_email, rs.permission
-    FROM resumes r
-    JOIN users u ON u.id = r.user_id
-    LEFT JOIN resume_shares rs
-      ON rs.resume_id = r.id AND rs.shared_with_user_id = ${user.id}
-    WHERE ${manageAll}
-      OR r.user_id = ${user.id}
-      OR rs.shared_with_user_id = ${user.id}
-    ORDER BY r.updated_at DESC
-  `) as ResumeAccessRow[];
-
-  const entries: ResumeAccessEntry[] = [];
-  for (const row of rows) {
-    const parsed = ResumeDataSchema.safeParse(row.data);
-    if (!parsed.success) continue;
-    const access = resolveResumeAccess({
-      userId: user.id,
-      userEmail: user.email,
-      ownerId: row.owner_id,
-      sharePermission: row.permission,
-    });
-    if (!access) continue;
-    entries.push({
-      resume: parsed.data,
-      access,
-      ownerEmail: row.owner_email,
-    });
-  }
-
+  const entries = await listResumesForUser(user);
   return NextResponse.json(entries);
 }
 

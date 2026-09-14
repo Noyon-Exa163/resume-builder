@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import "./page.css";
 import type { ResumeData } from "@/lib/schema/resume";
@@ -10,12 +10,10 @@ import { fetchDefaultTemplateId } from "@/lib/storage/api/appDefaults";
 import { deleteResumeThumbnails } from "@/lib/export/resumeThumbnail";
 import { aiChatRepository } from "@/lib/storage/aiChat/aiChatRepository";
 import {
-  listResumesWithAccess,
   canManageResume,
   type ResumeAccessEntry,
 } from "@/lib/storage/api/resumeAccess";
 import { ResumeCardPreview } from "@/components/dashboard/ResumeCardPreview";
-import { ResumeCardSkeleton } from "@/components/dashboard/ResumeCardSkeleton";
 import { ShareDialog } from "@/components/common/ShareDialog";
 import { formatDisplayDate } from "@/lib/date";
 import { toTitleCase } from "@/lib/schema/personalInfo";
@@ -33,26 +31,23 @@ import {
   Trash2,
 } from "lucide-react";
 
-export default function DashboardClient() {
+interface DashboardClientProps {
+  /** Loaded server-side by app/page.tsx — see that file's comment. */
+  initialEntries: ResumeAccessEntry[];
+}
+
+export default function DashboardClient({
+  initialEntries,
+}: DashboardClientProps) {
   const router = useRouter();
-  const [entries, setEntries] = useState<ResumeAccessEntry[] | null>(null);
+  const [entries, setEntries] = useState<ResumeAccessEntry[]>(initialEntries);
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ResumeData | null>(null);
   const [shareTarget, setShareTarget] = useState<ResumeData | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    listResumesWithAccess().then((list) => {
-      list.sort((a, b) =>
-        b.resume.meta.updatedAt.localeCompare(a.resume.meta.updatedAt),
-      );
-      setEntries(list);
-    });
-  }, []);
-
   const filteredEntries = useMemo(() => {
-    if (!entries) return null;
     const query = searchQuery.trim().toLowerCase();
     if (!query) return entries;
 
@@ -100,7 +95,7 @@ export default function DashboardClient() {
     void aiChatRepository.delete(id).catch((error) => {
       console.error("Failed to clear cached AI chat history:", error);
     });
-    setEntries((prev) => prev?.filter((e) => e.resume.meta.id !== id) ?? null);
+    setEntries((prev) => prev.filter((e) => e.resume.meta.id !== id));
   }
 
   return (
@@ -124,7 +119,7 @@ export default function DashboardClient() {
           </Button>
         </header>
 
-        {entries !== null && entries.length > 0 && (
+        {entries.length > 0 && (
           <label className="dashboard__search">
             <Search
               size={16}
@@ -143,15 +138,7 @@ export default function DashboardClient() {
         )}
       </div>
 
-      {entries === null && (
-        <ul className="dashboard__list">
-          {Array.from({ length: 6 }, (_, index) => (
-            <ResumeCardSkeleton key={index} />
-          ))}
-        </ul>
-      )}
-
-      {entries !== null && entries.length === 0 && (
+      {entries.length === 0 && (
         <EmptyState
           icon={FileText}
           title="No resumes yet"
@@ -159,13 +146,11 @@ export default function DashboardClient() {
         />
       )}
 
-      {entries !== null &&
-        entries.length > 0 &&
-        filteredEntries?.length === 0 && (
-          <p className="dashboard__hint">No resumes match your search.</p>
-        )}
+      {entries.length > 0 && filteredEntries.length === 0 && (
+        <p className="dashboard__hint">No resumes match your search.</p>
+      )}
 
-      {filteredEntries !== null && filteredEntries.length > 0 && (
+      {filteredEntries.length > 0 && (
         <ul className="dashboard__list">
           {filteredEntries.map(({ resume, access, ownerEmail }) => (
             <li key={resume.meta.id} className="resume-card">
