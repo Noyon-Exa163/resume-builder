@@ -196,6 +196,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   contactValue: {
+    marginTop: 1,
     fontSize: fonts.sizeTag,
     lineHeight: fonts.lineHeightHeadline,
     color: colors.text,
@@ -204,9 +205,10 @@ const styles = StyleSheet.create({
   contactLink: {
     textDecoration: "none",
   },
+  /** Sits above the value now — one step smaller (sizeChip) so it reads as
+   *  a label, not a second value line. */
   contactCaption: {
-    marginTop: 1,
-    fontSize: fonts.sizeTag,
+    fontSize: fonts.sizeChip,
     lineHeight: fonts.lineHeightTag,
     color: colors.textMuted,
   },
@@ -635,6 +637,7 @@ function ContactFlow({
           >
             {item.icon}
             <View style={styles.contactBody}>
+              <Text style={styles.contactCaption}>{item.caption}</Text>
               {item.href ? (
                 <Link src={item.href} style={styles.contactLink}>
                   <Text style={styles.contactValue}>{displayValue}</Text>
@@ -642,7 +645,6 @@ function ContactFlow({
               ) : (
                 <Text style={styles.contactValue}>{displayValue}</Text>
               )}
-              <Text style={styles.contactCaption}>{item.caption}</Text>
             </View>
           </View>
         );
