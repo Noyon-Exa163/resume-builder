@@ -5,7 +5,12 @@ import { Check, Copy, FileText, Pencil, RotateCcw } from "lucide-react";
 import { Badge, Button } from "@/components/ui";
 import type { ChatMessage } from "@/lib/ai/chatTypes";
 import { formatChatTimestampLabel } from "@/lib/utils/formatLastSaved";
+import { truncateFilenameMiddle } from "@/lib/utils/truncateFilename";
 import "./AiChatMessageBubble.css";
+
+/** Keeps a long attached-file name from forcing the bubble wider than the
+ *  sidebar — see .ai-chat-message__attachment. */
+const ATTACHMENT_NAME_MAX_LENGTH = 32;
 
 export interface AiChatMessageBubbleProps {
   message: ChatMessage;
@@ -94,7 +99,12 @@ export function AiChatMessageBubble({
         {message.attachment && (
           <div className="ai-chat-message__attachment">
             <FileText size={14} />
-            <span>{message.attachment.name}</span>
+            <span title={message.attachment.name}>
+              {truncateFilenameMiddle(
+                message.attachment.name,
+                ATTACHMENT_NAME_MAX_LENGTH,
+              )}
+            </span>
           </div>
         )}
 

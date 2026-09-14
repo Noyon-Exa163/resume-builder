@@ -23,6 +23,7 @@ import type { ChatFileAttachment, ChatMessage } from "@/lib/ai/chatTypes";
 import type { AIChatMessage } from "@/lib/ai/types";
 import { AI_CHAT_HISTORY_LIMIT } from "@/lib/ai/chatPrompt";
 import { detectFormat } from "@/lib/import/detectFormat";
+import { truncateFilenameMiddle } from "@/lib/utils/truncateFilename";
 import { extractPdfText } from "@/lib/import/extractors/pdfText";
 import { extractDocxText } from "@/lib/import/extractors/docxText";
 import { extractMarkdownText } from "@/lib/import/extractors/markdownText";
@@ -36,6 +37,9 @@ type Status = "idle" | "sending";
 type LoadingStage = "reading" | "thinking" | null;
 
 const ACCEPTED_EXTENSIONS = ".pdf,.docx,.md,.markdown,.txt,.json";
+/** Keeps the composer's file chip from forcing the sidebar wider than its
+ *  fixed width — see .ai-chat-panel__chip-name's max-width:220px. */
+const CHIP_NAME_MAX_LENGTH = 28;
 
 export interface AiChatPanelProps {
   resume: ResumeData;
@@ -502,7 +506,9 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
           {file && (
             <div className="ai-chat-panel__chip">
               <FileText size={14} />
-              <span className="ai-chat-panel__chip-name">{file.name}</span>
+              <span className="ai-chat-panel__chip-name" title={file.name}>
+                {truncateFilenameMiddle(file.name, CHIP_NAME_MAX_LENGTH)}
+              </span>
               <Tooltip label="Remove File">
                 <button
                   type="button"

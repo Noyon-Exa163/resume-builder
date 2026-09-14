@@ -98,6 +98,7 @@
   gap: var(--space-1);
   align-self: flex-start;
   max-width: 100%;
+  min-width: 0;
   background: var(--color-surface);
   border-radius: var(--radius-full);
   padding: 4px var(--space-2);
@@ -107,6 +108,7 @@
 }
 
 .ai-chat-panel__chip-name {
+  min-width: 0;
   max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
