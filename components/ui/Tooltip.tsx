@@ -7,7 +7,7 @@ import "./Tooltip.css";
 export const TooltipProvider = BaseTooltip.Provider;
 
 export interface TooltipProps {
-  label: string;
+  label: ReactNode;
   children: ReactElement;
   side?: "top" | "bottom" | "left" | "right";
 }

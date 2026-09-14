@@ -32,6 +32,12 @@ interface GeminiResponse {
     finishReason?: string;
   }>;
   promptFeedback?: { blockReason?: string };
+  usageMetadata?: { totalTokenCount?: number };
+}
+
+interface GenerateContentResult {
+  content: string;
+  totalTokens?: number;
 }
 
 function modelPath(model: string): string {
@@ -70,7 +76,7 @@ async function generateContent(args: {
   responseSchema?: unknown;
   maxOutputTokens: number;
   temperature?: number;
-}): Promise<string> {
+}): Promise<GenerateContentResult> {
   requireApiKey(args.apiKey, "Gemini");
 
   const contents: Array<{ role: string; parts: GeminiPart[] }> = [];
@@ -128,7 +134,10 @@ async function generateContent(args: {
       `Gemini blocked the prompt (${data.promptFeedback.blockReason}).`,
     );
   }
-  return collectText(data);
+  return {
+    content: collectText(data),
+    totalTokens: data.usageMetadata?.totalTokenCount,
+  };
 }
 
 export const geminiProvider: AIProvider = {
@@ -140,7 +149,7 @@ export const geminiProvider: AIProvider = {
     model: string,
     baseUrl?: string,
   ): Promise<AIExtractResumeResult> {
-    const raw = await generateContent({
+    const result = await generateContent({
       apiKey,
       model,
       baseUrl,
@@ -152,7 +161,7 @@ export const geminiProvider: AIProvider = {
       maxOutputTokens: EXTRACT_MAX_TOKENS,
       temperature: 0,
     });
-    return { json: parseModelJson(raw), raw };
+    return { json: parseModelJson(result.content), raw: result.content };
   },
 
   async chat(
@@ -169,7 +178,7 @@ export const geminiProvider: AIProvider = {
       );
     }
 
-    const content = await generateContent({
+    const result = await generateContent({
       apiKey,
       model,
       baseUrl,
@@ -180,7 +189,10 @@ export const geminiProvider: AIProvider = {
       maxOutputTokens: input.maxTokens ?? DEFAULT_CHAT_MAX_TOKENS,
       temperature: input.temperature,
     });
-    return { content };
+    // Gemini doesn't echo the model back in the response body — report the
+    // one we actually requested (unlike OpenRouter, there's no auto-router
+    // here that could have picked a different one).
+    return { content: result.content, totalTokens: result.totalTokens, model };
   },
 
   async testConnection(

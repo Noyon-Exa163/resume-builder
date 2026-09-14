@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Check, Copy, FileText, Pencil, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { Check, Copy, FileText, Info, Pencil, RotateCcw } from "lucide-react";
 import { Badge, Button } from "@/components/ui";
 import type { ChatMessage } from "@/lib/ai/chatTypes";
 import { formatChatTimestampLabel } from "@/lib/utils/formatLastSaved";
@@ -32,6 +32,14 @@ export interface AiChatMessageBubbleProps {
 const TYPE_DURATION_MS = 600;
 const TYPE_TICK_MS = 20;
 
+/** Grows a textarea to exactly fit its content. Reset to "auto" first so
+ *  deleting text can shrink it back down, not just grow. */
+function resizeDraftTextarea(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
+
 export function AiChatMessageBubble({
   message,
   isEditing,
@@ -50,12 +58,25 @@ export function AiChatMessageBubble({
   const [revealedLength, setRevealedLength] = useState(
     shouldAnimate && !isUser ? 0 : message.content.length,
   );
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!justCopied) return;
     const timeoutId = window.setTimeout(() => setJustCopied(false), 1500);
     return () => window.clearTimeout(timeoutId);
   }, [justCopied]);
+
+  // Grows the textarea to fit the message being edited right away, rather
+  // than opening at a small fixed size the original text has to scroll
+  // inside — see the matching resize call in handleDraftChange below.
+  useEffect(() => {
+    if (isEditing) resizeDraftTextarea(editTextareaRef.current);
+  }, [isEditing]);
+
+  function handleDraftChange(e: ChangeEvent<HTMLTextAreaElement>) {
+    setDraft(e.target.value);
+    resizeDraftTextarea(e.target);
+  }
 
   // Runs once per distinct message (this component is keyed by message.id
   // in AiChatPanel, so a new message always mounts fresh).
@@ -93,7 +114,10 @@ export function AiChatMessageBubble({
       className={[
         "ai-chat-message",
         isUser ? "ai-chat-message--user" : "ai-chat-message--assistant",
-      ].join(" ")}
+        isEditing && "ai-chat-message--editing",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       <div className="ai-chat-message__bubble">
         {message.attachment && (
@@ -111,9 +135,10 @@ export function AiChatMessageBubble({
         {isEditing ? (
           <div className="ai-chat-message__edit">
             <textarea
+              ref={editTextareaRef}
               className="ai-chat-message__edit-textarea"
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={handleDraftChange}
               autoFocus
             />
             <div className="ai-chat-message__edit-actions">
@@ -197,6 +222,27 @@ export function AiChatMessageBubble({
                 onClick={() => onRegenerate(message.id)}
               >
                 <RotateCcw size={14} />
+              </Button>
+            )}
+            {!isUser && (message.totalTokens != null || message.model) && (
+              <Button
+                type="button"
+                variant="tertiary"
+                size="s"
+                iconOnly
+                aria-label="Response Details"
+                tooltip={
+                  <div className="ai-chat-message__usage-tooltip">
+                    {message.totalTokens != null && (
+                      <div>
+                        Tokens Used: {message.totalTokens.toLocaleString()}
+                      </div>
+                    )}
+                    {message.model && <div>Model Used: {message.model}</div>}
+                  </div>
+                }
+              >
+                <Info size={14} />
               </Button>
             )}
           </div>

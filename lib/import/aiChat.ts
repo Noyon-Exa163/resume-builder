@@ -4,6 +4,8 @@ import type { AIChatMessage } from "@/lib/ai/types";
 export interface AiChatTurnResult {
   reply: string;
   resumeUpdate?: unknown;
+  model?: string;
+  totalTokens?: number;
 }
 
 /**

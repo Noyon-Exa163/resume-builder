@@ -52,6 +52,8 @@ interface PendingTurn {
   withUserMessage: ChatMessage[];
   reply: string;
   resumeUpdate: DeepPartial<ResumeData>;
+  model?: string;
+  totalTokens?: number;
 }
 
 interface RequestTurnArgs {
@@ -157,6 +159,8 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
     withUserMessage: ChatMessage[],
     replyText: string,
     resumeUpdate?: DeepPartial<ResumeData>,
+    model?: string,
+    totalTokens?: number,
   ) {
     if (resumeUpdate) onApply(resumeUpdate);
     const assistantMessage: ChatMessage = {
@@ -165,6 +169,8 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       content: replyText,
       createdAt: new Date().toISOString(),
       appliedChange: resumeUpdate ? { previousResume: currentResume } : undefined,
+      model,
+      totalTokens,
     };
     setAnimateMessageId(assistantMessage.id);
     commitMessages([...withUserMessage, assistantMessage]);
@@ -198,11 +204,20 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
           withUserMessage,
           reply: result.reply,
           resumeUpdate,
+          model: result.model,
+          totalTokens: result.totalTokens,
         });
         return;
       }
 
-      finalizeTurn(args.currentResume, withUserMessage, result.reply, resumeUpdate);
+      finalizeTurn(
+        args.currentResume,
+        withUserMessage,
+        result.reply,
+        resumeUpdate,
+        result.model,
+        result.totalTokens,
+      );
     } catch (err) {
       setErrorMessage(
         err instanceof Error ? err.message : "Something went wrong.",
@@ -383,6 +398,8 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       pendingTurn.withUserMessage,
       pendingTurn.reply,
       pendingTurn.resumeUpdate,
+      pendingTurn.model,
+      pendingTurn.totalTokens,
     );
     setPendingTurn(null);
   }
@@ -394,6 +411,8 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       role: "assistant",
       content: pendingTurn.reply,
       createdAt: new Date().toISOString(),
+      model: pendingTurn.model,
+      totalTokens: pendingTurn.totalTokens,
     };
     setAnimateMessageId(assistantMessage.id);
     commitMessages([...pendingTurn.withUserMessage, assistantMessage]);

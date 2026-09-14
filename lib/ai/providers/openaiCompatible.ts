@@ -39,6 +39,17 @@ interface ChatCompletionMessage {
 
 interface ChatCompletionResponse {
   choices?: Array<{ message?: { content?: string | null } }>;
+  /** The model that actually served the request — OpenRouter echoes the
+   *  resolved model here even when the request asked for an auto-router
+   *  id like "openrouter/auto" or "openrouter/free". */
+  model?: string;
+  usage?: { total_tokens?: number };
+}
+
+interface ChatCompletionResult {
+  content: string;
+  model?: string;
+  totalTokens?: number;
 }
 
 /**
@@ -75,7 +86,8 @@ export function createOpenAICompatibleProvider(
     maxTokens: number;
     temperature?: number;
     jsonObject?: boolean;
-  }): Promise<string> => {
+    sessionId?: string;
+  }): Promise<ChatCompletionResult> => {
     requireApiKey(args.apiKey, options.label);
     const url = chatCompletionsUrl(resolveBaseUrl(args.baseUrl));
     const body: Record<string, unknown> = {
@@ -84,6 +96,12 @@ export function createOpenAICompatibleProvider(
       max_tokens: args.maxTokens,
     };
     if (args.temperature !== undefined) body.temperature = args.temperature;
+    // OpenRouter-specific routing hint (see AIChatInput.sessionId) — other
+    // OpenAI-compatible hosts (DeepSeek, a custom slot) don't document this
+    // field, so it's only sent to the one that does.
+    if (args.sessionId && options.id === "openrouter") {
+      body.session_id = args.sessionId;
+    }
     if (args.jsonObject) {
       // DeepSeek requires the prompt itself to mention JSON when this is set,
       // otherwise the request can hang generating whitespace.
@@ -114,7 +132,11 @@ export function createOpenAICompatibleProvider(
     if (typeof content !== "string") {
       throw new Error(`${options.label} returned no message content.`);
     }
-    return content;
+    return {
+      content,
+      model: json.model,
+      totalTokens: json.usage?.total_tokens,
+    };
   };
 
   return {
@@ -126,7 +148,7 @@ export function createOpenAICompatibleProvider(
       model: string,
       baseUrl?: string,
     ): Promise<AIExtractResumeResult> {
-      const raw = await request({
+      const result = await request({
         apiKey,
         model,
         baseUrl,
@@ -142,7 +164,7 @@ export function createOpenAICompatibleProvider(
         temperature: 0,
         jsonObject: true,
       });
-      return { json: parseModelJson(raw), raw };
+      return { json: parseModelJson(result.content), raw: result.content };
     },
 
     async chat(
@@ -158,7 +180,7 @@ export function createOpenAICompatibleProvider(
       for (const message of input.messages) {
         messages.push({ role: message.role, content: message.content });
       }
-      const content = await request({
+      return await request({
         apiKey,
         model,
         baseUrl,
@@ -166,8 +188,8 @@ export function createOpenAICompatibleProvider(
         maxTokens: input.maxTokens ?? DEFAULT_CHAT_MAX_TOKENS,
         temperature: input.temperature,
         jsonObject: input.jsonMode,
+        sessionId: input.sessionId,
       });
-      return { content };
     },
 
     async testConnection(

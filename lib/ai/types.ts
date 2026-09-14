@@ -27,10 +27,27 @@ export interface AIChatInput {
   jsonMode?: boolean;
   maxTokens?: number;
   temperature?: number;
+  /**
+   * Stable per-conversation key (this app uses the resume id) so OpenRouter
+   * routes every turn of the same conversation to the same upstream
+   * provider instance instead of load-balancing across instances — a
+   * prerequisite for that provider's own prompt caching to ever hit across
+   * turns. Pure routing hint: never affects prompt content or how a reply
+   * is interpreted. Ignored by providers other than OpenRouter.
+   */
+  sessionId?: string;
 }
 
 export interface AIChatResult {
   content: string;
+  /** Total tokens (prompt + completion) the provider reports for this
+   *  request, when available. */
+  totalTokens?: number;
+  /** The model that actually served the request — may differ from the
+   *  requested model id for a provider that auto-routes (e.g. OpenRouter's
+   *  `openrouter/auto` and `openrouter/free`). Falls back to the requested
+   *  model for a provider that doesn't echo it back (Gemini). */
+  model?: string;
 }
 
 export interface AIConnectionTestResult {

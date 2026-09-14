@@ -42,7 +42,21 @@ interface AnthropicContentBlock {
 
 interface AnthropicMessageResponse {
   content?: AnthropicContentBlock[];
+  model?: string;
+  usage?: { input_tokens?: number; output_tokens?: number };
   error?: { message?: string };
+}
+
+function totalTokensFromUsage(
+  usage: AnthropicMessageResponse["usage"],
+): number | undefined {
+  if (
+    typeof usage?.input_tokens !== "number" ||
+    typeof usage?.output_tokens !== "number"
+  ) {
+    return undefined;
+  }
+  return usage.input_tokens + usage.output_tokens;
 }
 
 async function postMessages(args: {
@@ -172,7 +186,11 @@ export const anthropicProvider: AIProvider = {
       })),
     });
 
-    return { content: textFromBlocks(data.content) };
+    return {
+      content: textFromBlocks(data.content),
+      model: data.model,
+      totalTokens: totalTokensFromUsage(data.usage),
+    };
   },
 
   async testConnection(

@@ -8,8 +8,10 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "tertiary";
   size?: "l" | "m" | "s";
   iconOnly?: boolean;
-  /** Visible hover/focus hint. Icon-only buttons fall back to `aria-label`. */
-  tooltip?: string;
+  /** Visible hover/focus hint. Icon-only buttons fall back to `aria-label`.
+   *  Usually a short string, but accepts richer content (e.g. a multi-line
+   *  breakdown) for a tooltip that needs more than a one-liner. */
+  tooltip?: ReactNode;
   children: ReactNode;
 }
 

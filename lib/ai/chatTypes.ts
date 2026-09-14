@@ -27,4 +27,9 @@ export interface ChatMessage {
   appliedChange?: {
     previousResume: ResumeData;
   };
+  /** Present only on an assistant message that came from an actual AI
+   *  call (never the synthetic "Imported your resume…" reply for a direct
+   *  .json project-file import). See lib/ai/types.ts's AIChatResult. */
+  model?: string;
+  totalTokens?: number;
 }

@@ -98,6 +98,11 @@ export async function POST(request: Request) {
         messages,
         jsonMode: true,
         temperature: 0,
+        // Same resume = same conversation thread — keeps OpenRouter routing
+        // every turn to the same upstream instance so its prompt cache (for
+        // providers that support one) can actually hit across turns. Pure
+        // routing hint, ignored by every other provider.
+        sessionId: parsed.data.resume.meta.id,
       });
       const json = parseModelJson(result.content);
       const envelope = QaEnvelopeSchema.safeParse(json);
@@ -110,7 +115,11 @@ export async function POST(request: Request) {
           { status: 502 },
         );
       }
-      return NextResponse.json({ reply: envelope.success ? envelope.data.reply : fallbackReply });
+      return NextResponse.json({
+        reply: envelope.success ? envelope.data.reply : fallbackReply,
+        model: result.model,
+        totalTokens: result.totalTokens,
+      });
     }
 
     const { system, messages } = buildChatPrompt({
@@ -126,6 +135,7 @@ export async function POST(request: Request) {
         jsonMode: true,
         temperature: 0,
         maxTokens: EXTRACT_MAX_TOKENS,
+        sessionId: parsed.data.resume.meta.id,
       },
       config.apiKey,
       config.model ?? "",
@@ -149,7 +159,11 @@ export async function POST(request: Request) {
           { status: 502 },
         );
       }
-      return NextResponse.json({ reply: fallbackReply });
+      return NextResponse.json({
+        reply: fallbackReply,
+        model: result.model,
+        totalTokens: result.totalTokens,
+      });
     }
 
     let resumeUpdate: ResumeData | undefined;
@@ -162,7 +176,12 @@ export async function POST(request: Request) {
       if (validated.success) resumeUpdate = validated.data;
     }
 
-    return NextResponse.json({ reply: envelope.data.reply, resumeUpdate });
+    return NextResponse.json({
+      reply: envelope.data.reply,
+      resumeUpdate,
+      model: result.model,
+      totalTokens: result.totalTokens,
+    });
   } catch (error) {
     return NextResponse.json(
       {

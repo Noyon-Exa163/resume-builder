@@ -185,10 +185,16 @@
   opacity: 1;
 }
 
+/* overflow: hidden would clip text past the fixed height AND block wheel
+   scrolling entirely (a textarea's own keyboard-driven caret scroll still
+   works under overflow: hidden, but a generic wheel gesture doesn't) — auto
+   keeps it scrollable, the scrollbar-hiding rules below just keep the
+   scrollbar itself invisible. */
 .ai-chat-panel__textarea {
   height: 72px;
   resize: none;
-  overflow: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
   border: none;
   background: none;
   padding: 0;
@@ -198,6 +204,10 @@
   color: var(--color-text-primary);
   text-align: left;
   vertical-align: top;
+}
+
+.ai-chat-panel__textarea::-webkit-scrollbar {
+  display: none;
 }
 
 .ai-chat-panel__textarea::placeholder {
