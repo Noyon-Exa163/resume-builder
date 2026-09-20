@@ -1,3 +1,4 @@
+import { fixBrandCasingDeep } from "@/lib/schema/brandCasing";
 import { Document, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
 import type { ResumeData } from "@/lib/schema/resume";
 import {
@@ -15,7 +16,8 @@ import { formatFullNameForDisplay } from "@/lib/schema/personalInfo";
  * section walk as toMarkdown.ts, not a branded-template replica. Runs
  * entirely client-side (`docx`'s Packer.toBlob()), no export API route.
  */
-export async function toDocx(data: ResumeData): Promise<Blob> {
+export async function toDocx(source: ResumeData): Promise<Blob> {
+  const data = fixBrandCasingDeep(source);
   const { personalInfo, summary, meta } = data;
   const children: Paragraph[] = [];
 
@@ -35,7 +37,7 @@ export async function toDocx(data: ResumeData): Promise<Blob> {
   if (hasText(headline)) {
     children.push(new Paragraph({ children: [new TextRun(headline)] }));
   }
-  const contact = contactLine(personalInfo);
+  const contact = contactLine(personalInfo, meta.alternatePhoneVisible);
   if (contact) {
     children.push(new Paragraph({ children: [new TextRun(contact)] }));
   }

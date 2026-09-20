@@ -181,8 +181,8 @@ export const useEditorStore = create<EditorState>((set, get) => {
           pageSize: partial.meta?.pageSize ?? resume.meta.pageSize,
           nameCasing: partial.meta?.nameCasing ?? resume.meta.nameCasing,
           accentColor: partial.meta?.accentColor ?? resume.meta.accentColor,
-          showAlternatePhone:
-            partial.meta?.showAlternatePhone ?? resume.meta.showAlternatePhone,
+          alternatePhoneVisible:
+            partial.meta?.alternatePhoneVisible ?? resume.meta.alternatePhoneVisible,
           title: importedName || partial.meta?.title || resume.meta.title,
         },
       });
@@ -222,7 +222,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
       set({
         resume: touch({
           ...resume,
-          meta: { ...resume.meta, showAlternatePhone: show },
+          meta: { ...resume.meta, alternatePhoneVisible: show },
         }),
         isDirty: true,
       });

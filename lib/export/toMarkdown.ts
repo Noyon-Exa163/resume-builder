@@ -1,3 +1,4 @@
+import { fixBrandCasingDeep } from "@/lib/schema/brandCasing";
 import type { ResumeData } from "@/lib/schema/resume";
 import {
   contactLine,
@@ -14,7 +15,8 @@ import { formatFullNameForDisplay } from "@/lib/schema/personalInfo";
  * no design fidelity intended. Best-effort formatting, not a branded
  * template replica (same spirit as toDocx.ts).
  */
-export function toMarkdown(data: ResumeData): string {
+export function toMarkdown(source: ResumeData): string {
+  const data = fixBrandCasingDeep(source);
   const { personalInfo, summary, meta } = data;
   const lines: string[] = [];
 
@@ -25,7 +27,7 @@ export function toMarkdown(data: ResumeData): string {
   }
   const headline = normalizeHeadline(personalInfo.headline);
   if (hasText(headline)) lines.push(headline);
-  const contact = contactLine(personalInfo);
+  const contact = contactLine(personalInfo, meta.alternatePhoneVisible);
   if (contact) lines.push(contact);
   lines.push("");
 

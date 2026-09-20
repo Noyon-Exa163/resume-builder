@@ -1,4 +1,5 @@
 import { createId } from "@/lib/utils/ids";
+import { fixBrandCasingDeep } from "@/lib/schema/brandCasing";
 import { normalizeHeadline } from "./headline";
 import {
   CURRENT_SCHEMA_VERSION,
@@ -77,7 +78,7 @@ export function normalizeAndValidate(
       pageSize: partial.meta?.pageSize ?? "A4",
       nameCasing: partial.meta?.nameCasing ?? "uppercase",
       accentColor: partial.meta?.accentColor ?? "cyan",
-      showAlternatePhone: partial.meta?.showAlternatePhone ?? false,
+      alternatePhoneVisible: partial.meta?.alternatePhoneVisible ?? true,
     },
     personalInfo: {
       fullName: partial.personalInfo?.fullName ?? "",
@@ -94,7 +95,7 @@ export function normalizeAndValidate(
     sections,
   };
 
-  return ResumeDataSchema.parse(candidate);
+  return ResumeDataSchema.parse(fixBrandCasingDeep(candidate));
 }
 
 export function createBlankResume(templateId?: string): ResumeData {

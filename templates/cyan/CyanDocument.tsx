@@ -1,3 +1,4 @@
+import { uppercaseKeepingBrands } from "@/lib/schema/brandCasing";
 import type { ComponentProps, ReactElement, ReactNode } from "react";
 import { createContext, useContext } from "react";
 import {
@@ -234,7 +235,6 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     lineHeight: fonts.lineHeightSection,
     letterSpacing: fonts.letterSpacingSection,
-    textTransform: "uppercase",
   },
   sectionRule: {
     marginTop: space[1],
@@ -525,7 +525,7 @@ export function CyanDocument({ data }: ResumeTemplateProps) {
               personalInfo={personalInfo}
               pageSize={meta.pageSize}
               nameCasing={meta.nameCasing}
-              showAlternatePhone={meta.showAlternatePhone}
+              showAlternatePhone={meta.alternatePhoneVisible}
             />
           </View>
           {hasText(summary) ? (
@@ -893,7 +893,7 @@ function SectionHeading({
   const accent = useAccent();
   return (
     <View style={spaced ? styles.sectionHeadingSpaced : styles.sectionHeader}>
-      <Text style={[styles.sectionTitle, { color: accent.brand }]}>{title}</Text>
+      <Text style={[styles.sectionTitle, { color: accent.brand }]}>{uppercaseKeepingBrands(title)}</Text>
       <View style={[styles.sectionRule, { backgroundColor: accent.brand }]} />
     </View>
   );

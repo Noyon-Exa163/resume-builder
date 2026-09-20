@@ -33,10 +33,13 @@ export function visibleSections(data: ResumeData): ResumeSection[] {
   return data.sections.filter((s) => s.visible && sectionHasContent(s));
 }
 
-export function contactLine(info: ResumeData["personalInfo"]): string {
+export function contactLine(
+  info: ResumeData["personalInfo"],
+  showAlternatePhone: boolean,
+): string {
   return [
     info.email,
-    ...phonesForDisplay(info.phone),
+    ...phonesForDisplay(info.phone, showAlternatePhone),
     info.location,
     info.website,
     info.linkedin,

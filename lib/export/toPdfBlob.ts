@@ -1,3 +1,4 @@
+import { fixBrandCasingDeep } from "@/lib/schema/brandCasing";
 import { createElement } from "react";
 import type { pdf as PdfFn } from "@react-pdf/renderer";
 import type { ResumeData } from "@/lib/schema/resume";
@@ -22,7 +23,8 @@ function getPdf(): Promise<typeof PdfFn> {
  *
  * Runs entirely client-side. No API routes needed.
  */
-export async function toPdfBlob(data: ResumeData): Promise<Blob> {
+export async function toPdfBlob(source: ResumeData): Promise<Blob> {
+  const data = fixBrandCasingDeep(source);
   const pdf = await getPdf();
   const { Document } = getTemplate(data.meta.templateId);
   // The template's Document wraps react-pdf's <Document> internally.

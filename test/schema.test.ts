@@ -38,7 +38,7 @@ function validResume(overrides: Partial<ResumeData> = {}): ResumeData {
       pageSize: "A4",
       nameCasing: "uppercase",
       accentColor: "cyan",
-      showAlternatePhone: false,
+      alternatePhoneVisible: true,
     },
     personalInfo: { fullName: "Ada Lovelace" },
     sections: [],

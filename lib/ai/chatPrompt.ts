@@ -1,6 +1,6 @@
 import type { ResumeData } from "@/lib/schema/resume";
 import type { AIChatMessage } from "./types";
-import { RESUME_SCHEMA_DESCRIPTION } from "./extractionPrompt";
+import { EDUCATION_ENTRY_RULES, RESUME_SCHEMA_DESCRIPTION } from "./extractionPrompt";
 
 /** How many prior turns are sent to the model per request — older turns
  *  stay in the persisted transcript and the UI, just not the wire payload. */
@@ -39,6 +39,7 @@ function buildChatSystemPrompt(resume: ResumeData, hasAttachment: boolean): stri
     "Keep \"reply\" concise — 1 to 3 sentences, plain prose (no markdown, no bullet characters like \"-\" or \"*\"). Never restate the full resume, never repeat back JSON, never open with a long preamble like \"Sure, I'd be happy to help\". If you changed something, name what changed in a short clause.",
     "",
     "Apply ONLY the change requested — do not rewrite, reorder, or reword anything else. Do not invent employers, dates, degrees, or skills that aren't already present, in the conversation, or in an attached file.",
+    'Always write the company name bKash with a lowercase b and uppercase K, never Bkash or BKASH.',
     'personalInfo.headline should join titles with " • ", never "|".',
     "",
     'The current resume\'s sections and entries each have an "id" field. When you return a section or entry unchanged (or lightly edited) from the current resume, keep its exact "id" value. For a brand-new section or entry, omit "id" entirely — never copy an existing id onto a different section or entry.',
@@ -56,7 +57,9 @@ function buildChatSystemPrompt(resume: ResumeData, hasAttachment: boolean): stri
   if (hasAttachment) {
     parts.push(
       "",
-      "The user's latest message includes text extracted from an attached file. Decide whether it's a full resume to import (replace current content) or supplementary text for a specific change, based on the user's message and the file content. If importing, return the full resume in \"resume\".",
+      EDUCATION_ENTRY_RULES,
+      "",
+      "The user's latest message includes text extracted from an attached file. If that text is a resume or CV, this is an import: you MUST include the full extracted resume in \"resume\", replacing the current content, even when the user's message is only a file name or says nothing about importing. Only leave \"resume\" out if the file clearly is not a resume and the user asked something else about it. Keep \"reply\" to one short sentence saying what you imported.",
     );
   }
 

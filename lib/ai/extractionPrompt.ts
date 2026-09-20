@@ -46,6 +46,10 @@ export const RESUME_SCHEMA_DESCRIPTION = `{
   ]
 }`;
 
+/** Shared by the one-shot extraction prompt and the chat prompt's import path. */
+export const EDUCATION_ENTRY_RULES =
+  "Education entries: the title must name the qualification itself, such as SSC, HSC, O Level, A Level, Diploma, BSc, or MSc, never just a group or subject. Example title: \"Higher Secondary Certificate (HSC)\". Include every education entry in the source, including secondary and higher secondary schooling. Put the result in the description as \"GPA: 4.20\" or \"CGPA: 3.40\". When the source names a study group such as Science, Humanities, Arts, or Business, put it in front of the result in the description, separated by a spaced bullet: \"Science • GPA: 4.20\". Only do this when the source names a group; otherwise the description holds just the result. Do not put the group in the title.";
+
 /**
  * Shared extraction prompt + schema description so every provider asks for
  * the same thing and differs only in HTTP transport.
@@ -74,10 +78,12 @@ export function formatExtractionPrompt(input: AIExtractResumeInput): string {
     "Extract a structured resume from the source text and return a JSON object matching the shape below.",
     "If you find any typos or formatting errors in the source text, correct them before extracting the resume. But beware of technical terms and abbreviations that might look like typos.",
     "Omit fields you cannot support from the source. Do not invent employers, dates, degrees, or skills.",
+    "Always write the company name bKash with a lowercase b and uppercase K, never Bkash or BKASH.",
     "Omit ids, createdAt, updatedAt, and photoDataUrl — those are assigned later.",
     "schemaVersion must be 1 when present.",
     "If you cannot find a resume title in the source text, create one based on the person's past job titles and specialties.",
     'If personalInfo.headline lists multiple titles or specialties separated by "|" (or a similar bar), join them with a spaced bullet " • " instead. Example: "DevOps Engineer • Cloud Infrastructure".',
+    EDUCATION_ENTRY_RULES,
     "",
     "JSON shape:",
     input.schemaDescription,

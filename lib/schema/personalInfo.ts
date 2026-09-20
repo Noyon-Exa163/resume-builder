@@ -1,14 +1,17 @@
+import { fixBrandCasing, uppercaseKeepingBrands } from "./brandCasing";
 import type { NameCasing } from "./resume";
 
 /** Capitalizes the first letter of each word, lowercasing the rest — used
  *  both for the "Title Case" name display option and for building export
  *  filenames (lib/export/filename.ts), so both stay in exact agreement. */
 export function toTitleCase(value: string): string {
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
+  return fixBrandCasing(
+    value
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" "),
+  );
 }
 
 /**
@@ -21,5 +24,7 @@ export function formatFullNameForDisplay(
   fullName: string,
   casing: NameCasing,
 ): string {
-  return casing === "titleCase" ? toTitleCase(fullName) : fullName.toUpperCase();
+  return casing === "titleCase"
+    ? toTitleCase(fullName)
+    : uppercaseKeepingBrands(fullName);
 }

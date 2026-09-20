@@ -395,6 +395,8 @@ export default function EditorPage() {
                         onChange={setPersonalInfo}
                         nameCasing={resume.meta.nameCasing}
                         onNameCasingChange={setNameCasing}
+                        showAlternatePhone={resume.meta.alternatePhoneVisible}
+                        onShowAlternatePhoneChange={setShowAlternatePhone}
                       />
                       <SummaryForm
                         value={resume.summary ?? ""}
@@ -425,8 +427,6 @@ export default function EditorPage() {
                       onChange={setTemplateId}
                       accentColor={resume.meta.accentColor}
                       onAccentColorChange={setAccentColor}
-                      showAlternatePhone={resume.meta.showAlternatePhone}
-                      onShowAlternatePhoneChange={setShowAlternatePhone}
                       active={activeTab === "theme"}
                     />
                   ),

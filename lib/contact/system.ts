@@ -13,10 +13,9 @@ function digitsOnly(value: string): string {
 
 /**
  * Personal phone first (when present), then the system alternate — unless
- * the author already entered that same number. `includeAlternate` defaults
- * to true (Default and Minimal always print the company number); the
- * Universal template passes its own `meta.showAlternatePhone` toggle
- * instead (see components/editor/ThemePicker.tsx).
+ * the author already entered that same number. Callers pass
+ * `meta.alternatePhoneVisible` (toggled in components/editor/PersonalInfoForm.tsx);
+ * `includeAlternate` defaults to true.
  */
 export function phonesForDisplay(
   personalPhone?: string,

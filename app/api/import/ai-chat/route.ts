@@ -159,6 +159,19 @@ export async function POST(request: Request) {
           { status: 502 },
         );
       }
+      // With a file attached the model was almost certainly returning the
+      // imported resume, so unparseable output means it was cut off or
+      // malformed — posting that as a chat reply would look like a
+      // successful turn that just forgot to apply anything.
+      if (parsed.data.attachedFileText) {
+        return NextResponse.json(
+          {
+            error:
+              "The AI's response for that file was incomplete, so nothing was imported. Try again — if it keeps happening, try a shorter file.",
+          },
+          { status: 502 },
+        );
+      }
       return NextResponse.json({
         reply: fallbackReply,
         model: result.model,
@@ -174,6 +187,15 @@ export async function POST(request: Request) {
       // Degrade gracefully: still return the conversational reply even if the
       // model's resume payload didn't validate, rather than failing the turn.
       if (validated.success) resumeUpdate = validated.data;
+      else if (parsed.data.attachedFileText) {
+        return NextResponse.json(
+          {
+            error:
+              "The AI returned resume data in a format that couldn't be applied, so nothing was imported. Try again.",
+          },
+          { status: 502 },
+        );
+      }
     }
 
     return NextResponse.json({

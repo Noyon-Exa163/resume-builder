@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { NameCasing, PersonalInfo } from "@/lib/schema/resume";
-import { Input, Tooltip } from "@/components/ui";
+import { Input, SwitchField, Tooltip } from "@/components/ui";
 import { formatBangladeshiPhone } from "@/lib/contact";
 import "./PersonalInfoForm.css";
 
@@ -14,6 +14,9 @@ export interface PersonalInfoFormProps {
    *  fields (see lib/schema/personalInfo.ts). */
   nameCasing: NameCasing;
   onNameCasingChange: (casing: NameCasing) => void;
+  /** Whether the company alternate number prints after the personal one. */
+  showAlternatePhone: boolean;
+  onShowAlternatePhoneChange: (show: boolean) => void;
   className?: string;
 }
 
@@ -22,6 +25,8 @@ export function PersonalInfoForm({
   onChange,
   nameCasing,
   onNameCasingChange,
+  showAlternatePhone,
+  onShowAlternatePhoneChange,
   className,
 }: PersonalInfoFormProps) {
   // Format problems are only worth raising once someone has left the field —
@@ -149,6 +154,12 @@ export function PersonalInfoForm({
               handleFieldChange("phone", formatted);
             }
           }}
+        />
+        <SwitchField
+          checked={showAlternatePhone}
+          onCheckedChange={onShowAlternatePhoneChange}
+          label="Show Alternate Phone Number"
+          className="personal-info-form__alternate-phone-toggle"
         />
 
         <Input

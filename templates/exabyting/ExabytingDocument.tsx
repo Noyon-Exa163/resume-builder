@@ -1,3 +1,4 @@
+import { uppercaseKeepingBrands } from "@/lib/schema/brandCasing";
 import type { ReactElement, ReactNode } from "react";
 import {
   Circle,
@@ -254,7 +255,6 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     lineHeight: fonts.lineHeightSection,
     letterSpacing: fonts.letterSpacingSection,
-    textTransform: "uppercase",
     color: colors.brand,
   },
   sectionRule: {
@@ -550,6 +550,7 @@ export function ExabytingDocument({ data }: ResumeTemplateProps) {
             personalInfo={personalInfo}
             pageSize={meta.pageSize}
             nameCasing={meta.nameCasing}
+            showAlternatePhone={meta.alternatePhoneVisible}
           />
         </View>
         {hasText(summary) ? (
@@ -570,10 +571,12 @@ function Header({
   personalInfo,
   pageSize,
   nameCasing,
+  showAlternatePhone,
 }: {
   personalInfo: ResumeTemplateProps["data"]["personalInfo"];
   pageSize: PageSize;
   nameCasing: ResumeTemplateProps["data"]["meta"]["nameCasing"];
+  showAlternatePhone: boolean;
 }) {
   const photoSrc = isRenderableImageSrc(personalInfo.photoDataUrl)
     ? personalInfo.photoDataUrl.trim()
@@ -608,7 +611,11 @@ function Header({
         </View>
       </View>
       <View style={styles.headerContact}>
-        <ContactFlow personalInfo={personalInfo} pageSize={pageSize} />
+        <ContactFlow
+          personalInfo={personalInfo}
+          showAlternatePhone={showAlternatePhone}
+          pageSize={pageSize}
+        />
       </View>
     </View>
   );
@@ -623,12 +630,14 @@ interface ContactItem {
 
 function ContactFlow({
   personalInfo,
+  showAlternatePhone,
   pageSize,
 }: {
   personalInfo: ResumeTemplateProps["data"]["personalInfo"];
+  showAlternatePhone: boolean;
   pageSize: PageSize;
 }) {
-  const items = buildContactItems(personalInfo);
+  const items = buildContactItems(personalInfo, showAlternatePhone);
   if (items.length === 0) return null;
 
   const flowWidth = pageContentWidth(pageSize);
@@ -734,6 +743,7 @@ function profileCaption(url: string): string {
 
 function buildContactItems(
   info: ResumeTemplateProps["data"]["personalInfo"],
+  showAlternatePhone: boolean,
 ): ContactItem[] {
   const items: ContactItem[] = [];
   const glyph = colors.brand;
@@ -746,7 +756,7 @@ function buildContactItems(
       caption: "Email",
     });
   }
-  for (const phone of phonesForDisplay(info.phone)) {
+  for (const phone of phonesForDisplay(info.phone, showAlternatePhone)) {
     items.push({
       icon: contactBadge(<PhoneIcon size={glyphSize} color={glyph} />),
       value: phone,
@@ -879,7 +889,7 @@ function SectionHeading({
 }) {
   return (
     <View style={spaced ? styles.sectionHeadingSpaced : styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={styles.sectionTitle}>{uppercaseKeepingBrands(title)}</Text>
       <View style={styles.sectionRule} />
     </View>
   );
