@@ -11,10 +11,13 @@ export interface ResumeAccessEntry {
   resume: ResumeData;
   access: ResumeAccessLevel;
   ownerEmail: string;
+  /** Only set by the list endpoint (dashboard), not the single-resume one. */
+  ownerName?: string;
 }
 
 export interface ShareableUser {
   id: string;
+  name: string;
   email: string;
 }
 

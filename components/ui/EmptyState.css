@@ -41,3 +41,10 @@
 .empty-state__action {
   margin-top: var(--space-2);
 }
+
+.empty-state__illustration {
+  display: block;
+  width: auto;
+  height: 128px;
+  margin-bottom: var(--space-2);
+}

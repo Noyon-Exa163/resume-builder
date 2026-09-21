@@ -10,6 +10,9 @@ export type { DateInputProps } from "./DateInput";
 export { default as Textarea } from "./Textarea";
 export type { TextareaProps } from "./Textarea";
 
+export { default as Avatar } from "./Avatar";
+export type { AvatarProps } from "./Avatar";
+
 export { default as Badge } from "./Badge";
 export type { BadgeProps } from "./Badge";
 
@@ -28,11 +31,17 @@ export type { TabsFieldProps, TabItem } from "./Tabs";
 export { default as EmptyState } from "./EmptyState";
 export type { EmptyStateProps } from "./EmptyState";
 
+export { default as ActionDialog } from "./ActionDialog";
+export type { ActionDialogProps } from "./ActionDialog";
+
 export { default as ConfirmDialog } from "./ConfirmDialog";
 export type { ConfirmDialogProps } from "./ConfirmDialog";
 
 export { default as Skeleton } from "./Skeleton";
 export type { SkeletonProps } from "./Skeleton";
+
+export { default as UserTooltip } from "./UserTooltip";
+export type { UserTooltipProps } from "./UserTooltip";
 
 export { Tooltip, TooltipProvider } from "./Tooltip";
 export type { TooltipProps, TooltipProviderProps } from "./Tooltip";

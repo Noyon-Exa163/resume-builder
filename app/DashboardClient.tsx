@@ -17,19 +17,28 @@ import { ResumeCardPreview } from "@/components/dashboard/ResumeCardPreview";
 import { ShareDialog } from "@/components/common/ShareDialog";
 import { formatDisplayDate } from "@/lib/date";
 import { toTitleCase } from "@/lib/schema/personalInfo";
-import { EmptyState, ConfirmDialog, Button, Tooltip } from "@/components/ui";
+import { EmptyState, ActionDialog, Avatar, Button, Tooltip, UserTooltip } from "@/components/ui";
 import { toPdfBlob } from "@/lib/export/toPdfBlob";
 import { buildExportFilename } from "@/lib/export/filename";
 import { triggerDownload } from "@/lib/export/triggerDownload";
 import {
   Download,
   FilePlus,
-  FileText,
   Loader2,
   Search,
   Share2,
   Trash2,
+  X,
 } from "lucide-react";
+
+function formatCreatedAt(iso: string): string | undefined {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
 
 interface DashboardClientProps {
   /** Loaded server-side by app/page.tsx — see that file's comment. */
@@ -140,19 +149,34 @@ export default function DashboardClient({
 
       {entries.length === 0 && (
         <EmptyState
-          icon={FileText}
+          illustration="/assets/spots/candidate.svg"
           title="No resumes yet"
           description='Select "New Resume" to build your first one.'
         />
       )}
 
       {entries.length > 0 && filteredEntries.length === 0 && (
-        <p className="dashboard__hint">No resumes match your search.</p>
+        <EmptyState
+          illustration="/assets/spots/candidate.svg"
+          title="No matching resumes"
+          description="No resumes match your search. Try a different name or keyword."
+          action={
+            <Button
+              type="button"
+              variant="secondary"
+              size="m"
+              onClick={() => setSearchQuery("")}
+            >
+              <X size={16} />
+              Clear
+            </Button>
+          }
+        />
       )}
 
       {filteredEntries.length > 0 && (
         <ul className="dashboard__list">
-          {filteredEntries.map(({ resume, access, ownerEmail }) => (
+          {filteredEntries.map(({ resume, access, ownerEmail, ownerName }) => (
             <li key={resume.meta.id} className="resume-card">
               <a
                 href={`/editor/${resume.meta.id}`}
@@ -204,21 +228,28 @@ export default function DashboardClient({
                 </div>
                 <div className="resume-card__actions-group resume-card__actions-group--end">
                   {access !== "owner" && (
-                    <span
-                      className={`resume-card__badge resume-card__badge--${access}`}
-                      title={
-                        // No display name yet — email is the best we have.
+                    <UserTooltip
+                      title={access === "admin" ? "Created By" : "Shared By"}
+                      name={ownerName ?? ownerEmail.split("@")[0]}
+                      email={ownerEmail}
+                      caption={
                         access === "admin"
-                          ? `Owned by ${ownerEmail}`
-                          : `Shared by ${ownerEmail}`
+                          ? formatCreatedAt(resume.meta.createdAt)
+                          : undefined
                       }
                     >
-                      {access === "editor"
-                        ? "Shared • Editor"
-                        : access === "admin"
-                          ? "Admin"
-                          : "Shared • Viewer"}
-                    </span>
+                      {access === "admin" ? (
+                        <Avatar name={ownerEmail} size={24} />
+                      ) : (
+                        <span
+                          className={`resume-card__badge resume-card__badge--${access}`}
+                        >
+                          {access === "editor"
+                            ? "Shared • Editor"
+                            : "Shared • Viewer"}
+                        </span>
+                      )}
+                    </UserTooltip>
                   )}
                   {canManageResume(access) && (
                     <Tooltip label="Delete">
@@ -239,14 +270,21 @@ export default function DashboardClient({
         </ul>
       )}
 
-      <ConfirmDialog
+      <ActionDialog
+        illustration="/assets/spots/trash-delete.svg"
         open={deleteTarget !== null}
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
         title={`Delete "${deleteTarget?.meta.title ?? ""}"?`}
         description="This will permanently delete this resume. This cannot be undone."
-        onConfirm={confirmDelete}
+        confirmLabel="Delete"
+        confirmIcon={Trash2}
+        isDestructive
+        onConfirm={() => {
+          void confirmDelete();
+          setDeleteTarget(null);
+        }}
       />
 
       {shareTarget && (

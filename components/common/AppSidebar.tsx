@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { Menu } from "@base-ui/react/menu";
+import { Avatar } from "@/components/ui";
 import {
   FileText,
   LogOut,
+  MoreVertical,
   Sparkles,
   User,
   Users,
@@ -14,6 +17,7 @@ import "./AppSidebar.css";
 
 export interface AppSidebarProps {
   isAdmin: boolean;
+  user: { name: string; email: string } | null;
 }
 
 interface NavItem {
@@ -27,7 +31,7 @@ interface NavItem {
  * Users). Page-specific actions (e.g. "New Resume") stay in each
  * page's own header — this only owns account-level navigation.
  */
-export function AppSidebar({ isAdmin }: AppSidebarProps) {
+export function AppSidebar({ isAdmin, user }: AppSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -79,14 +83,36 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
         })}
       </nav>
 
-      <button
-        type="button"
-        className="app-sidebar__logout"
-        onClick={() => void handleLogout()}
-      >
-        <LogOut size={18} className="app-sidebar__nav-icon" />
-        Log Out
-      </button>
+      {user && (
+        <div className="app-sidebar__user">
+          <Avatar name={user.email} size={36} />
+          <div className="app-sidebar__user-identity">
+            <span className="app-sidebar__user-name">{user.name}</span>
+            <span className="app-sidebar__user-email">{user.email}</span>
+          </div>
+          <Menu.Root>
+            <Menu.Trigger
+              className="app-sidebar__user-menu-trigger"
+              aria-label="Account menu"
+            >
+              <MoreVertical size={18} />
+            </Menu.Trigger>
+            <Menu.Portal>
+              <Menu.Positioner side="top" align="end" sideOffset={8}>
+                <Menu.Popup className="app-sidebar__menu">
+                  <Menu.Item
+                    className="app-sidebar__menu-item"
+                    onClick={() => void handleLogout()}
+                  >
+                    <LogOut size={16} />
+                    Log Out
+                  </Menu.Item>
+                </Menu.Popup>
+              </Menu.Positioner>
+            </Menu.Portal>
+          </Menu.Root>
+        </div>
+      )}
     </aside>
   );
 }

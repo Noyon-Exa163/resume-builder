@@ -81,11 +81,17 @@
 }
 
 .users-page__list-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr var(--space-20) 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: var(--space-4) var(--space-5);
   border-bottom: 1px solid var(--color-border);
+}
+
+/* User count (or its skeleton) sits in the last column, at the right edge. */
+.users-page__list-header > :nth-child(2) {
+  grid-column: 3;
+  justify-self: end;
 }
 
 .users-page__list-title {
@@ -123,20 +129,32 @@
   gap: var(--space-3);
 }
 
-.users-page__user-email {
+.users-page__user-identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.users-page__user-name {
   font-family: var(--font-body);
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-primary);
 }
 
+.users-page__user-email {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+}
+
 .users-page__user-badge {
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   line-height: 1.4;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  justify-self: start;
   padding: 2px var(--space-2);
   border-radius: var(--radius-full);
 }
@@ -153,6 +171,7 @@
 
 .users-page__user-actions {
   display: flex;
+  justify-content: flex-end;
   gap: var(--space-2);
 }
 

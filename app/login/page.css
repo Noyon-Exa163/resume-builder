@@ -32,6 +32,10 @@
   margin-bottom: var(--space-5);
 }
 
+.login-header .avatar {
+  margin-bottom: var(--space-4);
+}
+
 .login-header__title {
   font-family: var(--font-display);
   font-weight: 700;

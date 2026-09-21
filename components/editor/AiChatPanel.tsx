@@ -11,12 +11,14 @@ import {
   FileText,
   Loader2,
   Paperclip,
+  RefreshCw,
   RotateCcw,
   Send,
   Sparkles,
+  TriangleAlert,
   X,
 } from "lucide-react";
-import { ConfirmDialog, EmptyState, Tooltip } from "@/components/ui";
+import { ActionDialog, EmptyState, Tooltip } from "@/components/ui";
 import type { ResumeData } from "@/lib/schema/resume";
 import type { DeepPartial } from "@/lib/schema/normalize";
 import type { ChatFileAttachment, ChatMessage } from "@/lib/ai/chatTypes";
@@ -596,7 +598,9 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
         )}
       </div>
 
-      <ConfirmDialog
+      <ActionDialog
+        icon={TriangleAlert}
+        tone="warning"
         open={pendingTurn !== null}
         onOpenChange={(open) => {
           if (!open) handleCancelPending();
@@ -604,7 +608,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
         title="Replace current content?"
         description="This will replace the personal info, summary, and sections below with the uploaded file's content."
         confirmLabel="Replace"
-        isDestructive={false}
+        confirmIcon={RefreshCw}
         onConfirm={handleConfirmPending}
       />
     </div>

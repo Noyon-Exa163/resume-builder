@@ -6,6 +6,8 @@ import { USER_SESSION_COOKIE, verifyUserSessionToken } from "./userSession";
 export interface CurrentUser {
   id: string;
   email: string;
+  /** Display name; falls back to the email's local part when unset. */
+  name: string;
   role: "user" | "admin";
 }
 
@@ -26,12 +28,17 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   if (!session) return null;
 
   const rows = await sql`
-    SELECT id, email, is_admin FROM users WHERE id = ${session.userId}
+    SELECT id, email, name, is_admin FROM users WHERE id = ${session.userId}
   `;
   const row = rows[0] as
-    | { id: string; email: string; is_admin: boolean }
+    | { id: string; email: string; name: string | null; is_admin: boolean }
     | undefined;
   if (!row) return null;
 
-  return { id: row.id, email: row.email, role: row.is_admin ? "admin" : "user" };
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name?.trim() || row.email.split("@")[0],
+    role: row.is_admin ? "admin" : "user",
+  };
 });

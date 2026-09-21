@@ -2,7 +2,7 @@
 
 import { Suspense, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Input, Button } from "@/components/ui";
+import { Avatar, Input, Button } from "@/components/ui";
 import { Loader2, LogIn } from "lucide-react";
 import "./page.css";
 
@@ -59,6 +59,7 @@ function LoginForm() {
             alt="ExaResume"
             className="login-header__logo"
           />
+          <Avatar name={email.trim() || "ExaResume"} size={64} />
           <h1 className="login-header__title">Sign In</h1>
           <p className="login-header__subtitle">
             Enter your credentials to continue.

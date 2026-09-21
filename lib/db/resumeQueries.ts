@@ -9,6 +9,7 @@ interface ResumeAccessRow {
   data: unknown;
   owner_id: string;
   owner_email: string;
+  owner_name: string | null;
   permission: "viewer" | "editor" | null;
 }
 
@@ -34,7 +35,7 @@ export async function listResumesForUser(
 
   const rows = (await sql`
     SELECT r.id, jsonb_set(r.data, '{sections}', '[]'::jsonb) AS data,
-      r.user_id AS owner_id, u.email AS owner_email, rs.permission
+      r.user_id AS owner_id, u.email AS owner_email, u.name AS owner_name, rs.permission
     FROM resumes r
     JOIN users u ON u.id = r.user_id
     LEFT JOIN resume_shares rs
@@ -60,6 +61,7 @@ export async function listResumesForUser(
       resume: parsed.data,
       access,
       ownerEmail: row.owner_email,
+      ownerName: row.owner_name?.trim() || row.owner_email.split("@")[0],
     });
   }
 

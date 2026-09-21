@@ -25,14 +25,15 @@ export async function GET() {
   if (denied) return denied;
 
   const rows = await sql`
-    SELECT id, email, is_admin, created_at FROM users ORDER BY created_at ASC
+    SELECT id, email, name, is_admin, created_at FROM users ORDER BY created_at ASC
   `;
 
   return NextResponse.json(
-    (rows as Array<{ id: string; email: string; is_admin: boolean; created_at: string }>).map(
+    (rows as Array<{ id: string; email: string; name: string | null; is_admin: boolean; created_at: string }>).map(
       (r) => ({
         id: r.id,
         email: r.email,
+        name: r.name,
         isAdmin: r.is_admin,
         createdAt: r.created_at,
       }),
@@ -55,20 +56,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const { email, password, isAdmin } = body as {
+  const { name, email, password, isAdmin } = body as {
+    name?: string;
     email?: string;
     password?: string;
     isAdmin?: boolean;
   };
 
   if (
+    typeof name !== "string" ||
+    name.trim().length === 0 ||
     typeof email !== "string" ||
     email.length === 0 ||
     typeof password !== "string" ||
     password.length < 6
   ) {
     return NextResponse.json(
-      { error: "Email and a password of at least 6 characters are required." },
+      { error: "A name, an email, and a password of at least 6 characters are required." },
       { status: 400 },
     );
   }
@@ -87,9 +91,9 @@ export async function POST(request: Request) {
   const passwordHash = hashPassword(password);
 
   await sql`
-    INSERT INTO users (id, email, password_hash, is_admin)
-    VALUES (${id}, ${email.toLowerCase().trim()}, ${passwordHash}, ${isAdmin ?? false})
+    INSERT INTO users (id, name, email, password_hash, is_admin)
+    VALUES (${id}, ${name.trim()}, ${email.toLowerCase().trim()}, ${passwordHash}, ${isAdmin ?? false})
   `;
 
-  return NextResponse.json({ id, email: email.toLowerCase().trim(), isAdmin: isAdmin ?? false }, { status: 201 });
+  return NextResponse.json({ id, name: name.trim(), email: email.toLowerCase().trim(), isAdmin: isAdmin ?? false }, { status: 201 });
 }

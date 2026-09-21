@@ -88,3 +88,52 @@
   justify-content: flex-end;
   gap: var(--space-3);
 }
+
+/* Centered variant — see ActionDialog. */
+.dialog-popup--centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 400px;
+  text-align: center;
+}
+
+.dialog-popup--centered .dialog-header {
+  justify-content: center;
+  align-self: stretch;
+  margin-bottom: var(--space-1);
+}
+
+/* Take the close button's wrapper out of flow so the header is only as tall
+   as the title — the title-to-body gap is then exactly the 4px margin. */
+.dialog-popup--centered .dialog-header .tooltip-trigger {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+}
+
+.dialog-popup--centered .dialog-body,
+.dialog-popup--centered .dialog-footer {
+  align-self: stretch;
+}
+
+/* Form/list content stays left-aligned; only the header text is centered. */
+.dialog-popup--centered .dialog-body {
+  text-align: left;
+}
+
+.dialog-popup--centered .dialog-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.dialog-popup--centered .dialog-footer .button {
+  width: 100%;
+}
+
+.dialog-illustration {
+  display: block;
+  width: auto;
+  height: 128px;
+  margin-bottom: var(--space-2);
+}

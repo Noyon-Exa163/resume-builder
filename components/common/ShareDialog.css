@@ -32,8 +32,9 @@
 .share-dialog__list {
   max-height: 320px;
   overflow-y: auto;
-  border-radius: var(--radius-md);
-  background-color: var(--color-surface-inset);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .share-dialog__row {
@@ -42,17 +43,33 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
 }
 
-.share-dialog__row + .share-dialog__row {
-  border-top: 1px solid var(--color-border);
+.share-dialog__identity {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
-.share-dialog__email {
+.share-dialog__name {
   font-family: var(--font-body);
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.share-dialog__email {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -80,4 +97,9 @@
   background-color: var(--color-danger-subtle);
   border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-4);
+}
+
+/* Wider than the default centered dialog so the people list has room. */
+.dialog-popup.share-dialog {
+  max-width: 480px;
 }

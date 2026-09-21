@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect, type FormEvent } from "react";
-import { Users, Loader2, Trash2, Plus } from "lucide-react";
+import { Users, Trash2, Plus, UserPlus } from "lucide-react";
 import {
+  Avatar,
   Input,
   Button,
   EmptyState,
-  ConfirmDialog,
-  DialogRoot,
-  DialogPopup,
+  ActionDialog,
   Skeleton,
 } from "@/components/ui";
 import { isProtectedAdmin } from "@/lib/auth/constants";
@@ -16,6 +15,7 @@ import "./page.css";
 
 interface User {
   id: string;
+  name: string | null;
   email: string;
   isAdmin: boolean;
   createdAt: string;
@@ -26,6 +26,7 @@ export default function UsersPageClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newIsAdmin, setNewIsAdmin] = useState(false);
@@ -71,7 +72,8 @@ export default function UsersPageClient() {
         if (!ignore) setUsers(data);
       })
       .catch((err: Error) => {
-        if (!ignore) setError(err.message || "Something went wrong loading users.");
+        if (!ignore)
+          setError(err.message || "Something went wrong loading users.");
       })
       .finally(() => {
         if (!ignore) setIsLoading(false);
@@ -92,6 +94,7 @@ export default function UsersPageClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          name: newName,
           email: newEmail,
           password: newPassword,
           isAdmin: newIsAdmin,
@@ -104,6 +107,7 @@ export default function UsersPageClient() {
         return;
       }
 
+      setNewName("");
       setNewEmail("");
       setNewPassword("");
       setNewIsAdmin(false);
@@ -119,6 +123,7 @@ export default function UsersPageClient() {
   function handleCreateDialogChange(open: boolean) {
     setIsCreateOpen(open);
     if (!open) {
+      setNewName("");
       setNewEmail("");
       setNewPassword("");
       setNewIsAdmin(false);
@@ -150,7 +155,7 @@ export default function UsersPageClient() {
         <h1 className="users-page__title">User Management</h1>
         <Button
           variant="primary"
-          size="s"
+          size="m"
           onClick={() => setIsCreateOpen(true)}
         >
           <Plus size={16} />
@@ -160,66 +165,65 @@ export default function UsersPageClient() {
 
       {error && <div className="users-page__error">{error}</div>}
 
-      <DialogRoot open={isCreateOpen} onOpenChange={handleCreateDialogChange}>
-        <DialogPopup
-          title="Create User"
-          footer={
-            <>
-              <Button
-                variant="secondary"
-                size="s"
-                onClick={() => handleCreateDialogChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                form="create-user-form"
-                variant="primary"
-                size="s"
-                disabled={isCreating}
-              >
-                {isCreating && <Loader2 size={14} className="button__icon--spin" />}
-                {isCreating ? "Creating..." : "Create User"}
-              </Button>
-            </>
-          }
+      <ActionDialog
+        illustration="/assets/spots/add-users.svg"
+        open={isCreateOpen}
+        onOpenChange={handleCreateDialogChange}
+        title="Create User"
+        description="Add someone who can sign in and build resumes."
+        confirmLabel="Create User"
+        confirmIcon={UserPlus}
+        loadingLabel="Creating..."
+        isLoading={isCreating}
+        formId="create-user-form"
+      >
+        <form
+          id="create-user-form"
+          className="users-page__create-form"
+          onSubmit={handleCreate}
         >
-          <form id="create-user-form" className="users-page__create-form" onSubmit={handleCreate}>
-            {createError && (
-              <div className="users-page__error">{createError}</div>
-            )}
-            <div className="users-page__create-row">
-              <Input
-                label="Email"
-                type="email"
-                size="s"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                required
-                placeholder="user@exabyting.com"
+          {createError && (
+            <div className="users-page__error">{createError}</div>
+          )}
+          <div className="users-page__create-row">
+            <Input
+              label="Name"
+              size="m"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              required
+              placeholder="Jane Doe"
+              autoComplete="off"
+            />
+            <Input
+              label="Email"
+              type="email"
+              size="m"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              required
+              placeholder="user@exabyting.com"
+            />
+            <Input
+              label="Initial Password"
+              type="password"
+              size="m"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+            <label className="users-page__create-checkbox">
+              <input
+                type="checkbox"
+                checked={newIsAdmin}
+                onChange={(e) => setNewIsAdmin(e.target.checked)}
               />
-              <Input
-                label="Initial Password"
-                type="password"
-                size="s"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-              <label className="users-page__create-checkbox">
-                <input
-                  type="checkbox"
-                  checked={newIsAdmin}
-                  onChange={(e) => setNewIsAdmin(e.target.checked)}
-                />
-                Admin
-              </label>
-            </div>
-          </form>
-        </DialogPopup>
-      </DialogRoot>
+              Admin
+            </label>
+          </div>
+        </form>
+      </ActionDialog>
 
       <div className="users-page__list">
         <div className="users-page__list-header">
@@ -238,8 +242,8 @@ export default function UsersPageClient() {
             <div key={index} className="users-page__user">
               <div className="users-page__user-info">
                 <Skeleton width={180} height={14} />
-                <Skeleton width={48} height={18} radius="full" />
               </div>
+              <Skeleton width={48} height={18} radius="full" />
               <Skeleton width={72} height={28} radius="md" />
             </div>
           ))
@@ -249,13 +253,19 @@ export default function UsersPageClient() {
           users.map((u) => (
             <div key={u.id} className="users-page__user">
               <div className="users-page__user-info">
-                <span className="users-page__user-email">{u.email}</span>
-                <span
-                  className={`users-page__user-badge ${u.isAdmin ? "users-page__user-badge--admin" : "users-page__user-badge--user"}`}
-                >
-                  {u.isAdmin ? "Admin" : "User"}
-                </span>
+                <Avatar name={u.email} size={36} />
+                <div className="users-page__user-identity">
+                  <span className="users-page__user-name">
+                    {u.name || u.email.split("@")[0]}
+                  </span>
+                  <span className="users-page__user-email">{u.email}</span>
+                </div>
               </div>
+              <span
+                className={`users-page__user-badge ${u.isAdmin ? "users-page__user-badge--admin" : "users-page__user-badge--user"}`}
+              >
+                {u.isAdmin ? "Admin" : "User"}
+              </span>
               <div className="users-page__user-actions">
                 {isProtectedAdmin(u.email) ? (
                   <span className="users-page__user-protected">
@@ -277,14 +287,21 @@ export default function UsersPageClient() {
         )}
       </div>
 
-      <ConfirmDialog
+      <ActionDialog
+        illustration="/assets/spots/trash-delete.svg"
         open={deleteTarget !== null}
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
         title={`Delete user "${deleteTarget?.email ?? ""}"?`}
         description="This will permanently remove the user and all their resumes."
-        onConfirm={confirmDelete}
+        confirmLabel="Delete"
+        confirmIcon={Trash2}
+        isDestructive
+        onConfirm={() => {
+          void confirmDelete();
+          setDeleteTarget(null);
+        }}
       />
     </div>
   );

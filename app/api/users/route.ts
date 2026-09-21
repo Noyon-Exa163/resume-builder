@@ -14,8 +14,14 @@ export async function GET() {
   }
 
   const rows = (await sql`
-    SELECT id, email FROM users WHERE id != ${user.id} ORDER BY email ASC
-  `) as Array<{ id: string; email: string }>;
+    SELECT id, email, name FROM users WHERE id != ${user.id} ORDER BY email ASC
+  `) as Array<{ id: string; email: string; name: string | null }>;
 
-  return NextResponse.json(rows);
+  return NextResponse.json(
+    rows.map((row) => ({
+      id: row.id,
+      email: row.email,
+      name: row.name?.trim() || row.email.split("@")[0],
+    })),
+  );
 }

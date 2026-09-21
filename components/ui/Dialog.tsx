@@ -14,14 +14,18 @@ export interface DialogProps {
   children?: ReactNode;
   footer?: ReactNode;
   className?: string;
+  /** Centered layout: narrow, centered text, full-width evenly split footer
+   *  buttons. Used by ActionDialog. */
+  centered?: boolean;
+  /** Visual shown above the title (spot illustration or icon badge). */
+  media?: ReactNode;
 }
 
 const DialogRoot = Dialog.Root;
 
-const DialogTrigger = forwardRef<
-  HTMLButtonElement,
-  Dialog.Trigger.Props
->(({ ...rest }, ref) => <Dialog.Trigger ref={ref} {...rest} />);
+const DialogTrigger = forwardRef<HTMLButtonElement, Dialog.Trigger.Props>(
+  ({ ...rest }, ref) => <Dialog.Trigger ref={ref} {...rest} />,
+);
 DialogTrigger.displayName = "DialogTrigger";
 
 function DialogPopup({
@@ -30,15 +34,26 @@ function DialogPopup({
   children,
   footer,
   className,
+  centered,
+  media,
 }: DialogProps) {
   return (
     <Dialog.Portal>
       <Dialog.Backdrop className="dialog-backdrop" />
       <Dialog.Popup
-        className={["dialog-popup", className].filter(Boolean).join(" ")}
+        className={[
+          "dialog-popup",
+          centered && "dialog-popup--centered",
+          className,
+        ]
+          .filter(Boolean)
+          .join(" ")}
       >
+        {media}
         <div className="dialog-header">
-          {title && <Dialog.Title className="dialog-title">{title}</Dialog.Title>}
+          {title && (
+            <Dialog.Title className="dialog-title">{title}</Dialog.Title>
+          )}
           <Tooltip label="Close">
             <Dialog.Close className="dialog-close" aria-label="Close dialog">
               <X size={18} />
