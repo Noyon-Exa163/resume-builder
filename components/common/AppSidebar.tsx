@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu } from "@base-ui/react/menu";
 import { Avatar } from "@/components/ui";
+import type { AvatarPreferences } from "@/lib/avatar";
 import {
   FileText,
   LogOut,
@@ -17,7 +18,7 @@ import "./AppSidebar.css";
 
 export interface AppSidebarProps {
   isAdmin: boolean;
-  user: { name: string; email: string } | null;
+  user: { name: string; email: string; avatar: AvatarPreferences } | null;
 }
 
 interface NavItem {
@@ -85,7 +86,7 @@ export function AppSidebar({ isAdmin, user }: AppSidebarProps) {
 
       {user && (
         <div className="app-sidebar__user">
-          <Avatar name={user.email} size={36} />
+          <Avatar name={user.email} size={36} {...user.avatar} />
           <div className="app-sidebar__user-identity">
             <span className="app-sidebar__user-name">{user.name}</span>
             <span className="app-sidebar__user-email">{user.email}</span>

@@ -2,7 +2,11 @@ import { sql } from "@/lib/db/client";
 import { ResumeDataSchema } from "@/lib/schema/resume";
 import { canManageAllResumes, resolveResumeAccess } from "@/lib/auth/permissions";
 import type { CurrentUser } from "@/lib/auth";
-import type { ResumeAccessEntry } from "@/lib/storage/api/resumeAccess";
+import { avatarFromColumns } from "@/lib/avatar";
+import type {
+  ResumeAccessEntry,
+  ResumeAccessLevel,
+} from "@/lib/storage/api/resumeAccess";
 
 interface ResumeAccessRow {
   id: string;
@@ -10,6 +14,8 @@ interface ResumeAccessRow {
   owner_id: string;
   owner_email: string;
   owner_name: string | null;
+  owner_avatar_hue: number | null;
+  owner_avatar_expression: string | null;
   permission: "viewer" | "editor" | null;
 }
 
@@ -35,7 +41,9 @@ export async function listResumesForUser(
 
   const rows = (await sql`
     SELECT r.id, jsonb_set(r.data, '{sections}', '[]'::jsonb) AS data,
-      r.user_id AS owner_id, u.email AS owner_email, u.name AS owner_name, rs.permission
+      r.user_id AS owner_id, u.email AS owner_email, u.name AS owner_name,
+      u.avatar_hue AS owner_avatar_hue, u.avatar_expression AS owner_avatar_expression,
+      rs.permission
     FROM resumes r
     JOIN users u ON u.id = r.user_id
     LEFT JOIN resume_shares rs
@@ -49,7 +57,10 @@ export async function listResumesForUser(
   const entries: ResumeAccessEntry[] = [];
   for (const row of rows) {
     const parsed = ResumeDataSchema.safeParse(row.data);
-    if (!parsed.success) continue;
+    if (!parsed.success) {
+      console.warn(`Skipping resume ${row.id}: stored data failed validation.`);
+      continue;
+    }
     const access = resolveResumeAccess({
       userId: user.id,
       userEmail: user.email,
@@ -62,8 +73,39 @@ export async function listResumesForUser(
       access,
       ownerEmail: row.owner_email,
       ownerName: row.owner_name?.trim() || row.owner_email.split("@")[0],
+      ownerAvatar: avatarFromColumns(
+        row.owner_avatar_hue,
+        row.owner_avatar_expression,
+      ),
     });
   }
 
   return entries;
+}
+
+/**
+ * `user`'s access to one resume (owner, shared user or Super Admin), or null
+ * when the resume doesn't exist or they have no relationship to it — callers
+ * answer both with the same 404 so existence isn't leaked.
+ */
+export async function getResumeAccessLevel(
+  user: CurrentUser,
+  resumeId: string,
+): Promise<ResumeAccessLevel | null> {
+  const rows = (await sql`
+    SELECT r.user_id, rs.permission
+    FROM resumes r
+    LEFT JOIN resume_shares rs
+      ON rs.resume_id = r.id AND rs.shared_with_user_id = ${user.id}
+    WHERE r.id = ${resumeId}
+  `) as Array<{ user_id: string; permission: "viewer" | "editor" | null }>;
+
+  const row = rows[0];
+  if (!row) return null;
+  return resolveResumeAccess({
+    userId: user.id,
+    userEmail: user.email,
+    ownerId: row.user_id,
+    sharePermission: row.permission,
+  });
 }

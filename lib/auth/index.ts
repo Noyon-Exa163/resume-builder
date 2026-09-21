@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { cookies } from "next/headers";
+import { avatarFromColumns, type AvatarPreferences } from "@/lib/avatar";
 import { sql } from "@/lib/db/client";
 import { USER_SESSION_COOKIE, verifyUserSessionToken } from "./userSession";
 
@@ -9,6 +10,7 @@ export interface CurrentUser {
   /** Display name; falls back to the email's local part when unset. */
   name: string;
   role: "user" | "admin";
+  avatar: AvatarPreferences;
 }
 
 /**
@@ -28,10 +30,17 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   if (!session) return null;
 
   const rows = await sql`
-    SELECT id, email, name, is_admin FROM users WHERE id = ${session.userId}
+    SELECT id, email, name, is_admin, avatar_hue, avatar_expression FROM users WHERE id = ${session.userId}
   `;
   const row = rows[0] as
-    | { id: string; email: string; name: string | null; is_admin: boolean }
+    | {
+        id: string;
+        email: string;
+        name: string | null;
+        is_admin: boolean;
+        avatar_hue: number | null;
+        avatar_expression: string | null;
+      }
     | undefined;
   if (!row) return null;
 
@@ -40,5 +49,6 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     email: row.email,
     name: row.name?.trim() || row.email.split("@")[0],
     role: row.is_admin ? "admin" : "user",
+    avatar: avatarFromColumns(row.avatar_hue, row.avatar_expression),
   };
 });

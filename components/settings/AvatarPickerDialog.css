@@ -1,0 +1,117 @@
+/* Avatar picker dialog — live preview, hue rail, expression grid */
+
+/* Centered dialogs cap at 400px; the picker needs 96px more room. */
+.dialog-popup.avatar-picker__popup {
+  max-width: 496px;
+}
+
+.avatar-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.avatar-picker__error {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: var(--leading-body);
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}
+
+.avatar-picker__stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  align-self: stretch;
+  margin-bottom: var(--space-2);
+}
+
+.avatar-picker__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.avatar-picker__label {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: var(--leading-ui);
+  color: var(--color-text-primary);
+}
+
+.avatar-picker__colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.avatar-picker__color {
+  width: var(--space-8);
+  height: var(--space-8);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: transform var(--duration-base) var(--ease-default);
+}
+
+.avatar-picker__color:hover {
+  transform: scale(1.1);
+}
+
+.avatar-picker__color:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Gap ring in the surface color, then the focus-colored ring outside it. */
+.avatar-picker__color--selected {
+  box-shadow:
+    0 0 0 2px var(--color-surface),
+    0 0 0 4px var(--color-brand);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-picker__color {
+    transition: none;
+  }
+}
+
+.avatar-picker__expressions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: var(--space-2);
+}
+
+.avatar-picker__expression {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-inset);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color var(--duration-base) var(--ease-default);
+}
+
+.avatar-picker__expression:hover {
+  background-color: var(--color-brand-subtle);
+}
+
+.avatar-picker__expression:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.avatar-picker__expression--selected {
+  background-color: var(--color-brand-subtle);
+  color: var(--color-brand);
+  box-shadow: inset 0 0 0 2px var(--color-brand);
+}

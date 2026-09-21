@@ -59,7 +59,7 @@ function LoginForm() {
             alt="ExaResume"
             className="login-header__logo"
           />
-          <Avatar name={email.trim() || "ExaResume"} size={64} />
+          <Avatar name={email.trim() || "ExaResume"} size={64} followPointer bare />
           <h1 className="login-header__title">Sign In</h1>
           <p className="login-header__subtitle">
             Enter your credentials to continue.

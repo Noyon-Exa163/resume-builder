@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
+import {
+  AI_PARSE_RULE,
+  checkRateLimit,
+  rateLimitResponse,
+} from "@/lib/rateLimit";
+import {
+  AI_ATTACHED_TEXT_MAX_CHARS,
+  AI_INSTRUCTION_MAX_CHARS,
+} from "@/lib/ai/limits";
 import { resolveConfiguredProvider } from "@/lib/ai/resolveConfiguredProvider";
 import { RESUME_SCHEMA_DESCRIPTION } from "@/lib/ai/extractionPrompt";
 
@@ -13,8 +22,8 @@ import { RESUME_SCHEMA_DESCRIPTION } from "@/lib/ai/extractionPrompt";
  */
 
 const AiParseRequestSchema = z.object({
-  rawText: z.string().min(1),
-  customInstruction: z.string().optional(),
+  rawText: z.string().min(1).max(AI_ATTACHED_TEXT_MAX_CHARS),
+  customInstruction: z.string().max(AI_INSTRUCTION_MAX_CHARS).optional(),
 });
 
 export async function POST(request: Request) {
@@ -22,6 +31,9 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const limit = await checkRateLimit(user.id, AI_PARSE_RULE);
+  if (!limit.allowed) return rateLimitResponse(limit.retryAfterSeconds);
 
   let body: unknown;
   try {

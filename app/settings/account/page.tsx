@@ -9,7 +9,11 @@ export default async function AccountPage() {
 
   return (
     <AppShell>
-      <AccountPageClient name={user.name} email={user.email} />
+      <AccountPageClient
+        name={user.name}
+        email={user.email}
+        avatar={user.avatar}
+      />
     </AppShell>
   );
 }

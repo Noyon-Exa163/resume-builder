@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
+import { recordResumeActivity } from "@/lib/db/resumeActivity";
 import { canManageAllResumes } from "@/lib/auth/permissions";
 import { ResumeDataSchema } from "@/lib/schema/resume";
 import { listResumesForUser } from "@/lib/db/resumeQueries";
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  await sql`
+  const written = (await sql`
     INSERT INTO resumes (id, user_id, data, created_at, updated_at)
     VALUES (${resumeId}, ${user.id}, ${resumeJson}::jsonb, now(), now())
     ON CONFLICT (id) DO UPDATE
@@ -91,7 +92,17 @@ export async function POST(request: Request) {
         SELECT 1 FROM resume_shares
         WHERE resume_id = resumes.id AND shared_with_user_id = ${user.id} AND permission = 'editor'
       )
-  `;
+    RETURNING id
+  `) as Array<{ id: string }>;
+
+  if (written.length > 0) {
+    await recordResumeActivity({
+      resumeId,
+      userId: user.id,
+      action: existing.length > 0 ? "edited" : "created",
+      resumeJson,
+    });
+  }
 
   return NextResponse.json(resume, { status: existing.length > 0 ? 200 : 201 });
 }

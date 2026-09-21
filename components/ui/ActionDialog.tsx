@@ -15,6 +15,8 @@ export interface ActionDialogProps {
   description?: string;
   /** Spot illustration (image URL) shown above the title. */
   illustration?: string;
+  /** Custom node shown above the title; takes precedence over `illustration` and `icon`. */
+  media?: ReactNode;
   /** Icon badge shown above the title when there is no illustration. */
   icon?: IconComponent;
   /** Tints the icon badge. */
@@ -48,6 +50,7 @@ export default function ActionDialog({
   title,
   description,
   illustration,
+  media: customMedia,
   icon: Icon,
   tone = "default",
   children,
@@ -63,7 +66,9 @@ export default function ActionDialog({
   className,
 }: ActionDialogProps) {
   let media: ReactNode = null;
-  if (illustration) {
+  if (customMedia) {
+    media = customMedia;
+  } else if (illustration) {
     media = (
       <img
         className="dialog-illustration"

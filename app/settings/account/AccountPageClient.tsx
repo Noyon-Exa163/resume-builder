@@ -3,17 +3,21 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Avatar, Input, Button, ActionDialog } from "@/components/ui";
-import { KeyRound, Pencil } from "lucide-react";
+import { KeyRound, Pencil, Smile } from "lucide-react";
+import AvatarPickerDialog from "@/components/settings/AvatarPickerDialog";
+import type { AvatarPreferences } from "@/lib/avatar";
 import "./page.css";
 
 interface AccountPageClientProps {
   name: string;
   email: string;
+  avatar: AvatarPreferences;
 }
 
 export default function AccountPageClient({
   name,
   email,
+  avatar,
 }: AccountPageClientProps) {
   const router = useRouter();
 
@@ -21,6 +25,12 @@ export default function AccountPageClient({
   const [nameDraft, setNameDraft] = useState(name);
   const [nameError, setNameError] = useState("");
   const [isSavingName, setIsSavingName] = useState(false);
+
+  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
+  // Bumped on each open so the picker remounts and drops any unsaved draft.
+  const [avatarDialogKey, setAvatarDialogKey] = useState(0);
+  const [avatarError, setAvatarError] = useState("");
+  const [isSavingAvatar, setIsSavingAvatar] = useState(false);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -62,6 +72,40 @@ export default function AccountPageClient({
       setNameError("Something went wrong. Please try again.");
     } finally {
       setIsSavingName(false);
+    }
+  }
+
+  function handleAvatarDialogChange(open: boolean) {
+    setIsAvatarDialogOpen(open);
+    if (open) {
+      setAvatarError("");
+      setAvatarDialogKey((k) => k + 1);
+    }
+  }
+
+  async function handleAvatarSave(next: AvatarPreferences) {
+    setAvatarError("");
+    setIsSavingAvatar(true);
+
+    try {
+      const res = await fetch("/api/auth/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatar: next }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setAvatarError(data?.error || "Could not update your avatar.");
+        return;
+      }
+
+      setIsAvatarDialogOpen(false);
+      router.refresh();
+    } catch {
+      setAvatarError("Something went wrong. Please try again.");
+    } finally {
+      setIsSavingAvatar(false);
     }
   }
 
@@ -117,7 +161,14 @@ export default function AccountPageClient({
       <h1 className="account-page__title">Account</h1>
 
       <div className="account-card account-profile">
-        <Avatar name={email} size={72} />
+        <Avatar
+          name={email}
+          size={72}
+          hue={avatar.hue}
+          expression={avatar.expression}
+          followPointer
+          bare
+        />
         <div className="account-profile__identity">
           <div className="account-profile__name-row">
             <span className="account-profile__name">{name}</span>
@@ -133,16 +184,37 @@ export default function AccountPageClient({
           </div>
           <span className="account-profile__email">{email}</span>
         </div>
-        <Button
-          variant="secondary"
-          size="m"
-          className="account-profile__action"
-          onClick={() => setIsDialogOpen(true)}
-        >
-          <KeyRound size={16} />
-          Change Password
-        </Button>
+        <div className="account-profile__actions">
+          <Button
+            variant="secondary"
+            size="m"
+            onClick={() => handleAvatarDialogChange(true)}
+          >
+            <Smile size={16} />
+            Customize Avatar
+          </Button>
+          <Button
+            variant="secondary"
+            size="m"
+            className="account-profile__action"
+            onClick={() => setIsDialogOpen(true)}
+          >
+            <KeyRound size={16} />
+            Change Password
+          </Button>
+        </div>
       </div>
+
+      <AvatarPickerDialog
+        key={avatarDialogKey}
+        open={isAvatarDialogOpen}
+        onOpenChange={handleAvatarDialogChange}
+        email={email}
+        value={avatar}
+        isSaving={isSavingAvatar}
+        error={avatarError}
+        onSave={handleAvatarSave}
+      />
 
       <ActionDialog
         icon={Pencil}

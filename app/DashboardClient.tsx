@@ -16,8 +16,9 @@ import {
 import { ResumeCardPreview } from "@/components/dashboard/ResumeCardPreview";
 import { ShareDialog } from "@/components/common/ShareDialog";
 import { formatDisplayDate } from "@/lib/date";
+import { formatDateTime } from "@/lib/utils/formatDateTime";
 import { toTitleCase } from "@/lib/schema/personalInfo";
-import { EmptyState, ActionDialog, Avatar, Button, Tooltip, UserTooltip } from "@/components/ui";
+import { EmptyState, ActionDialog, Avatar, Button, GroupedSelect, SelectField, Tooltip, UserTooltip } from "@/components/ui";
 import { toPdfBlob } from "@/lib/export/toPdfBlob";
 import { buildExportFilename } from "@/lib/export/filename";
 import { triggerDownload } from "@/lib/export/triggerDownload";
@@ -28,16 +29,29 @@ import {
   Search,
   Share2,
   Trash2,
+  Users,
   X,
 } from "lucide-react";
 
-function formatCreatedAt(iso: string): string | undefined {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return undefined;
-  return date.toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+const ALL_OWNERS = "all";
+
+const SORT_FIELD_OPTIONS = [
+  { value: "created", label: "Date Created" },
+  { value: "modified", label: "Date Modified" },
+];
+const DEFAULT_SORT_FIELD = "modified";
+const DEFAULT_SORT_DIRECTION = "desc";
+const SORT_DIRECTION_OPTIONS = [
+  { value: "desc", label: "Newest First" },
+  { value: "asc", label: "Oldest First" },
+];
+
+/** Timestamp to sort by; an unparseable date sorts as oldest. */
+function sortTimestamp(entry: ResumeAccessEntry, field: string): number {
+  const iso =
+    field === "created" ? entry.resume.meta.createdAt : entry.resume.meta.updatedAt;
+  const time = Date.parse(iso);
+  return Number.isNaN(time) ? 0 : time;
 }
 
 interface DashboardClientProps {
@@ -51,21 +65,60 @@ export default function DashboardClient({
   const router = useRouter();
   const [entries, setEntries] = useState<ResumeAccessEntry[]>(initialEntries);
   const [searchQuery, setSearchQuery] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState(ALL_OWNERS);
+  const [sortField, setSortField] = useState(DEFAULT_SORT_FIELD);
+  const [sortDirection, setSortDirection] = useState(DEFAULT_SORT_DIRECTION);
   const [isCreating, setIsCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ResumeData | null>(null);
   const [shareTarget, setShareTarget] = useState<ResumeData | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  // One option per distinct creator, alphabetical by display name.
+  const ownerOptions = useMemo(() => {
+    const byEmail = new Map<string, ResumeAccessEntry>();
+    for (const entry of entries) {
+      if (!byEmail.has(entry.ownerEmail)) byEmail.set(entry.ownerEmail, entry);
+    }
+    return [...byEmail.values()]
+      .map((entry) => ({
+        value: entry.ownerEmail,
+        label: entry.ownerName ?? entry.ownerEmail.split("@")[0],
+        icon: (
+          <Avatar
+            name={entry.ownerEmail}
+            size={20}
+            bare
+            {...entry.ownerAvatar}
+          />
+        ),
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [entries]);
+
+  // Falls back to "all" if the chosen creator's last resume was deleted.
+  const activeOwnerFilter = ownerOptions.some((o) => o.value === ownerFilter)
+    ? ownerFilter
+    : ALL_OWNERS;
+
   const filteredEntries = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return entries;
 
-    return entries.filter(({ resume }) => {
+    const sign = sortDirection === "asc" ? 1 : -1;
+
+    const matches = entries.filter(({ resume, ownerEmail }) => {
+      if (activeOwnerFilter !== ALL_OWNERS && ownerEmail !== activeOwnerFilter) {
+        return false;
+      }
+      if (!query) return true;
       const title = resume.meta.title.toLowerCase();
       const fullName = resume.personalInfo.fullName.toLowerCase();
       return title.includes(query) || fullName.includes(query);
     });
-  }, [entries, searchQuery]);
+
+    return matches.sort(
+      (a, b) => sign * (sortTimestamp(a, sortField) - sortTimestamp(b, sortField)),
+    );
+  }, [entries, searchQuery, activeOwnerFilter, sortField, sortDirection]);
 
   async function handleCreate() {
     setIsCreating(true);
@@ -129,21 +182,71 @@ export default function DashboardClient({
         </header>
 
         {entries.length > 0 && (
-          <label className="dashboard__search">
-            <Search
-              size={16}
-              className="dashboard__search-icon"
-              aria-hidden="true"
+          <div className="dashboard__filters">
+            <label className="dashboard__search">
+              <Search
+                size={16}
+                className="dashboard__search-icon"
+                aria-hidden="true"
+              />
+              <input
+                type="search"
+                className="dashboard__search-input"
+                placeholder={`Search ${entries.length} ${entries.length === 1 ? "Resume" : "Resumes"}...`}
+                aria-label={`Search ${entries.length} ${entries.length === 1 ? "Resume" : "Resumes"}`}
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
+            </label>
+            {ownerOptions.length > 1 && (
+              <SelectField
+                size="s"
+                className="dashboard__owner-filter"
+                options={[
+                  {
+                    value: ALL_OWNERS,
+                    label: "All Users",
+                    icon: (
+                      <span className="dashboard__owner-all-icon">
+                        <Users size={12} aria-hidden="true" />
+                      </span>
+                    ),
+                  },
+                  ...ownerOptions,
+                ]}
+                value={activeOwnerFilter}
+                onValueChange={(next) => setOwnerFilter(next ?? ALL_OWNERS)}
+              />
+            )}
+            <GroupedSelect
+              className="dashboard__sort"
+              aria-label="Sort Resumes"
+              reset={{
+                label: "Default",
+                isActive:
+                  sortField === DEFAULT_SORT_FIELD &&
+                  sortDirection === DEFAULT_SORT_DIRECTION,
+                onSelect: () => {
+                  setSortField(DEFAULT_SORT_FIELD);
+                  setSortDirection(DEFAULT_SORT_DIRECTION);
+                },
+              }}
+              groups={[
+                {
+                  id: "field",
+                  options: SORT_FIELD_OPTIONS,
+                  value: sortField,
+                  onValueChange: setSortField,
+                },
+                {
+                  id: "direction",
+                  options: SORT_DIRECTION_OPTIONS,
+                  value: sortDirection,
+                  onValueChange: setSortDirection,
+                },
+              ]}
             />
-            <input
-              type="search"
-              className="dashboard__search-input"
-              placeholder={`Search ${entries.length} ${entries.length === 1 ? "Resume" : "Resumes"}...`}
-              aria-label={`Search ${entries.length} ${entries.length === 1 ? "Resume" : "Resumes"}`}
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-          </label>
+          </div>
         )}
       </div>
 
@@ -159,13 +262,16 @@ export default function DashboardClient({
         <EmptyState
           illustration="/assets/spots/candidate.svg"
           title="No matching resumes"
-          description="No resumes match your search. Try a different name or keyword."
+          description="No resumes match your search or filter. Try a different name, keyword or user."
           action={
             <Button
               type="button"
               variant="secondary"
               size="m"
-              onClick={() => setSearchQuery("")}
+              onClick={() => {
+                setSearchQuery("");
+                setOwnerFilter(ALL_OWNERS);
+              }}
             >
               <X size={16} />
               Clear
@@ -176,7 +282,7 @@ export default function DashboardClient({
 
       {filteredEntries.length > 0 && (
         <ul className="dashboard__list">
-          {filteredEntries.map(({ resume, access, ownerEmail, ownerName }) => (
+          {filteredEntries.map(({ resume, access, ownerEmail, ownerName, ownerAvatar }) => (
             <li key={resume.meta.id} className="resume-card">
               <a
                 href={`/editor/${resume.meta.id}`}
@@ -232,14 +338,15 @@ export default function DashboardClient({
                       title={access === "admin" ? "Created By" : "Shared By"}
                       name={ownerName ?? ownerEmail.split("@")[0]}
                       email={ownerEmail}
+                      avatar={ownerAvatar}
                       caption={
                         access === "admin"
-                          ? formatCreatedAt(resume.meta.createdAt)
+                          ? formatDateTime(resume.meta.createdAt)
                           : undefined
                       }
                     >
                       {access === "admin" ? (
-                        <Avatar name={ownerEmail} size={24} />
+                        <Avatar name={ownerEmail} size={24} bare {...ownerAvatar} />
                       ) : (
                         <span
                           className={`resume-card__badge resume-card__badge--${access}`}

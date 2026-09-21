@@ -1,0 +1,36 @@
+/* Download format menu for a saved version */
+
+/* Portals to <body>, so it needs its own z-index to clear the dialog. */
+.version-menu__positioner {
+  z-index: var(--z-floating);
+}
+
+.version-menu__popup {
+  min-width: 160px;
+  padding: var(--space-1);
+  background-color: var(--color-surface-raised);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+}
+
+.version-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  outline: none;
+}
+
+.version-menu__item svg {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.version-menu__item[data-highlighted] {
+  background-color: var(--color-surface-inset);
+}

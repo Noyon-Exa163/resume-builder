@@ -20,7 +20,11 @@ export default async function AppShell({ children }: AppShellProps) {
     <div className="app-shell">
       <AppSidebar
         isAdmin={user?.role === "admin"}
-        user={user ? { name: user.name, email: user.email } : null}
+        user={
+          user
+            ? { name: user.name, email: user.email, avatar: user.avatar }
+            : null
+        }
       />
       <div className="app-shell__content">{children}</div>
     </div>

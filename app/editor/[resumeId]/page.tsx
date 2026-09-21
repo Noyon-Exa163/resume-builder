@@ -18,14 +18,16 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useEditorStore } from "@/lib/store/editorStore";
-import { formatLastSavedLabel } from "@/lib/utils/formatLastSaved";
 import { createBlankResume, type DeepPartial } from "@/lib/schema/normalize";
 import type { ResumeData } from "@/lib/schema/resume";
 import { resumeRepository } from "@/lib/storage/api/resumeRepository";
 import { fetchDefaultTemplateId } from "@/lib/storage/api/appDefaults";
 import { canManageResume } from "@/lib/storage/api/resumeAccess";
+import { restoreResumeVersion } from "@/lib/storage/api/resumeHistory";
 import { Button, Skeleton, TabsField } from "@/components/ui";
 import { ShareDialog } from "@/components/common/ShareDialog";
+import { SaveStatusButton } from "@/components/editor/SaveStatusButton";
+import { ResumeHistoryDialog } from "@/components/editor/ResumeHistoryDialog";
 import {
   AiChatPanel,
   PersonalInfoForm,
@@ -39,7 +41,6 @@ import {
 import "./page.css";
 
 const AUTOSAVE_DELAY_MS = 5_000;
-const SAVE_STATUS_TICK_MS = 30_000;
 const DEFAULT_SIDEBAR_WIDTH = 420;
 const MIN_SIDEBAR_WIDTH = 320;
 const MAX_SIDEBAR_WIDTH = 640;
@@ -81,6 +82,7 @@ export default function EditorPage() {
   }, [params.resumeId, load]);
 
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [importCelebrateKey, setImportCelebrateKey] = useState(0);
 
@@ -207,6 +209,25 @@ export default function EditorPage() {
     void save();
   }
 
+  async function handleRestoreVersion(versionId: string) {
+    if (!resume) return;
+    // Flush pending edits first, so the restore isn't overwritten by a stale
+    // autosave a moment later.
+    await save();
+    if (useEditorStore.getState().isDirty) {
+      throw new Error(
+        "Your latest edits couldn't be saved yet. Wait a moment and try again.",
+      );
+    }
+    const restored = await restoreResumeVersion(resume.meta.id, versionId);
+    useEditorStore.setState({
+      resume: restored,
+      isDirty: false,
+      lastSavedAt: restored.meta.updatedAt,
+    });
+    setIsHistoryOpen(false);
+  }
+
   if (isLoading || !hasLoaded) {
     return (
       <main className="editor-page">
@@ -282,18 +303,17 @@ export default function EditorPage() {
           />
         </span>
         <div className="editor-page__header-end">
-          {/* Keyed so a new save restarts the elapsed-time clock immediately
-              rather than waiting out the current tick. */}
-          <LastSavedStatus
-            key={lastSavedAt}
-            lastSavedAt={lastSavedAt}
-            isSaving={isSaving}
-          />
           {pageCount != null && (
-            <p className="editor-page__save-status" aria-live="polite">
+            <p className="editor-page__save-status">
               {pageCount === 1 ? "1 page" : `${pageCount} pages`}
             </p>
           )}
+          <SaveStatusButton
+            isSaving={isSaving}
+            isDirty={isDirty}
+            lastSavedAt={lastSavedAt}
+            onClick={() => setIsHistoryOpen(true)}
+          />
           <div className="editor-page__actions">
             <ExportButtons data={resume} />
             {access != null && canManageResume(access) && (
@@ -437,6 +457,13 @@ export default function EditorPage() {
         </aside>
       </div>
 
+      <ResumeHistoryDialog
+        resumeId={resume.meta.id}
+        open={isHistoryOpen}
+        onOpenChange={setIsHistoryOpen}
+        canRestore={!isReadOnly}
+        onRestore={handleRestoreVersion}
+      />
       {access != null && canManageResume(access) && (
         <ShareDialog
           resumeId={resume.meta.id}
@@ -446,36 +473,5 @@ export default function EditorPage() {
         />
       )}
     </main>
-  );
-}
-
-function LastSavedStatus({
-  lastSavedAt,
-  isSaving,
-}: {
-  lastSavedAt: string | null;
-  isSaving: boolean;
-}) {
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setNow(Date.now());
-    }, SAVE_STATUS_TICK_MS);
-    return () => window.clearInterval(intervalId);
-  }, []);
-
-  const label = isSaving
-    ? "Saving…"
-    : lastSavedAt
-      ? formatLastSavedLabel(lastSavedAt, new Date(now))
-      : null;
-
-  if (!label) return null;
-
-  return (
-    <p className="editor-page__save-status" aria-live="polite">
-      {label}
-    </p>
   );
 }

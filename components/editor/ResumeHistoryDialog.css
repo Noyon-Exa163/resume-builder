@@ -1,0 +1,132 @@
+/* Edit history dialog — a vertical timeline of avatars joined by a line */
+
+.history-dialog {
+  max-width: 480px;
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.history-dialog .dialog-header {
+  flex-shrink: 0;
+}
+
+/* At least 60vh tall, so the dialog is the same size on both tabs and while a
+   list loads; it grows with a long list up to the dialog's 94vh cap, and only
+   the list scrolls after that. */
+.history-dialog .dialog-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 60vh;
+}
+
+.history-dialog .tabs {
+  flex: 1;
+  min-height: 0;
+}
+
+.history-dialog .tabs__panel {
+  flex: 1;
+  min-height: 0;
+  margin-top: var(--space-4);
+  overflow-y: auto;
+}
+
+.history-dialog__message {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: var(--leading-body);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.history-dialog__message--error {
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}
+
+.history-dialog__loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.history-dialog__skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.history-dialog__skeleton-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.history-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.history-timeline__item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-bottom: var(--space-5);
+}
+
+/* Connector from this avatar down to the next one. */
+.history-timeline__item:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: var(--space-8);
+  bottom: 0;
+  left: calc(var(--space-4) - 1px);
+  width: 2px;
+  background-color: var(--color-border);
+}
+
+.history-timeline__item:last-child {
+  padding-bottom: 0;
+}
+
+.history-timeline__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding-top: var(--space-1);
+}
+
+.history-timeline__who {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: var(--leading-ui);
+  color: var(--color-text-secondary);
+}
+
+.history-timeline__name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.history-timeline__time {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: var(--leading-caption);
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.history-timeline__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}

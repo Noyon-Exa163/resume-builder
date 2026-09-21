@@ -30,6 +30,20 @@
   margin-top: auto;
 }
 
+/* One step up from the default 16px empty-state title (20px is the app's
+   next title size, as in dialog titles), semibold. */
+.ai-chat-panel__empty-state .empty-state__title {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: var(--leading-heading);
+  letter-spacing: var(--tracking-subtitle);
+}
+
+/* The default tertiary grey is too faint for a paragraph this long. */
+.ai-chat-panel__empty-state .empty-state__description {
+  color: var(--color-text-secondary);
+}
+
 .ai-chat-panel__thinking {
   align-self: flex-start;
   display: inline-flex;

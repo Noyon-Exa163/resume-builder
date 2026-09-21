@@ -10,6 +10,8 @@ export interface TooltipProps {
   label: ReactNode;
   children: ReactElement;
   side?: "top" | "bottom" | "left" | "right";
+  /** "light" is a white card for rich content; "default" is the inverted label. */
+  variant?: "default" | "light";
 }
 
 /**
@@ -19,7 +21,12 @@ export interface TooltipProps {
  * tooltip (native disabled elements swallow pointer events) and so the
  * trigger identity stays stable if `disabled` flips.
  */
-export function Tooltip({ label, children, side = "top" }: TooltipProps) {
+export function Tooltip({
+  label,
+  children,
+  side = "top",
+  variant = "default",
+}: TooltipProps) {
   return (
     <BaseTooltip.Root>
       <BaseTooltip.Trigger render={<span className="tooltip-trigger" />}>
@@ -31,7 +38,15 @@ export function Tooltip({ label, children, side = "top" }: TooltipProps) {
           side={side}
           sideOffset={6}
         >
-          <BaseTooltip.Popup className="tooltip-popup">{label}</BaseTooltip.Popup>
+          <BaseTooltip.Popup
+            className={
+              variant === "light"
+                ? "tooltip-popup tooltip-popup--light"
+                : "tooltip-popup"
+            }
+          >
+            {label}
+          </BaseTooltip.Popup>
         </BaseTooltip.Positioner>
       </BaseTooltip.Portal>
     </BaseTooltip.Root>

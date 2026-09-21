@@ -1,9 +1,15 @@
 .avatar {
   display: inline-flex;
   flex-shrink: 0;
-  background-color: var(--color-info-subtle);
+  background-color: var(--color-brand-subtle);
   border-radius: var(--radius-full);
   overflow: hidden;
+}
+
+.avatar--bare {
+  background-color: transparent;
+  /* No circle to clip to, so let the hover lift and scale show in full. */
+  overflow: visible;
 }
 
 .avatar > * {

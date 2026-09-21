@@ -96,9 +96,18 @@ export async function PUT(request: Request, { params }: RouteParams) {
     );
   }
 
-  const shares = parsed.data.shares.filter(
-    (share) => share.userId !== resume.ownerId,
-  );
+  // Deduplicated by user (last entry wins): the table's primary key is
+  // (resume_id, shared_with_user_id), so a repeat would fail the whole update.
+  const sharesByUser = new Map<string, "viewer" | "editor">();
+  for (const share of parsed.data.shares) {
+    if (share.userId !== resume.ownerId) {
+      sharesByUser.set(share.userId, share.permission);
+    }
+  }
+  const shares = [...sharesByUser].map(([userId, permission]) => ({
+    userId,
+    permission,
+  }));
 
   await sql.transaction([
     sql`DELETE FROM resume_shares WHERE resume_id = ${id}`,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
+import { avatarFromColumns } from "@/lib/avatar";
 
 /**
  * GET /api/users — every other user in the system, for the resume Share
@@ -14,14 +15,22 @@ export async function GET() {
   }
 
   const rows = (await sql`
-    SELECT id, email, name FROM users WHERE id != ${user.id} ORDER BY email ASC
-  `) as Array<{ id: string; email: string; name: string | null }>;
+    SELECT id, email, name, avatar_hue, avatar_expression
+    FROM users WHERE id != ${user.id} ORDER BY email ASC
+  `) as Array<{
+    id: string;
+    email: string;
+    name: string | null;
+    avatar_hue: number | null;
+    avatar_expression: string | null;
+  }>;
 
   return NextResponse.json(
     rows.map((row) => ({
       id: row.id,
       email: row.email,
       name: row.name?.trim() || row.email.split("@")[0],
+      avatar: avatarFromColumns(row.avatar_hue, row.avatar_expression),
     })),
   );
 }

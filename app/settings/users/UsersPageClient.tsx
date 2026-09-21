@@ -11,6 +11,7 @@ import {
   Skeleton,
 } from "@/components/ui";
 import { isProtectedAdmin } from "@/lib/auth/constants";
+import type { AvatarPreferences } from "@/lib/avatar";
 import "./page.css";
 
 interface User {
@@ -19,6 +20,7 @@ interface User {
   email: string;
   isAdmin: boolean;
   createdAt: string;
+  avatar: AvatarPreferences;
 }
 
 export default function UsersPageClient() {
@@ -253,7 +255,7 @@ export default function UsersPageClient() {
           users.map((u) => (
             <div key={u.id} className="users-page__user">
               <div className="users-page__user-info">
-                <Avatar name={u.email} size={36} />
+                <Avatar name={u.email} size={36} {...u.avatar} />
                 <div className="users-page__user-identity">
                   <span className="users-page__user-name">
                     {u.name || u.email.split("@")[0]}

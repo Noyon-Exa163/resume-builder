@@ -276,14 +276,18 @@ export function PdfCanvasViewer({
           <p className="pdf-canvas-viewer__status">Rendering preview…</p>
         )}
       </div>
-      <PreviewZoomToolbar
-        mode={mode}
-        zoomPercent={zoomPercent}
-        onModeChange={handleModeChange}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onZoomReset={handleZoomReset}
-      />
+      {/* Mounted only once the first pages are on screen, so its appear
+          animation plays when the preview is ready, not while it loads. */}
+      {hasRendered && (
+        <PreviewZoomToolbar
+          mode={mode}
+          zoomPercent={zoomPercent}
+          onModeChange={handleModeChange}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onZoomReset={handleZoomReset}
+        />
+      )}
     </div>
   );
 }

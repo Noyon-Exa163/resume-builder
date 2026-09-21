@@ -22,6 +22,14 @@ export type { SelectFieldProps, SelectOption } from "./Select";
 export { DialogRoot, DialogTrigger, DialogPopup } from "./Dialog";
 export type { DialogProps } from "./Dialog";
 
+export { default as GroupedSelect } from "./GroupedSelect";
+export type {
+  GroupedSelectProps,
+  GroupedSelectGroup,
+  GroupedSelectOption,
+  GroupedSelectReset,
+} from "./GroupedSelect";
+
 export { default as SwitchField } from "./Switch";
 export type { SwitchFieldProps } from "./Switch";
 

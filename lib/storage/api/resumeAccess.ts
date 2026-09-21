@@ -1,3 +1,4 @@
+import type { AvatarPreferences } from "@/lib/avatar";
 import type { ResumeData } from "@/lib/schema/resume";
 
 export type ResumeAccessLevel = "owner" | "editor" | "viewer" | "admin";
@@ -13,12 +14,14 @@ export interface ResumeAccessEntry {
   ownerEmail: string;
   /** Only set by the list endpoint (dashboard), not the single-resume one. */
   ownerName?: string;
+  ownerAvatar?: AvatarPreferences;
 }
 
 export interface ShareableUser {
   id: string;
   name: string;
   email: string;
+  avatar: AvatarPreferences;
 }
 
 export interface ResumeShare {

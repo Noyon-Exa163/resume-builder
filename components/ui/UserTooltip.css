@@ -10,12 +10,12 @@
   font-weight: 600;
   letter-spacing: var(--tracking-overline);
   text-transform: uppercase;
-  opacity: 0.7;
+  color: var(--color-text-tertiary);
 }
 
 .user-tooltip__person {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
 }
 
@@ -27,16 +27,17 @@
 .user-tooltip__name {
   font-size: 13px;
   font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .user-tooltip__email {
   font-size: 12px;
   font-weight: 400;
-  opacity: 0.7;
+  color: var(--color-text-secondary);
 }
 
 .user-tooltip__caption {
   font-size: 12px;
   font-weight: 400;
-  opacity: 0.7;
+  color: var(--color-text-tertiary);
 }

@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
+import {
+  AI_CHAT_RULE,
+  checkRateLimit,
+  rateLimitResponse,
+} from "@/lib/rateLimit";
+import {
+  AI_ATTACHED_TEXT_MAX_CHARS,
+  AI_MESSAGE_MAX_CHARS,
+  AI_TURN_MAX_CHARS,
+} from "@/lib/ai/limits";
 import { resolveConfiguredProvider } from "@/lib/ai/resolveConfiguredProvider";
 import {
   buildChatPrompt,
@@ -28,14 +38,14 @@ import type { ResumeData } from "@/lib/schema/resume";
 
 const ChatTurnSchema = z.object({
   role: z.enum(["user", "assistant"]),
-  content: z.string(),
+  content: z.string().max(AI_TURN_MAX_CHARS),
 });
 
 const AiChatRequestSchema = z.object({
   resume: ResumeDataSchema,
   history: z.array(ChatTurnSchema).max(AI_CHAT_HISTORY_LIMIT),
-  message: z.string().min(1),
-  attachedFileText: z.string().optional(),
+  message: z.string().min(1).max(AI_MESSAGE_MAX_CHARS),
+  attachedFileText: z.string().max(AI_ATTACHED_TEXT_MAX_CHARS).optional(),
 });
 
 const ChatEnvelopeSchema = z.object({
@@ -52,6 +62,9 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const limit = await checkRateLimit(user.id, AI_CHAT_RULE);
+  if (!limit.allowed) return rateLimitResponse(limit.retryAfterSeconds);
 
   let body: unknown;
   try {

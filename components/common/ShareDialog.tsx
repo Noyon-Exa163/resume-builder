@@ -151,7 +151,7 @@ export function ShareDialog({
                 <p className="share-dialog__heading">Owner</p>
                 <div className="share-dialog__list">
                   <div className="share-dialog__row">
-                    <Avatar name={owner.email} size={28} />
+                    <Avatar name={owner.email} size={28} {...owner.avatar} />
                     <span className="share-dialog__identity">
                       <span className="share-dialog__name">{owner.name}</span>
                       <span className="share-dialog__email">{owner.email}</span>
@@ -168,7 +168,7 @@ export function ShareDialog({
                 <div className="share-dialog__list">
                   {shareTargets?.map((user) => (
                     <div key={user.id} className="share-dialog__row">
-                      <Avatar name={user.email} size={28} />
+                      <Avatar name={user.email} size={28} {...user.avatar} />
                       <span className="share-dialog__identity">
                         <span className="share-dialog__name">{user.name}</span>
                         <span className="share-dialog__email">

@@ -25,6 +25,7 @@ import type { ChatFileAttachment, ChatMessage } from "@/lib/ai/chatTypes";
 import type { AIChatMessage } from "@/lib/ai/types";
 import { AI_CHAT_HISTORY_LIMIT } from "@/lib/ai/chatPrompt";
 import { detectFormat } from "@/lib/import/detectFormat";
+import { parseResumeJson } from "@/lib/import/jsonImport";
 import { truncateFilenameMiddle } from "@/lib/utils/truncateFilename";
 import { extractPdfText } from "@/lib/import/extractors/pdfText";
 import { extractDocxText } from "@/lib/import/extractors/docxText";
@@ -286,9 +287,20 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       setLoadingStage("reading");
       try {
         if (format === "json") {
-          directResumeUpdate = JSON.parse(
-            await currentFile.text(),
-          ) as DeepPartial<ResumeData>;
+          const parsedJson = parseResumeJson(await currentFile.text());
+          if (!parsedJson.ok) {
+            setErrorMessage(parsedJson.error);
+            setStatus("idle");
+            setLoadingStage(null);
+            return;
+          }
+          if (trimmedInstruction) {
+            // The person asked for something to be done with this data, so
+            // the AI gets the JSON along with their message.
+            attachedFileText = JSON.stringify(parsedJson.data);
+          } else {
+            directResumeUpdate = parsedJson.data;
+          }
         } else {
           const rawText = await extractText(currentFile, format);
           if (!rawText.trim()) {

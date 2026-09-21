@@ -1,11 +1,25 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db/client";
-import { verifyPassword } from "@/lib/auth/password";
+import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import {
+  checkRateLimit,
+  getClientIp,
+  LOGIN_ACCOUNT_RULE,
+  LOGIN_IP_RULE,
+  rateLimitResponse,
+} from "@/lib/rateLimit";
 import {
   createUserSessionToken,
   USER_SESSION_COOKIE,
   USER_SESSION_MAX_AGE_SECONDS,
 } from "@/lib/auth/userSession";
+
+/**
+ * Verified against when the email is unknown, so an unknown email costs the
+ * same scrypt work as a wrong password and response time can't reveal which
+ * emails have accounts. Created once, on first use.
+ */
+let decoyHash: string | undefined;
 
 /**
  * POST /api/auth/login
@@ -42,12 +56,30 @@ export async function POST(request: Request) {
     );
   }
 
+  const normalizedEmail = email.toLowerCase().trim();
+  const ip = getClientIp(request);
+  const [ipLimit, accountLimit] = await Promise.all([
+    checkRateLimit(ip, LOGIN_IP_RULE),
+    // Keyed by IP as well as email so a stranger can't lock a real user out.
+    checkRateLimit(`${ip}:${normalizedEmail}`, LOGIN_ACCOUNT_RULE),
+  ]);
+  if (!ipLimit.allowed || !accountLimit.allowed) {
+    return rateLimitResponse(
+      Math.max(ipLimit.retryAfterSeconds, accountLimit.retryAfterSeconds),
+    );
+  }
+
   const rows = await sql`
-    SELECT id, password_hash FROM users WHERE email = ${email.toLowerCase().trim()}
+    SELECT id, password_hash FROM users WHERE email = ${normalizedEmail}
   `;
   const user = rows[0] as
     | { id: string; password_hash: string }
     | undefined;
+
+  if (!user) {
+    decoyHash ??= hashPassword("decoy-password-for-timing");
+    verifyPassword(password, decoyHash);
+  }
 
   if (!user || !verifyPassword(password, user.password_hash)) {
     return NextResponse.json(

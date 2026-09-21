@@ -3,7 +3,7 @@
 
 .preview-zoom-toolbar {
   position: absolute;
-  z-index: var(--z-floating);
+  z-index: var(--z-page-chrome);
   bottom: var(--space-4);
   left: 50%;
   transform: translateX(-50%);
@@ -14,7 +14,30 @@
   padding: var(--space-1);
   background-color: var(--color-surface-raised);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-3);
+  box-shadow: var(--shadow-4);
+  transform-origin: bottom center;
+  animation: preview-zoom-toolbar-in calc(var(--duration-slow) * 2)
+    var(--ease-out) both;
+}
+
+/* Rises from the bottom edge while scaling up. The translateX(-50%) is part
+   of the centering, so it has to be repeated in every keyframe. */
+@keyframes preview-zoom-toolbar-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(var(--space-4)) scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preview-zoom-toolbar {
+    animation: none;
+  }
 }
 
 .preview-zoom-toolbar__group {

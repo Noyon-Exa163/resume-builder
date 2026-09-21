@@ -123,7 +123,16 @@ export const useEditorStore = create<EditorState>((set, get) => {
     async load(id) {
       const token = (loadToken += 1);
       set({ isLoading: true });
-      const found = await getResumeWithAccess(id);
+      let found: Awaited<ReturnType<typeof getResumeWithAccess>>;
+      try {
+        found = await getResumeWithAccess(id);
+      } catch (error) {
+        console.error("Failed to load resume:", error);
+        // Leave the loading state so the page doesn't sit on its skeleton
+        // forever; with no resume it falls through to the not-found screen.
+        if (token === loadToken) set({ isLoading: false, hasLoaded: true });
+        return;
+      }
 
       // A newer load started while this one was in flight; let that one win.
       if (token !== loadToken) return;
@@ -143,7 +152,10 @@ export const useEditorStore = create<EditorState>((set, get) => {
       const repaired = found
         ? backfillMetaDefaults(dedupeResumeIds(found.resume))
         : null;
-      const wasRepaired = found ? repaired !== found.resume : false;
+      // A viewer can't save, so a repaired copy stays in memory only; marking
+      // it dirty would just queue writes the server rejects.
+      const wasRepaired =
+        found && found.access !== "viewer" ? repaired !== found.resume : false;
 
       set({
         resume: repaired,

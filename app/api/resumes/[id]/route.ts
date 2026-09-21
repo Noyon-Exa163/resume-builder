@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
+import { recordResumeActivity } from "@/lib/db/resumeActivity";
 import { canManageAllResumes, resolveResumeAccess } from "@/lib/auth/permissions";
 import { ResumeDataSchema } from "@/lib/schema/resume";
 
@@ -110,6 +111,15 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
   const resume = parsed.data;
 
+  // Authorization below is checked against the URL id, so the stored document
+  // must belong to that same id or the row and its data would disagree.
+  if (resume.meta.id !== id) {
+    return NextResponse.json(
+      { error: "Resume id does not match the URL." },
+      { status: 400 },
+    );
+  }
+
   // Confirm the caller may write to this resume (owner, editor share, or Super Admin)
   const existing = (await sql`
     SELECT r.id
@@ -130,7 +140,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
   const resumeJson = JSON.stringify(resume);
 
-  await sql`
+  const updated = (await sql`
     UPDATE resumes
     SET data = ${resumeJson}::jsonb,
         updated_at = now()
@@ -143,7 +153,17 @@ export async function PUT(request: Request, { params }: RouteParams) {
           WHERE resume_id = resumes.id AND shared_with_user_id = ${user.id} AND permission = 'editor'
         )
       )
-  `;
+    RETURNING id
+  `) as Array<{ id: string }>;
+
+  if (updated.length > 0) {
+    await recordResumeActivity({
+      resumeId: id,
+      userId: user.id,
+      action: "edited",
+      resumeJson,
+    });
+  }
 
   return NextResponse.json(resume);
 }

@@ -30,6 +30,12 @@
   transition: opacity var(--duration-fast) var(--ease-default);
 }
 
+.tooltip-popup--light {
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-3);
+}
+
 .tooltip-popup[data-starting-style],
 .tooltip-popup[data-ending-style] {
   opacity: 0;
