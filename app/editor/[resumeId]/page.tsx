@@ -4,14 +4,17 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  Eye,
   FilePlus,
   Loader2,
+  MoreVertical,
   Palette,
   Pencil,
   Share2,
@@ -24,7 +27,14 @@ import { resumeRepository } from "@/lib/storage/api/resumeRepository";
 import { fetchDefaultTemplateId } from "@/lib/storage/api/appDefaults";
 import { canManageResume } from "@/lib/storage/api/resumeAccess";
 import { restoreResumeVersion } from "@/lib/storage/api/resumeHistory";
-import { Button, Skeleton, TabsField } from "@/components/ui";
+import { resumeHasContent } from "@/lib/export/shared";
+import {
+  ActionMenu,
+  BottomTabBar,
+  Button,
+  Skeleton,
+  TabsField,
+} from "@/components/ui";
 import { ShareDialog } from "@/components/common/ShareDialog";
 import { SaveStatusButton } from "@/components/editor/SaveStatusButton";
 import { ResumeHistoryDialog } from "@/components/editor/ResumeHistoryDialog";
@@ -44,6 +54,22 @@ const AUTOSAVE_DELAY_MS = 5_000;
 const DEFAULT_SIDEBAR_WIDTH = 420;
 const MIN_SIDEBAR_WIDTH = 320;
 const MAX_SIDEBAR_WIDTH = 640;
+
+/** The bottom tab bar's extra view — the rest map onto the sidebar tabs. */
+const PREVIEW_VIEW = "preview";
+
+const COMPACT_VIEWS = [
+  { value: PREVIEW_VIEW, label: "Preview", icon: Eye },
+  { value: "ai", label: "AI", icon: Sparkles },
+  { value: "manual", label: "Edit", icon: Pencil },
+  { value: "theme", label: "Theme", icon: Palette },
+];
+
+/** Sidebar width travels as a custom property so page.css can ignore it
+ *  once the layout goes single-view (no inline width to override). */
+function sidebarWidthStyle(width: number): CSSProperties {
+  return { "--editor-sidebar-width": `${width}px` } as CSSProperties;
+}
 
 export default function EditorPage() {
   const params = useParams<{ resumeId: string }>();
@@ -121,6 +147,31 @@ export default function EditorPage() {
   // AI is always the tab the editor opens on — the chat transcript itself
   // (not a tab switch) is what shows the user what's changed.
   const [activeTab, setActiveTab] = useState("ai");
+  // Below desktop width only one pane shows at a time, picked by the bottom
+  // tab bar: the preview, or the sidebar on its active tab. Ignored by the
+  // desktop layout, where both panes are always visible.
+  const [isPreviewShown, setIsPreviewShown] = useState(false);
+
+  // Pick the starting compact view once per resume, as soon as it loads: a
+  // blank resume opens on AI (to import or describe one), a filled-in one
+  // opens on its preview. Done during render, not in an effect, so the
+  // wrong view never paints first. Desktop ignores isPreviewShown.
+  const [startViewResumeId, setStartViewResumeId] = useState<string | null>(
+    null,
+  );
+  if (resume && hasLoaded && resume.meta.id !== startViewResumeId) {
+    setStartViewResumeId(resume.meta.id);
+    setIsPreviewShown(resumeHasContent(resume));
+  }
+
+  function handleCompactViewChange(view: string) {
+    if (view === PREVIEW_VIEW) {
+      setIsPreviewShown(true);
+      return;
+    }
+    setIsPreviewShown(false);
+    setActiveTab(view);
+  }
   const [isCreating, setIsCreating] = useState(false);
 
   // Drag-to-resize the sidebar, dragging from its left edge. The sidebar
@@ -242,7 +293,7 @@ export default function EditorPage() {
           <Skeleton radius="none" className="editor-page__preview-skeleton" />
           <div
             className="editor-page__sidebar"
-            style={{ width: DEFAULT_SIDEBAR_WIDTH }}
+            style={sidebarWidthStyle(DEFAULT_SIDEBAR_WIDTH)}
           >
             <div className="editor-page__sidebar-skeleton">
               <Skeleton height={36} />
@@ -316,33 +367,64 @@ export default function EditorPage() {
           />
           <div className="editor-page__actions">
             <ExportButtons data={resume} />
-            {access != null && canManageResume(access) && (
+            <div className="editor-page__inline-actions">
+              {access != null && canManageResume(access) && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="m"
+                  iconOnly
+                  aria-label="Share Resume"
+                  onClick={() => setIsShareOpen(true)}
+                >
+                  <Share2 size={18} />
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="secondary"
                 size="m"
                 iconOnly
-                aria-label="Share Resume"
-                onClick={() => setIsShareOpen(true)}
+                aria-label="New Resume"
+                disabled={isCreating}
+                onClick={() => void handleNewResume()}
               >
-                <Share2 size={18} />
+                {isCreating ? (
+                  <Loader2 size={18} className="button__icon--spin" />
+                ) : (
+                  <FilePlus size={18} />
+                )}
               </Button>
-            )}
-            <Button
-              type="button"
-              variant="secondary"
-              size="m"
-              iconOnly
-              aria-label="New Resume"
-              disabled={isCreating}
-              onClick={() => void handleNewResume()}
-            >
-              {isCreating ? (
-                <Loader2 size={18} className="button__icon--spin" />
-              ) : (
-                <FilePlus size={18} />
-              )}
-            </Button>
+            </div>
+            <span className="editor-page__more-actions">
+              <ActionMenu
+                trigger={
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="m"
+                    iconOnly
+                    aria-label="More Actions"
+                  >
+                    <MoreVertical size={18} />
+                  </Button>
+                }
+                items={[
+                  access != null &&
+                    canManageResume(access) && {
+                      label: "Share Resume",
+                      icon: Share2,
+                      onSelect: () => setIsShareOpen(true),
+                    },
+                  {
+                    label: "New Resume",
+                    icon: FilePlus,
+                    disabled: isCreating,
+                    onSelect: () => void handleNewResume(),
+                  },
+                ]}
+              />
+            </span>
           </div>
         </div>
       </header>
@@ -354,6 +436,9 @@ export default function EditorPage() {
         ]
           .filter(Boolean)
           .join(" ")}
+        data-compact-view={
+          isReadOnly ? "read-only" : isPreviewShown ? PREVIEW_VIEW : "panel"
+        }
         ref={bodyRef}
         onPointerMove={handleResizerPointerMove}
         onPointerUp={handleResizerPointerUp}
@@ -380,7 +465,7 @@ export default function EditorPage() {
         </div>
         <aside
           className="editor-page__sidebar"
-          style={{ width: sidebarWidth }}
+          style={sidebarWidthStyle(sidebarWidth)}
           aria-label="Resume editor"
         >
           {isReadOnly ? (
@@ -456,6 +541,16 @@ export default function EditorPage() {
           )}
         </aside>
       </div>
+
+      {!isReadOnly && (
+        <BottomTabBar
+          className="editor-page__bottom-bar"
+          aria-label="Editor View"
+          items={COMPACT_VIEWS}
+          value={isPreviewShown ? PREVIEW_VIEW : activeTab}
+          onValueChange={handleCompactViewChange}
+        />
+      )}
 
       <ResumeHistoryDialog
         resumeId={resume.meta.id}

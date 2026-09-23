@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { AppProviders } from "@/components/common/AppProviders";
@@ -49,6 +49,17 @@ const monoFont = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Exabyting Resume Builder",
   description: "Build and export company-branded resumes.",
+};
+
+// viewportFit "cover" lets fixed chrome pad itself with the safe-area
+// tokens; "resizes-content" shrinks the layout (not just the visual
+// viewport) when the on-screen keyboard opens, so the AI composer stays
+// visible above it.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

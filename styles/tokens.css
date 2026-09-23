@@ -250,6 +250,18 @@
   --z-modal: 101;
   --z-floating: 150;
 
+  /* Responsive sizing. Breakpoints can't be custom properties (var() isn't
+     allowed in @media), so every stylesheet uses these literal queries:
+       sm     (max-width: 639px)   phone
+       md     (max-width: 767px)   phone + small tablet — app nav → drawer
+       lg     (max-width: 1023px)  below desktop — editor → bottom tab bar
+       touch  (pointer: coarse)    hit targets grow to --size-touch-target */
+  --size-touch-target: 44px;
+  --size-topbar: 56px;
+  --size-bottom-bar: 64px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
   --duration-fast: 100ms;
   --duration-base: 150ms;
   --duration-slow: 250ms;

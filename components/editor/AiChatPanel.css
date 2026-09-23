@@ -288,3 +288,22 @@
   outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
 }
+
+/* iOS Safari zooms the page when a field under 16px takes focus. */
+@media (pointer: coarse) {
+  .ai-chat-panel__textarea {
+    font-size: 16px;
+  }
+}
+
+@media (pointer: coarse) {
+  .ai-chat-panel__icon-button {
+    width: var(--size-touch-target);
+    height: var(--size-touch-target);
+  }
+
+  .ai-chat-panel__chip-remove {
+    min-width: var(--space-8);
+    min-height: var(--space-8);
+  }
+}

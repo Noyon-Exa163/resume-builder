@@ -18,7 +18,7 @@ import { ShareDialog } from "@/components/common/ShareDialog";
 import { formatDisplayDate } from "@/lib/date";
 import { formatDateTime } from "@/lib/utils/formatDateTime";
 import { toTitleCase } from "@/lib/schema/personalInfo";
-import { EmptyState, ActionDialog, Avatar, Button, GroupedSelect, SelectField, Tooltip, UserTooltip } from "@/components/ui";
+import { EmptyState, ActionDialog, ActionMenu, Avatar, Button, GroupedSelect, SelectField, Tooltip, UserTooltip } from "@/components/ui";
 import { toPdfBlob } from "@/lib/export/toPdfBlob";
 import { buildExportFilename } from "@/lib/export/filename";
 import { triggerDownload } from "@/lib/export/triggerDownload";
@@ -26,6 +26,7 @@ import {
   Download,
   FilePlus,
   Loader2,
+  MoreVertical,
   Search,
   Share2,
   Trash2,
@@ -299,7 +300,7 @@ export default function DashboardClient({
                 </span>
               </a>
               <div className="resume-card__actions">
-                <div className="resume-card__actions-group">
+                <div className="resume-card__actions-group resume-card__inline-actions">
                   <Tooltip label="Download PDF">
                     <button
                       type="button"
@@ -359,17 +360,55 @@ export default function DashboardClient({
                     </UserTooltip>
                   )}
                   {canManageResume(access) && (
-                    <Tooltip label="Delete">
-                      <button
-                        type="button"
-                        className="resume-card__icon-button resume-card__icon-button--delete"
-                        aria-label={`Delete ${resume.meta.title}`}
-                        onClick={() => setDeleteTarget(resume)}
-                      >
-                        <Trash2 size={16} aria-hidden="true" />
-                      </button>
-                    </Tooltip>
+                    <span className="resume-card__inline-actions">
+                      <Tooltip label="Delete">
+                        <button
+                          type="button"
+                          className="resume-card__icon-button resume-card__icon-button--delete"
+                          aria-label={`Delete ${resume.meta.title}`}
+                          onClick={() => setDeleteTarget(resume)}
+                        >
+                          <Trash2 size={16} aria-hidden="true" />
+                        </button>
+                      </Tooltip>
+                    </span>
                   )}
+                  {/* Phones: the inline icons above don't fit a two-column
+                      grid, so the same actions collapse into one menu. */}
+                  <span className="resume-card__menu">
+                    <ActionMenu
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="tertiary"
+                          size="s"
+                          iconOnly
+                          aria-label={`More Actions for ${resume.meta.title}`}
+                        >
+                          <MoreVertical size={16} />
+                        </Button>
+                      }
+                      items={[
+                        {
+                          label: "Download PDF",
+                          icon: Download,
+                          disabled: downloadingId === resume.meta.id,
+                          onSelect: () => void handleDownload(resume),
+                        },
+                        canManageResume(access) && {
+                          label: "Share",
+                          icon: Share2,
+                          onSelect: () => setShareTarget(resume),
+                        },
+                        canManageResume(access) && {
+                          label: "Delete",
+                          icon: Trash2,
+                          isDestructive: true,
+                          onSelect: () => setDeleteTarget(resume),
+                        },
+                      ]}
+                    />
+                  </span>
                 </div>
               </div>
             </li>

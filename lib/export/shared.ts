@@ -29,6 +29,17 @@ export function sectionHasContent(section: ResumeSection): boolean {
   return hasText(section.title) || section.entries.some(entryHasContent);
 }
 
+/** False for a freshly created resume nothing has been typed or imported
+ *  into yet — every personal-info field, the summary and all sections are
+ *  empty. */
+export function resumeHasContent(data: ResumeData): boolean {
+  return (
+    Object.values(data.personalInfo).some(hasText) ||
+    hasText(data.summary) ||
+    data.sections.some(sectionHasContent)
+  );
+}
+
 export function visibleSections(data: ResumeData): ResumeSection[] {
   return data.sections.filter((s) => s.visible && sectionHasContent(s));
 }

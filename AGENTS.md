@@ -279,6 +279,19 @@ shadow:
   "3": "0 4px 16px 0 rgba(7,12,17,0.10), 0 2px 4px 0 rgba(7,12,17,0.06)"
   "4": "0 8px 32px 0 rgba(7,12,17,0.14), 0 2px 8px 0 rgba(7,12,17,0.08)"
 
+# ── Responsive sizing (see §6.9 / §6.11 for breakpoints) ─────────────────────
+size:
+  touch-target: "44px"
+  topbar: "56px"
+  bottom-bar: "64px"
+safe-area:
+  top: "env(safe-area-inset-top, 0px)"
+  bottom: "env(safe-area-inset-bottom, 0px)"
+breakpoints:
+  sm: "639px"
+  md: "767px"
+  lg: "1023px"
+
 # ── Motion ────────────────────────────────────────────────────────────────────
 motion:
   duration:
@@ -649,6 +662,12 @@ Component hierarchy follows Atomic Design: **Primitives/Atoms** (Button, Input, 
   --shadow-3: 0 4px 16px 0 rgba(7, 12, 17, 0.10), 0 2px 4px 0 rgba(7, 12, 17, 0.06);
   --shadow-4: 0 8px 32px 0 rgba(7, 12, 17, 0.14), 0 2px 8px 0 rgba(7, 12, 17, 0.08);
 
+  --size-touch-target: 44px;  /* min hit area under (pointer: coarse) */
+  --size-topbar:       56px;  /* mobile app top bar */
+  --size-bottom-bar:   64px;  /* editor bottom tab bar, excl. safe area */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
   --duration-fast:   100ms;
   --duration-base:   150ms;
   --duration-slow:   250ms;
@@ -773,7 +792,7 @@ All transitions use a token duration (`--duration-fast/base/slow/slower`) and to
 }
 ```
 
-Never use `outline: none` without a replacement. Minimum touch target: 44×44px (mobile), 32×32px (desktop). WCAG 2.1 AA contrast. Icon-only buttons need `aria-label`. This matters especially for the drag-and-drop section/entry reordering (`@dnd-kit`) — ensure keyboard-based reordering is also supported, not just pointer drag.
+Never use `outline: none` without a replacement. Minimum touch target: 44×44px (mobile), 32×32px (desktop) — enforce the mobile minimum with `var(--size-touch-target)` inside `@media (pointer: coarse)`, so desktop density is unchanged. Text fields must render at 16px under `(pointer: coarse)` or iOS Safari zooms the page on focus. Wrap purely decorative hover effects in `@media (hover: hover)` so they don't stick after a tap. WCAG 2.1 AA contrast. Icon-only buttons need `aria-label`. This matters especially for the drag-and-drop section/entry reordering (`@dnd-kit`) — ensure keyboard-based reordering is also supported, not just pointer drag.
 
 ### 6.10 Component Patterns
 
@@ -795,7 +814,18 @@ Apply these when building custom app-chrome components without a shared library:
 
 ### 6.11 Layout & Grid
 
-CSS Grid or Flexbox only — no layout frameworks in app chrome. Page max-width 1280px. Page inset `--space-6` desktop / `--space-4` mobile. The editor's split-pane (form on one side, live PDF preview on the other) should collapse to a single column below a reasonable breakpoint rather than squeezing both panes.
+CSS Grid or Flexbox only — no layout frameworks in app chrome. Page max-width 1280px. Page inset `--space-6` desktop / `--space-4` mobile.
+
+**Breakpoints.** `var()` isn't allowed inside `@media`, so these literal queries are the only ones app-chrome CSS may use (desktop-first: base styles are desktop, overrides go in these blocks):
+
+| Name | Query | Meaning |
+|---|---|---|
+| `sm` | `(max-width: 639px)` | Phone — page inset `--space-4`, dialogs become bottom sheets |
+| `md` | `(max-width: 767px)` | Phone + small tablet — sidebar becomes `AppTopBar` + `Drawer` |
+| `lg` | `(max-width: 1023px)` | Below desktop — editor shows one pane at a time via `BottomTabBar` |
+| touch | `(pointer: coarse)` | Hit targets and text-field sizing (§6.9) |
+
+Switch layouts with CSS (both variants rendered, one hidden) rather than JS media queries, so server markup is identical for every device and there's no hydration flash. Use `100dvh` (with a `100%`/`vh` fallback first) for full-height surfaces, and pad fixed chrome with `--safe-top`/`--safe-bottom`.
 
 ### 6.12 Content & Writing Rules
 
@@ -864,6 +894,8 @@ COLORS
   --color-link / -hover      Hyperlink
 
 SPACING          --space-1 (4px) through --space-24 (96px)
+SIZE             --size-touch-target (44px)  --size-topbar (56px)
+                 --size-bottom-bar (64px)  --safe-top  --safe-bottom
 RADIUS           --radius-xs (4px) through --radius-full (9999px)
 SHADOW           --shadow-1 (subtle) through --shadow-4 (high)
 DURATION         --duration-fast (100ms)  --duration-base (150ms)

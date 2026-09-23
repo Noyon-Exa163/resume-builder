@@ -167,3 +167,11 @@
   line-height: 1.54;
   color: var(--color-text-secondary);
 }
+
+/* iOS Safari zooms the page when a field under 16px takes focus — keep
+   every size at 16px on touch devices. */
+@media (pointer: coarse) {
+  .input-field__input {
+    font-size: 16px;
+  }
+}

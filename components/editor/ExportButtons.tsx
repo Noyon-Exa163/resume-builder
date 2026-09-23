@@ -73,7 +73,7 @@ export function ExportButtons({ data }: ExportButtonsProps) {
               className="export-buttons__trigger"
             >
               <Download size={14} />
-              Export
+              <span className="export-buttons__label">Export</span>
               <ChevronDown size={14} className="export-buttons__chevron" />
             </Button>
           }

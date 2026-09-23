@@ -1,0 +1,60 @@
+/* ActionMenu — command list behind one trigger.
+   Panel: --color-surface-raised + --shadow-3 (AGENTS.md §6.10). */
+
+/* Portals to <body>, so it needs its own z-index to clear dialogs and
+   page chrome. */
+.action-menu__positioner {
+  z-index: var(--z-floating);
+}
+
+.action-menu {
+  min-width: 160px;
+  max-width: calc(100vw - var(--space-8));
+  padding: var(--space-1);
+  background-color: var(--color-surface-raised);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+}
+
+.action-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  outline: none;
+}
+
+.action-menu__item svg {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.action-menu__item[data-highlighted] {
+  background-color: var(--color-surface-inset);
+}
+
+.action-menu__item[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-menu__item--destructive,
+.action-menu__item--destructive svg {
+  color: var(--color-danger-text);
+}
+
+.action-menu__item--destructive[data-highlighted] {
+  background-color: var(--color-danger-subtle);
+}
+
+@media (pointer: coarse) {
+  .action-menu__item {
+    min-height: var(--size-touch-target);
+  }
+}

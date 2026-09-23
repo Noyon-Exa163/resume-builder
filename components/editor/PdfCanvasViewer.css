@@ -200,3 +200,11 @@
   font-size: 14px;
   color: var(--color-text-secondary);
 }
+
+/* sm — phone: a tighter inset gives the page more of a narrow screen. */
+@media (max-width: 639px) {
+  .pdf-canvas-viewer__scroll {
+    padding: var(--space-4);
+    padding-bottom: var(--space-24);
+  }
+}

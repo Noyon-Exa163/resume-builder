@@ -128,3 +128,13 @@
     animation: none;
   }
 }
+
+/* Touch: icon-only buttons grow to the minimum touch target (AGENTS §6.9).
+   Labeled buttons are already wide enough to hit reliably. */
+@media (pointer: coarse) {
+  .button--icon-only.button--s,
+  .button--icon-only.button--m {
+    width: var(--size-touch-target);
+    height: var(--size-touch-target);
+  }
+}

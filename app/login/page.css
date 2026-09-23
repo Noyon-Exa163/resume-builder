@@ -79,3 +79,10 @@
 .login-form__submit {
   margin-top: var(--space-2);
 }
+
+/* sm — phone */
+@media (max-width: 639px) {
+  .login-card {
+    padding: var(--space-6);
+  }
+}

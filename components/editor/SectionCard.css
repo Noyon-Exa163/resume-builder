@@ -8,8 +8,10 @@
   overflow: hidden;
 }
 
-.section-card:hover {
-  border-color: var(--color-border-strong);
+@media (hover: hover) {
+  .section-card:hover {
+    border-color: var(--color-border-strong);
+  }
 }
 
 .section-card--dragging {
@@ -163,7 +165,7 @@
   justify-content: flex-start;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .section-card__header {
     flex-wrap: wrap;
     gap: var(--space-2);
@@ -177,5 +179,15 @@
 
   .section-card__actions {
     margin-left: auto;
+  }
+}
+
+/* iOS Safari zooms the page when a field under 16px takes focus; the title
+   is already 16px, so only the icon buttons need touch sizing. */
+@media (pointer: coarse) {
+  .section-card__drag-handle,
+  .section-card__icon-btn {
+    min-width: var(--size-touch-target);
+    min-height: var(--size-touch-target);
   }
 }

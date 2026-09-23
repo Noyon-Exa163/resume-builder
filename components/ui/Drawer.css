@@ -1,0 +1,109 @@
+/* Drawer — left-edge slide-in panel.
+   Backdrop matches Dialog (--color-surface-overlay); panel --shadow-4. */
+
+.drawer__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay-backdrop);
+  background-color: var(--color-surface-overlay);
+  opacity: calc(1 - var(--drawer-swipe-progress, 0));
+  transition: opacity var(--duration-slow) var(--ease-out);
+}
+
+.drawer__backdrop[data-starting-style],
+.drawer__backdrop[data-ending-style] {
+  opacity: 0;
+}
+
+.drawer__backdrop[data-swiping] {
+  transition-duration: 0ms;
+}
+
+.drawer__viewport {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  justify-content: flex-start;
+}
+
+.drawer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  max-width: calc(100vw - var(--space-12));
+  height: 100%;
+  padding: calc(var(--space-6) + var(--safe-top)) var(--space-4)
+    calc(var(--space-6) + var(--safe-bottom));
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-4);
+  outline: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform: translateX(var(--drawer-swipe-movement-x, 0px));
+  transition: transform var(--duration-slow) var(--ease-out);
+}
+
+.drawer[data-starting-style],
+.drawer[data-ending-style] {
+  transform: translateX(-100%);
+}
+
+.drawer[data-swiping] {
+  transition-duration: 0ms;
+  user-select: none;
+}
+
+.drawer[data-ending-style] {
+  transition-duration: calc(var(--drawer-swipe-strength, 1) * var(--duration-slow));
+}
+
+/* Screen-reader-only — the drawer's visible heading is the brand logo. */
+.drawer__title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.drawer__header {
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  margin: calc(-1 * var(--space-3)) calc(-1 * var(--space-2)) var(--space-2) 0;
+}
+
+.drawer__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-touch-target);
+  height: var(--size-touch-target);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.drawer__close:hover {
+  background-color: var(--color-surface-inset);
+  color: var(--color-text-primary);
+}
+
+.drawer__content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer,
+  .drawer__backdrop {
+    transition: none;
+  }
+}

@@ -1,0 +1,155 @@
+/* Shared body of the desktop sidebar and the mobile nav drawer — it fills
+   whichever container it's placed in; the container owns width/padding. */
+
+.app-nav {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.app-nav__brand {
+  display: block;
+  padding: 0 var(--space-2);
+  margin-bottom: var(--space-8);
+  text-decoration: none;
+}
+
+.app-nav__brand-logo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.app-nav__brand:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.app-nav__links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.app-nav__link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: background var(--duration-base) var(--ease-default),
+    color var(--duration-base) var(--ease-default);
+}
+
+.app-nav__link-icon {
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
+  transition: color var(--duration-base) var(--ease-default);
+}
+
+@media (hover: hover) {
+  .app-nav__link:hover {
+    color: var(--color-text-primary);
+    background: var(--color-surface-inset);
+  }
+
+  .app-nav__link:hover .app-nav__link-icon {
+    color: var(--color-text-secondary);
+  }
+}
+
+.app-nav__link:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.app-nav__link--active,
+.app-nav__link--active:hover {
+  color: var(--color-brand);
+  background: var(--color-brand-subtle);
+}
+
+.app-nav__link--active .app-nav__link-icon,
+.app-nav__link--active:hover .app-nav__link-icon {
+  color: var(--color-brand);
+}
+
+.app-nav__user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: auto;
+  padding: var(--space-4) var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.app-nav__user-identity {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.app-nav__user-name,
+.app-nav__user-email {
+  font-family: var(--font-body);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-nav__user-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.app-nav__user-email {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.app-nav__user-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--space-8);
+  height: var(--space-8);
+  color: var(--color-text-tertiary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--duration-base) var(--ease-default),
+    color var(--duration-base) var(--ease-default);
+}
+
+.app-nav__user-menu-trigger:hover,
+.app-nav__user-menu-trigger[data-popup-open] {
+  color: var(--color-text-primary);
+  background: var(--color-surface-inset);
+}
+
+.app-nav__user-menu-trigger:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .app-nav__link {
+    min-height: var(--size-touch-target);
+  }
+
+  .app-nav__user-menu-trigger {
+    width: var(--size-touch-target);
+    height: var(--size-touch-target);
+  }
+}

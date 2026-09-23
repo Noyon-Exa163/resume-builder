@@ -1,16 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Menu } from "@base-ui/react/menu";
 import { Download, FileCode, FileJson, FileText, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui";
+import { ActionMenu, Button } from "@/components/ui";
 import { toPdfBlob } from "@/lib/export/toPdfBlob";
 import { toMarkdown } from "@/lib/export/toMarkdown";
 import { toJsonBlob } from "@/lib/export/toJson";
 import { buildExportFilename } from "@/lib/export/filename";
 import { triggerDownload } from "@/lib/export/triggerDownload";
 import { getResumeVersion } from "@/lib/storage/api/resumeHistory";
-import "./VersionDownloadMenu.css";
 
 type Format = "json" | "pdf" | "markdown";
 
@@ -64,47 +62,29 @@ export function VersionDownloadMenu({
   }
 
   return (
-    <Menu.Root>
-      <Menu.Trigger
-        disabled={isBusy}
-        render={
-          <Button
-            type="button"
-            variant="tertiary"
-            size="s"
-            iconOnly
-            aria-label="Download Version"
-            tooltip="Download"
-          >
-            {isBusy ? (
-              <Loader2 size={16} className="button__icon--spin" />
-            ) : (
-              <Download size={16} />
-            )}
-          </Button>
-        }
-      />
-      <Menu.Portal>
-        <Menu.Positioner
-          className="version-menu__positioner"
-          side="bottom"
-          align="end"
-          sideOffset={4}
+    <ActionMenu
+      isTriggerDisabled={isBusy}
+      trigger={
+        <Button
+          type="button"
+          variant="tertiary"
+          size="s"
+          iconOnly
+          aria-label="Download Version"
+          tooltip="Download"
         >
-          <Menu.Popup className="version-menu__popup">
-            {FORMATS.map(({ format, label, icon: Icon }) => (
-              <Menu.Item
-                key={format}
-                className="version-menu__item"
-                onClick={() => void handleDownload(format)}
-              >
-                <Icon size={16} />
-                {label}
-              </Menu.Item>
-            ))}
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
+          {isBusy ? (
+            <Loader2 size={16} className="button__icon--spin" />
+          ) : (
+            <Download size={16} />
+          )}
+        </Button>
+      }
+      items={FORMATS.map(({ format, label, icon }) => ({
+        label,
+        icon,
+        onSelect: () => void handleDownload(format),
+      }))}
+    />
   );
 }

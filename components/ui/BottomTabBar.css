@@ -1,0 +1,55 @@
+/* BottomTabBar — docked view switcher for narrow layouts.
+   Sits in normal flow at the bottom of a full-height flex column, so the
+   content above it never scrolls underneath. */
+
+.bottom-tab-bar {
+  position: relative;
+  z-index: var(--z-page-chrome);
+  flex-shrink: 0;
+  padding-bottom: var(--safe-bottom);
+  background-color: var(--color-surface);
+  box-shadow: 0 -1px 0 0 var(--color-border);
+}
+
+.bottom-tab-bar__list {
+  display: flex;
+  height: var(--size-bottom-bar);
+}
+
+.bottom-tab-bar__tab {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: var(--size-touch-target);
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: color var(--duration-base) var(--ease-default);
+}
+
+.bottom-tab-bar__tab[data-active] {
+  color: var(--color-brand);
+}
+
+.bottom-tab-bar__tab:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: -4px;
+  border-radius: var(--radius-md);
+}
+
+.bottom-tab-bar__label {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: var(--leading-caption);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-tab-bar__tab {
+    transition: none;
+  }
+}

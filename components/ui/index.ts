@@ -53,3 +53,12 @@ export type { UserTooltipProps } from "./UserTooltip";
 
 export { Tooltip, TooltipProvider } from "./Tooltip";
 export type { TooltipProps, TooltipProviderProps } from "./Tooltip";
+
+export { ActionMenu } from "./ActionMenu";
+export type { ActionMenuProps, ActionMenuItem } from "./ActionMenu";
+
+export { Drawer } from "./Drawer";
+export type { DrawerProps } from "./Drawer";
+
+export { BottomTabBar } from "./BottomTabBar";
+export type { BottomTabBarProps, BottomTabBarItem } from "./BottomTabBar";

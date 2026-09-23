@@ -23,6 +23,7 @@
   padding: var(--space-6);
   max-width: 560px;
   max-height: 85vh;
+  max-height: 85dvh;
   overflow-y: auto;
   z-index: var(--z-modal);
   width: calc(100% - var(--space-8));
@@ -136,4 +137,32 @@
   width: auto;
   height: 128px;
   margin-bottom: var(--space-2);
+}
+
+@media (pointer: coarse) {
+  .dialog-close {
+    width: var(--size-touch-target);
+    height: var(--size-touch-target);
+  }
+}
+
+/* sm — phone: standard dialogs become bottom sheets (thumb-reachable,
+   full width). Centered confirmations (ActionDialog) stay centered. */
+@media (max-width: 639px) {
+  .dialog-popup:not(.dialog-popup--centered) {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    transform: none;
+    width: 100%;
+    max-width: none;
+    max-height: 90dvh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: var(--space-6) var(--space-4)
+      calc(var(--space-4) + var(--safe-bottom));
+  }
+
+  .dialog-footer .button {
+    flex: 1;
+  }
 }

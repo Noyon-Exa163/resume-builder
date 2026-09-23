@@ -110,3 +110,25 @@
   justify-content: center;
   gap: var(--space-2);
 }
+
+/* sm — phone */
+@media (max-width: 639px) {
+  .account-page {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .account-page__title {
+    font-size: 24px;
+  }
+
+  /* Both labels don't fit side by side at phone width, so the buttons
+     stack and span the card instead of hugging their text. */
+  .account-profile__actions {
+    flex-direction: column;
+    align-self: stretch;
+  }
+
+  .account-profile__actions .button {
+    width: 100%;
+  }
+}

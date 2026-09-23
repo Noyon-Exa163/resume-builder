@@ -119,11 +119,17 @@
   font-variant-numeric: tabular-nums;
 }
 
-.editor-page__actions {
+.editor-page__actions,
+.editor-page__inline-actions {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   flex-shrink: 0;
+}
+
+/* Below desktop width, Share / New Resume fold into this menu. */
+.editor-page__more-actions {
+  display: none;
 }
 
 .editor-page__body {
@@ -140,8 +146,10 @@
 
 /* A real sidebar (flat panel with a divider, like
    components/common/AppSidebar.css) — width is user-resizable via the
-   handle below rather than fixed, so it's set inline on the element. */
+   handle below rather than fixed, so page.tsx passes it in as
+   --editor-sidebar-width. */
 .editor-page__sidebar {
+  width: var(--editor-sidebar-width);
   flex-shrink: 0;
   min-height: 0;
   overflow-y: auto;
@@ -226,21 +234,81 @@
   padding-bottom: var(--space-10);
 }
 
-@media (max-width: 900px) {
-  .editor-page__body {
-    flex-direction: column;
-    overflow-y: auto;
-  }
+/* Only shown below desktop width — see the lg block below. */
+.editor-page__bottom-bar {
+  display: none;
+}
 
-  /* Overrides the resize handle's inline width style — dragging a width
-     doesn't apply once the layout stacks into a single column. */
+/* lg — below desktop: one pane at a time, switched by the bottom tab bar
+   (data-compact-view, set in page.tsx). Both panes stay mounted so chat
+   history, form state and the rendered preview survive a switch. */
+@media (max-width: 1023px) {
   .editor-page__sidebar {
-    width: 100% !important;
-    border-left: none;
-    border-top: 1px solid var(--color-border);
+    flex: 1;
+    width: 100%;
   }
 
-  .editor-page__resizer {
+  .editor-page__resizer,
+  .editor-page__preview-skeleton,
+  .editor-page__inline-actions {
     display: none;
+  }
+
+  .editor-page__more-actions {
+    display: flex;
+  }
+
+  .editor-page__bottom-bar {
+    display: block;
+  }
+
+  .editor-page__body[data-compact-view="panel"] .live-preview-pane,
+  .editor-page__body[data-compact-view="preview"] .editor-page__sidebar {
+    display: none;
+  }
+
+  /* The bottom tab bar replaces the sidebar's own tab strip. */
+  .editor-page__sidebar .tabs__list {
+    display: none;
+  }
+
+  .editor-page__sidebar .tabs__panel {
+    padding-top: 0;
+  }
+
+  /* View-only: no tabs to switch — the notice sits above the preview. */
+  .editor-page__body[data-compact-view="read-only"] {
+    flex-direction: column;
+  }
+
+  .editor-page__body[data-compact-view="read-only"] .editor-page__sidebar {
+    flex: none;
+    order: -1;
+  }
+}
+
+/* sm — phone */
+@media (max-width: 639px) {
+  .editor-page__header {
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .editor-page__header-end {
+    gap: var(--space-2);
+  }
+
+  .editor-page__title-sizer,
+  .editor-page__title-input {
+    font-size: 16px;
+  }
+
+  /* Page count is a nice-to-have; the title needs the room more. */
+  .editor-page__save-status {
+    display: none;
+  }
+
+  .editor-page__sidebar {
+    padding: var(--space-4);
   }
 }

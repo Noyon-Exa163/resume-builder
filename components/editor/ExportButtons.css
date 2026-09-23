@@ -22,6 +22,34 @@
   }
 }
 
+/* sm — phone: icon-only trigger. The label stays for screen readers so the
+   button keeps its accessible name. */
+@media (max-width: 639px) {
+  .export-buttons__trigger {
+    padding: 0;
+    aspect-ratio: 1;
+  }
+
+  .export-buttons__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .export-buttons__chevron {
+    display: none;
+  }
+}
+
+@media (max-width: 639px) and (pointer: coarse) {
+  .export-buttons__trigger {
+    height: var(--size-touch-target);
+  }
+}
+
 /* Positioner needs its own z-index (not just the popup) — Base UI portals
    this to <body>, so without one it stacks by DOM order among elements at
    the same level, and anything with an explicit z-index (e.g. .tabs__tab)
@@ -39,6 +67,7 @@
   box-shadow: var(--shadow-3);
   padding: var(--space-1);
   min-width: 220px;
+  max-width: calc(100vw - var(--space-8));
 }
 
 .export-buttons__title {

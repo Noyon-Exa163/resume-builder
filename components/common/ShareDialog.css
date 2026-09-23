@@ -103,3 +103,25 @@
 .dialog-popup.share-dialog {
   max-width: 480px;
 }
+
+/* sm — phone: the role picker drops under the person's name so long
+   emails keep their room. */
+@media (max-width: 639px) {
+  .share-dialog__row {
+    flex-wrap: wrap;
+  }
+
+  /* Name fills the first line beside the 28px avatar... */
+  .share-dialog__identity {
+    flex-basis: calc(100% - var(--space-7) - var(--space-3));
+  }
+
+  /* ...and the role wraps below it, aligned under the name. */
+  .share-dialog__row .select,
+  .share-dialog__role {
+    flex: 1 1 100%;
+    min-width: 0;
+    margin-left: calc(var(--space-7) + var(--space-3));
+    text-align: left;
+  }
+}

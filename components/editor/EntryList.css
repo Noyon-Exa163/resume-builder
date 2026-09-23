@@ -121,3 +121,11 @@
 .entry-list__body {
   padding: 0 var(--space-3) var(--space-3) var(--space-3);
 }
+
+@media (pointer: coarse) {
+  .entry-list__drag-handle,
+  .entry-list__icon-btn {
+    min-width: var(--size-touch-target);
+    min-height: var(--size-touch-target);
+  }
+}

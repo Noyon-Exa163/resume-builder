@@ -180,3 +180,45 @@
   font-size: 13px;
   color: var(--color-text-tertiary);
 }
+
+/* sm — phone */
+@media (max-width: 639px) {
+  .users-page {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .users-page__title {
+    font-size: 24px;
+  }
+
+  .users-page__list-header {
+    padding: var(--space-4);
+  }
+
+  /* Identity takes the first line; the role badge and actions wrap below,
+     aligned under the name (36px avatar + gap). */
+  .users-page__user {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-4);
+  }
+
+  .users-page__user-info {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .users-page__user-email {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .users-page__user-badge {
+    margin-left: calc(var(--space-9) + var(--space-3));
+  }
+
+  .users-page__user-actions {
+    margin-left: auto;
+  }
+}

@@ -108,3 +108,16 @@
   flex-direction: row-reverse;
   justify-content: space-between;
 }
+
+/* The toggle lives inside the Full Name input, so it can't reach the full
+   44px target — grow it as far as the field's height allows. */
+@media (pointer: coarse) {
+  .personal-info-form__casing-option {
+    min-width: var(--space-9);
+    height: var(--space-9);
+  }
+
+  .personal-info-form__email-chip {
+    min-height: var(--space-8);
+  }
+}

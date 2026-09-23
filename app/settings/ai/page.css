@@ -131,7 +131,7 @@
   margin: 0;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1023px) {
   .ai-settings-page__layout {
     grid-template-columns: 1fr;
   }
@@ -151,4 +151,24 @@
   font-family: var(--font-body);
   font-size: 13px;
   color: var(--color-warning-text);
+}
+
+/* sm — phone */
+@media (max-width: 639px) {
+  .ai-settings-page {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .ai-settings-page__title {
+    font-size: 24px;
+  }
+
+  .ai-settings-page__provider,
+  .ai-settings-page__defaults {
+    padding: var(--space-4);
+  }
+
+  .ai-settings-page__provider-title {
+    flex-wrap: wrap;
+  }
 }

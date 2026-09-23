@@ -9,6 +9,7 @@
   max-width: 680px;
   width: calc(100% - var(--space-8));
   height: min(520px, 85vh);
+  height: min(520px, 85dvh);
   overflow: hidden;
 }
 
@@ -218,9 +219,10 @@
   text-wrap: pretty;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 767px) {
   .dialog-popup.png-export-dialog {
     height: min(640px, 90vh);
+    height: min(640px, 90dvh);
   }
 
   .png-export-dialog__layout {
@@ -390,4 +392,18 @@
   background-color: var(--color-danger-subtle);
   border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-4);
+}
+
+/* sm — phone: full-width bottom sheet like every other dialog (this
+   file's width rule is more specific than Dialog.css's sheet rule). */
+@media (max-width: 639px) {
+  .dialog-popup.png-export-dialog {
+    width: 100%;
+    max-width: none;
+  }
+
+  .png-export-dialog__layout {
+    grid-template-rows: 200px auto;
+    gap: var(--space-4);
+  }
 }
