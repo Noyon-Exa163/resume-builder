@@ -821,8 +821,8 @@ CSS Grid or Flexbox only — no layout frameworks in app chrome. Page max-width 
 | Name | Query | Meaning |
 |---|---|---|
 | `sm` | `(max-width: 639px)` | Phone — page inset `--space-4`, dialogs become bottom sheets |
-| `md` | `(max-width: 767px)` | Phone + small tablet — sidebar becomes `AppTopBar` + `Drawer` |
-| `lg` | `(max-width: 1023px)` | Below desktop — editor shows one pane at a time via `BottomTabBar` |
+| `md` | `(max-width: 767px)` | Phone + small tablet — e.g. PNG export dialog stacks its columns |
+| `lg` | `(max-width: 1023px)` | Below desktop — sidebar becomes `AppTopBar` + `Drawer`; editor shows one pane at a time via `BottomTabBar` |
 | touch | `(pointer: coarse)` | Hit targets and text-field sizing (§6.9) |
 
 Switch layouts with CSS (both variants rendered, one hidden) rather than JS media queries, so server markup is identical for every device and there's no hydration flash. Use `100dvh` (with a `100%`/`vh` fallback first) for full-height surfaces, and pad fixed chrome with `--safe-top`/`--safe-bottom`.

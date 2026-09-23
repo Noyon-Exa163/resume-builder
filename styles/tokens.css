@@ -253,8 +253,8 @@
   /* Responsive sizing. Breakpoints can't be custom properties (var() isn't
      allowed in @media), so every stylesheet uses these literal queries:
        sm     (max-width: 639px)   phone
-       md     (max-width: 767px)   phone + small tablet — app nav → drawer
-       lg     (max-width: 1023px)  below desktop — editor → bottom tab bar
+       md     (max-width: 767px)   phone + small tablet
+       lg     (max-width: 1023px)  below desktop — app nav → drawer, editor → bottom tab bar
        touch  (pointer: coarse)    hit targets grow to --size-touch-target */
   --size-touch-target: 44px;
   --size-topbar: 56px;

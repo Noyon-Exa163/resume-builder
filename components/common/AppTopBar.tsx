@@ -10,7 +10,7 @@ import "./AppTopBar.css";
 export type AppTopBarProps = Omit<AppNavContentProps, "onNavigate">;
 
 /**
- * Compact header that replaces the sidebar on phones and small tablets.
+ * Compact header that replaces the sidebar on phones and tablets.
  * The menu button opens the same nav content in a slide-in drawer; each
  * link closes the drawer as it navigates.
  */

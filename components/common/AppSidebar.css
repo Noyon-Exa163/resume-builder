@@ -8,8 +8,8 @@
   border-right: 1px solid var(--color-border);
 }
 
-/* Below tablet width, AppTopBar + its drawer take over navigation. */
-@media (max-width: 767px) {
+/* Below desktop width, AppTopBar + its drawer take over navigation. */
+@media (max-width: 1023px) {
   .app-sidebar {
     display: none;
   }

@@ -17,7 +17,7 @@
   background-color: var(--color-surface-thumb);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .app-shell {
     flex-direction: column;
   }
