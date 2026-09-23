@@ -136,8 +136,13 @@ export default function DashboardClient({
   async function handleDownload(resume: ResumeData) {
     setDownloadingId(resume.meta.id);
     try {
-      const blob = await toPdfBlob(resume);
-      const name = buildExportFilename(resume);
+      // The dashboard list is loaded with `sections` stripped (see
+      // listResumesForUser) — fetch the full resume so the PDF isn't just
+      // the header and summary.
+      const full = await resumeRepository.get(resume.meta.id);
+      if (!full) throw new Error(`Resume ${resume.meta.id} no longer exists.`);
+      const blob = await toPdfBlob(full);
+      const name = buildExportFilename(full);
       triggerDownload(blob, `${name}.pdf`);
     } catch (err) {
       console.error("PDF download failed:", err);
