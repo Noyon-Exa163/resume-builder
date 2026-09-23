@@ -305,7 +305,7 @@ export default function DashboardClient({
                 </span>
               </a>
               <div className="resume-card__actions">
-                <div className="resume-card__actions-group resume-card__inline-actions">
+                <div className="resume-card__actions-group">
                   <Tooltip label="Download PDF">
                     <button
                       type="button"
@@ -326,16 +326,18 @@ export default function DashboardClient({
                     </button>
                   </Tooltip>
                   {canManageResume(access) && (
-                    <Tooltip label="Share">
-                      <button
-                        type="button"
-                        className="resume-card__icon-button resume-card__icon-button--share"
-                        aria-label={`Share ${resume.meta.title}`}
-                        onClick={() => setShareTarget(resume)}
-                      >
-                        <Share2 size={16} aria-hidden="true" />
-                      </button>
-                    </Tooltip>
+                    <span className="resume-card__inline-actions">
+                      <Tooltip label="Share">
+                        <button
+                          type="button"
+                          className="resume-card__icon-button resume-card__icon-button--share"
+                          aria-label={`Share ${resume.meta.title}`}
+                          onClick={() => setShareTarget(resume)}
+                        >
+                          <Share2 size={16} aria-hidden="true" />
+                        </button>
+                      </Tooltip>
+                    </span>
                   )}
                 </div>
                 <div className="resume-card__actions-group resume-card__actions-group--end">
@@ -378,42 +380,38 @@ export default function DashboardClient({
                       </Tooltip>
                     </span>
                   )}
-                  {/* Phones: the inline icons above don't fit a two-column
-                      grid, so the same actions collapse into one menu. */}
-                  <span className="resume-card__menu">
-                    <ActionMenu
-                      trigger={
-                        <Button
-                          type="button"
-                          variant="tertiary"
-                          size="s"
-                          iconOnly
-                          aria-label={`More Actions for ${resume.meta.title}`}
-                        >
-                          <MoreVertical size={16} />
-                        </Button>
-                      }
-                      items={[
-                        {
-                          label: "Download PDF",
-                          icon: Download,
-                          disabled: downloadingId === resume.meta.id,
-                          onSelect: () => void handleDownload(resume),
-                        },
-                        canManageResume(access) && {
-                          label: "Share",
-                          icon: Share2,
-                          onSelect: () => setShareTarget(resume),
-                        },
-                        canManageResume(access) && {
-                          label: "Delete",
-                          icon: Trash2,
-                          isDestructive: true,
-                          onSelect: () => setDeleteTarget(resume),
-                        },
-                      ]}
-                    />
-                  </span>
+                  {/* Phones: Share and Delete don't fit a two-column grid
+                      beside Download, so they collapse into one menu. */}
+                  {canManageResume(access) && (
+                    <span className="resume-card__menu">
+                      <ActionMenu
+                        trigger={
+                          <Button
+                            type="button"
+                            variant="tertiary"
+                            size="s"
+                            iconOnly
+                            aria-label={`More Actions for ${resume.meta.title}`}
+                          >
+                            <MoreVertical size={16} />
+                          </Button>
+                        }
+                        items={[
+                          {
+                            label: "Share",
+                            icon: Share2,
+                            onSelect: () => setShareTarget(resume),
+                          },
+                          {
+                            label: "Delete",
+                            icon: Trash2,
+                            isDestructive: true,
+                            onSelect: () => setDeleteTarget(resume),
+                          },
+                        ]}
+                      />
+                    </span>
+                  )}
                 </div>
               </div>
             </li>

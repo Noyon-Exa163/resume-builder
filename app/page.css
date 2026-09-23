@@ -326,14 +326,13 @@
 
   .resume-card__menu {
     display: flex;
-    margin-left: auto;
   }
 
-  /* With the inline group hidden, this group spans the row: owner
-     indicator on the left, menu pushed right. */
+  /* Download stays on the left; the owner indicator sits beside the menu
+     on the right and gives up width first in a narrow card. */
   .resume-card__actions-group--end {
-    flex: 1;
     min-width: 0;
+    justify-content: flex-end;
   }
 
   /* A long "Shared • Viewer" badge truncates instead of pushing the menu
