@@ -8,6 +8,7 @@ import {
   visibleSections,
 } from "./shared";
 import { formatDateRange } from "@/lib/date";
+import { entrySubtitle } from "@/lib/schema/entryOrganization";
 import { normalizeHeadline } from "@/lib/schema/headline";
 import { formatFullNameForDisplay } from "@/lib/schema/personalInfo";
 
@@ -72,7 +73,7 @@ export async function toDocx(source: ResumeData): Promise<Blob> {
     }
 
     for (const entry of entries) {
-      const header = [entry.title, entry.subtitle].filter(hasText).join(" — ");
+      const header = [entry.title, entrySubtitle(entry)].filter(hasText).join(" — ");
       if (header) {
         children.push(
           new Paragraph({ children: [new TextRun({ text: header, bold: true })] }),

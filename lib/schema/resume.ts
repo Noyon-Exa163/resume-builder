@@ -12,6 +12,9 @@ export const EntrySchema = z.object({
   id: z.string(),
   title: z.string().default(""),
   subtitle: z.string().optional(),
+  /** Company a referee works for; their designation stays in `subtitle`.
+   *  Only set for reference entries — see lib/schema/entryOrganization.ts. */
+  organization: z.string().optional(),
   location: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
@@ -86,6 +89,12 @@ export const SectionSchema = z.object({
   title: z.string(),
   visible: z.boolean().default(true),
   layout: SectionLayout.default("list"),
+  /**
+   * Skills sections only: show a logo next to each skill that has one (see
+   * lib/skillIcons). Off when absent, so resumes saved before this existed
+   * look exactly as they did; new skills sections turn it on explicitly.
+   */
+  showSkillIcons: z.boolean().default(false),
   entries: z.array(EntrySchema).default([]),
 });
 export type ResumeSection = z.infer<typeof SectionSchema>;

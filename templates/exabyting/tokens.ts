@@ -168,6 +168,16 @@ export const layout = {
   tagPadBottom: 3,
   /** Circular flag icon inside a language chip — see templates/languageFlags.ts. */
   languageFlagSize: 10,
+  /** Logo beside a skill when a skills section has icons on — see lib/skillIcons. */
+  skillIconSize: 8,
+  /** Skill chip: fixed height (icon plus 3pt above and below), side padding, and icon-to-name gap. */
+  skillChipHeight: 14,
+  skillChipPadX: 6,
+  skillChipGap: 3,
+  /** Referee cards: gap between cards (across and down), inner padding, corner. */
+  referenceCardGap: 12,
+  referenceCardPad: 10,
+  referenceCardRadius: 6,
   /** Horizontal padding inside each grid cell; doubled is the column gutter. */
   gridGutter: 16,
   gridCellWidth: "50%",

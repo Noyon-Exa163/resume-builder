@@ -17,6 +17,8 @@ export interface EntryFormProps {
   value: ResumeEntry;
   onChange: (patch: Partial<ResumeEntry>) => void;
   sectionKind?: SectionKind;
+  /** A referee: the title is a name, and the company gets its own box. */
+  isReferences?: boolean;
   className?: string;
 }
 
@@ -24,6 +26,7 @@ export function EntryForm({
   value,
   onChange,
   sectionKind = "experience",
+  isReferences = false,
   className,
 }: EntryFormProps) {
   const [newTagText, setNewTagText] = useState("");
@@ -69,8 +72,9 @@ export function EntryForm({
   };
 
   // Determine smart field labels based on section kind
-  const titleLabel =
-    sectionKind === "education"
+  const titleLabel = isReferences
+    ? "Name"
+    : sectionKind === "education"
       ? "Degree / Field of Study"
       : sectionKind === "skills"
         ? "Skill Category / Topic"
@@ -84,8 +88,9 @@ export function EntryForm({
                 ? "Project Name"
                 : "Job Title / Role";
 
-  const subtitleLabel =
-    sectionKind === "education"
+  const subtitleLabel = isReferences
+    ? "Designation"
+    : sectionKind === "education"
       ? "School / University"
       : sectionKind === "experience"
         ? "Company / Organization"
@@ -118,6 +123,15 @@ export function EntryForm({
           value={value.subtitle || ""}
           onChange={(e) => handleFieldChange("subtitle", e.target.value)}
         />
+
+        {isReferences && (
+          <Input
+            label="Company"
+            placeholder="Enter company"
+            value={value.organization || ""}
+            onChange={(e) => handleFieldChange("organization", e.target.value)}
+          />
+        )}
 
         <Input
           label="Location"

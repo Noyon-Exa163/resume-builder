@@ -289,6 +289,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
         title,
         visible: true,
         layout: layoutForSection(kind, title),
+        showSkillIcons: false,
         entries: [],
       };
       set({

@@ -27,6 +27,7 @@ describe("computeThumbnailKey", () => {
           title: "Experience",
           visible: true,
           layout: "list" as const,
+          showSkillIcons: false,
           entries: [
             { id: "e1", title: "New job", bullets: [], tags: [] },
           ],

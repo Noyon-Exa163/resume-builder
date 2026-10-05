@@ -65,6 +65,7 @@ export const anthropicResumeInputSchema = {
               properties: {
                 title: { type: "string" },
                 subtitle: { type: "string" },
+                organization: { type: "string" },
                 location: { type: "string" },
                 startDate: { type: "string" },
                 endDate: { type: "string" },
@@ -140,6 +141,7 @@ export const geminiResumeResponseSchema = {
               properties: {
                 title: { type: "STRING" },
                 subtitle: { type: "STRING" },
+                organization: { type: "STRING" },
                 location: { type: "STRING" },
                 startDate: { type: "STRING" },
                 endDate: { type: "STRING" },

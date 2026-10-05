@@ -28,7 +28,9 @@ import type {
 } from "@/lib/ai/chatTypes";
 import type { AIChatMessage } from "@/lib/ai/types";
 import { AI_CHAT_HISTORY_LIMIT } from "@/lib/ai/chatPrompt";
-import { detectFormat } from "@/lib/import/detectFormat";
+import { applySkillIconDefaults } from "@/lib/skillIcons/defaults";
+import { detectFormat, IMAGE_EXTENSIONS } from "@/lib/import/detectFormat";
+import { extractImageTextWithOcr } from "@/lib/import/extractors/imageOcr";
 import { parseResumeJson } from "@/lib/import/jsonImport";
 import { truncateFilenameMiddle } from "@/lib/utils/truncateFilename";
 import { extractPdfText } from "@/lib/import/extractors/pdfText";
@@ -59,6 +61,9 @@ const IMPORT_WRITING_TEXT = "The AI is organizing your resume into sections…";
 const SLOW_WAIT_HINT_SECONDS = 20;
 
 function describeOcrProgress(progress: OcrProgress): string {
+  if (progress.step === "reading-image") {
+    return "Reading the text in your image…";
+  }
   if (progress.step === "preparing") {
     return "Getting ready to read your scanned pages (the first time can take a moment)…";
   }
@@ -68,7 +73,15 @@ function describeOcrProgress(progress: OcrProgress): string {
     : base;
 }
 
-const ACCEPTED_EXTENSIONS = ".pdf,.docx,.md,.markdown,.txt,.json";
+const ACCEPTED_EXTENSIONS = [
+  ".pdf",
+  ".docx",
+  ".md",
+  ".markdown",
+  ".txt",
+  ".json",
+  ...IMAGE_EXTENSIONS,
+].join(",");
 /** Keeps the composer's file chip from forcing the sidebar wider than its
  *  fixed width — see .ai-chat-panel__chip-name's max-width:220px. */
 const CHIP_NAME_MAX_LENGTH = 28;
@@ -244,7 +257,10 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       });
       setProgressText("Applying the changes to your resume…");
 
-      const resumeUpdate = result.resumeUpdate as DeepPartial<ResumeData> | undefined;
+      const rawUpdate = result.resumeUpdate as DeepPartial<ResumeData> | undefined;
+      const resumeUpdate = rawUpdate
+        ? applySkillIconDefaults(args.currentResume, rawUpdate)
+        : undefined;
 
       if (args.gateOverwrite && resumeUpdate && hasExistingContent(args.currentResume)) {
         setPendingTurn({
@@ -323,7 +339,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       const format = detectFormat(currentFile);
       if (format === "unknown") {
         setErrorMessage(
-          "Unsupported file type. Attach a PDF, DOCX, Markdown, or a previously exported .json project file.",
+          "Unsupported file type. Attach a PDF, DOCX, an image (PNG, JPG, WebP, AVIF), Markdown, or a previously exported .json project file.",
         );
         return;
       }
@@ -510,8 +526,8 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
           <EmptyState
             className="ai-chat-panel__empty-state"
             icon={Sparkles}
-            title="Upload a PDF to create your Exabyting-branded resume!"
-            description="Attach a PDF, DOCX, Markdown, or text file and AI will rebuild it with Exabyting's branding — or a previously exported .json project file to restore it. You can also just type what you'd like to change."
+            title="Upload a CV to create your Exabyting-branded resume!"
+            description="Attach a PDF, DOCX, image, Markdown, or text file and AI will rebuild it with Exabyting's branding — or a previously exported .json project file to restore it. You can also just type what you'd like to change."
           />
         )}
 
@@ -690,13 +706,18 @@ function findLatestSourceText(messages: ChatMessage[]): string | undefined {
 
 async function extractText(
   file: File,
-  format: "pdf" | "docx" | "markdown" | "text",
+  format: "pdf" | "docx" | "markdown" | "text" | "image",
   onOcrProgress: (progress: OcrProgress) => void,
 ): Promise<string> {
   if (format === "pdf") {
     const text = await extractPdfText(file);
     // A scanned PDF has no text layer, so fall back to reading it with OCR.
     return text.trim() ? text : extractPdfTextWithOcr(file, onOcrProgress);
+  }
+  if (format === "image") {
+    return extractImageTextWithOcr(file, () =>
+      onOcrProgress({ step: "reading-image" }),
+    );
   }
   if (format === "docx") return extractDocxText(file);
   return extractMarkdownText(file);

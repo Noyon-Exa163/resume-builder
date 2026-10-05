@@ -25,6 +25,7 @@ import {
   type EntryContactItem,
 } from "@/lib/contact";
 import { formatDateRange } from "@/lib/date";
+import { entrySubtitle } from "@/lib/schema/entryOrganization";
 import { normalizeHeadline } from "@/lib/schema/headline";
 import { formatFullNameForDisplay } from "@/lib/schema/personalInfo";
 import { resolveLanguageFlagSrc } from "../languageFlags";
@@ -926,7 +927,7 @@ function entryFollowLines(
 } {
   return {
     dates: formatDateRange(entry),
-    metaLine: [entry.subtitle, entry.location].filter(hasText).join(separator),
+    metaLine: [entrySubtitle(entry), entry.location].filter(hasText).join(separator),
   };
 }
 
@@ -1475,6 +1476,7 @@ function entryHasContent(entry: ResumeEntry): boolean {
   return (
     hasText(entry.title) ||
     hasText(entry.subtitle) ||
+    hasText(entry.organization) ||
     hasText(entry.location) ||
     hasText(entry.startDate) ||
     hasText(entry.endDate) ||

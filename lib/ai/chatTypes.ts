@@ -4,7 +4,7 @@ export type ChatMessageRole = "user" | "assistant";
 
 export interface ChatFileAttachment {
   name: string;
-  /** detectFormat() result: "pdf" | "docx" | "markdown" | "text" | "json" */
+  /** detectFormat() result: "pdf" | "docx" | "markdown" | "text" | "json" | "image" */
   format: string;
 }
 

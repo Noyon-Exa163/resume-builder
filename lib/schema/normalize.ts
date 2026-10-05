@@ -47,10 +47,12 @@ export function normalizeAndValidate(
       title,
       visible: section?.visible ?? true,
       layout: layoutForSection(kind, title),
+      showSkillIcons: section?.showSkillIcons ?? false,
       entries: (section?.entries ?? []).map((entry): ResumeEntry => ({
         id: uniqueId(seenEntryIds, entry?.id),
         title: entry?.title ?? "",
         subtitle: entry?.subtitle,
+        organization: entry?.organization,
         location: entry?.location,
         startDate: entry?.startDate,
         endDate: entry?.endDate,

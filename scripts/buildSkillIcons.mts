@@ -1,0 +1,182 @@
+/**
+ * Renders the icons listed in lib/skillIcons/catalog.ts to PNG files in
+ * public/skill-icons/, plus a NOTICE.md recording each icon's licence.
+ *
+ * Why PNG: @react-pdf/renderer can't draw many real-world SVGs (CSS styles,
+ * masks, filters, some gradients), and parsing SVG at run time would be
+ * fragile. A PNG renders identically in the PDF, the live preview and the PNG
+ * export. (Language flags use the same pre-rendered-image approach.)
+ *
+ * Source icons come from https://github.com/glincker/thesvg — clone it, then:
+ *
+ *   npm run build:skill-icons -- /path/to/thesvg
+ *
+ * Icons thesvg doesn't have are supplied as scripts/skill-icon-sources/<slug>.svg
+ * and take precedence over thesvg. Re-run after changing the catalog. The
+ * generated files are committed.
+ */
+import { Resvg } from "@resvg/resvg-js";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { SKILL_ICON_CATALOG } from "../lib/skillIcons/catalog";
+
+/** Longest side in pixels. A resume shows icons ~12pt tall, so this is ~7x. */
+const ICON_PIXELS = 128;
+
+/**
+ * thesvg's `default.svg` is drawn for dark backgrounds for some brands (white
+ * fills), which would vanish on a white page. When a default is mostly white
+ * we try these variants in turn — `light` is thesvg's light-background version.
+ */
+const VARIANT_ORDER = ["default", "light", "color", "mono", "dark"];
+const MOSTLY_WHITE = 0.5;
+
+interface IconMeta {
+  slug: string;
+  title: string;
+  license?: string;
+  url?: string;
+}
+
+const thesvgDir = process.argv[2];
+if (!thesvgDir) {
+  console.error("Usage: npm run build:skill-icons -- /path/to/thesvg-clone");
+  process.exit(1);
+}
+
+const outDir = path.resolve("public/skill-icons");
+const localSourceDir = path.resolve("scripts/skill-icon-sources");
+await mkdir(outDir, { recursive: true });
+
+const metaList = JSON.parse(
+  await readFile(path.join(thesvgDir, "src/data/icons.json"), "utf8"),
+) as IconMeta[];
+const metaBySlug = new Map(metaList.map((meta) => [meta.slug, meta]));
+
+interface Rendered {
+  png: Buffer;
+  /** width / height after cropping to the visible content. */
+  aspect: number;
+  whiteShare: number;
+}
+
+/** Crops to the visible content so icons with big margins don't render tiny. */
+function renderIcon(svg: string): Rendered {
+  const sizing = new Resvg(svg);
+  const bbox = sizing.getBBox();
+  if (bbox) sizing.cropByBBox(bbox);
+  const fitTo =
+    sizing.width >= sizing.height
+      ? { mode: "width" as const, value: ICON_PIXELS }
+      : { mode: "height" as const, value: ICON_PIXELS };
+
+  const cropped = new Resvg(svg, { fitTo });
+  const box = cropped.getBBox();
+  if (box) cropped.cropByBBox(box);
+  const image = cropped.render();
+
+  const pixels = image.pixels;
+  let visible = 0;
+  let white = 0;
+  for (let i = 0; i < pixels.length; i += 4) {
+    if (pixels[i + 3] <= 40) continue;
+    visible += 1;
+    if (pixels[i] > 235 && pixels[i + 1] > 235 && pixels[i + 2] > 235) white += 1;
+  }
+  return {
+    png: image.asPng(),
+    aspect: image.width / image.height,
+    whiteShare: visible === 0 ? 1 : white / visible,
+  };
+}
+
+async function readLocalSource(slug: string): Promise<string | null> {
+  try {
+    return await readFile(path.join(localSourceDir, `${slug}.svg`), "utf8");
+  } catch {
+    return null;
+  }
+}
+
+async function readVariant(slug: string, variant: string): Promise<string | null> {
+  try {
+    return await readFile(
+      path.join(thesvgDir, "public/icons", slug, `${variant}.svg`),
+      "utf8",
+    );
+  } catch {
+    return null;
+  }
+}
+
+const aspects: Record<string, number> = {};
+const notice: string[] = [];
+const failures: string[] = [];
+
+for (const [slug] of SKILL_ICON_CATALOG) {
+  try {
+    let best: (Rendered & { variant: string }) | undefined;
+    const localSvg = await readLocalSource(slug);
+    if (localSvg) best = { ...renderIcon(localSvg), variant: "default" };
+    for (const variant of localSvg ? [] : VARIANT_ORDER) {
+      const svg = await readVariant(slug, variant);
+      if (!svg) continue;
+      const rendered = { ...renderIcon(svg), variant };
+      best ??= rendered;
+      if (rendered.whiteShare <= MOSTLY_WHITE) {
+        best = rendered;
+        break;
+      }
+    }
+    if (!best) throw new Error("no SVG found");
+    if (best.variant !== "default") {
+      console.log(`${slug}: using the "${best.variant}" variant`);
+    }
+    await writeFile(path.join(outDir, `${slug}.png`), best.png);
+    if (Math.abs(best.aspect - 1) > 0.05) {
+      aspects[slug] = Math.round(best.aspect * 100) / 100;
+    }
+
+    const meta = metaBySlug.get(slug);
+    notice.push(
+      `| ${meta?.title ?? slug} | \`${slug}\` | ${meta?.license ?? (localSvg ? "supplied locally" : "unknown")} | ${meta?.url ?? ""} |`,
+    );
+  } catch (error) {
+    failures.push(`${slug}: ${error instanceof Error ? error.message : error}`);
+  }
+}
+
+await writeFile(
+  path.resolve("lib/skillIcons/iconAspects.ts"),
+  [
+    "// Generated by scripts/buildSkillIcons.mts — do not edit by hand.",
+    "/** Width / height of each icon's PNG; icons not listed are square. */",
+    "export const SKILL_ICON_ASPECTS: Readonly<Record<string, number>> = {",
+    ...Object.entries(aspects).map(([slug, aspect]) => `  "${slug}": ${aspect},`),
+    "};",
+    "",
+  ].join("\n"),
+);
+
+await writeFile(
+  path.join(outDir, "NOTICE.md"),
+  [
+    "# Skill icon notice",
+    "",
+    "Generated by `scripts/buildSkillIcons.mts` from https://github.com/glincker/thesvg.",
+    "Each icon keeps the licence its source declares, and every logo remains the",
+    "property of its owner. Icons are used here only to identify the skill or tool",
+    "they name, not to suggest endorsement.",
+    "",
+    "| Name | Icon | Licence | Brand site |",
+    "|---|---|---|---|",
+    ...notice,
+    "",
+  ].join("\n"),
+);
+
+console.log(`Rendered ${SKILL_ICON_CATALOG.length - failures.length} icons.`);
+if (failures.length > 0) {
+  console.error(`Failed:\n${failures.join("\n")}`);
+  process.exit(1);
+}

@@ -15,6 +15,7 @@ export function entryHasContent(entry: ResumeEntry): boolean {
   return (
     hasText(entry.title) ||
     hasText(entry.subtitle) ||
+    hasText(entry.organization) ||
     hasText(entry.location) ||
     hasText(entry.startDate) ||
     hasText(entry.endDate) ||

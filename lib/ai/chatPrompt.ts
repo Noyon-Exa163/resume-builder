@@ -1,6 +1,10 @@
 import type { ResumeData } from "@/lib/schema/resume";
 import type { AIChatMessage } from "./types";
-import { EDUCATION_ENTRY_RULES, RESUME_SCHEMA_DESCRIPTION } from "./extractionPrompt";
+import {
+  EDUCATION_ENTRY_RULES,
+  REFERENCE_ENTRY_RULES,
+  RESUME_SCHEMA_DESCRIPTION,
+} from "./extractionPrompt";
 
 /** How many prior turns are sent to the model per request — older turns
  *  stay in the persisted transcript and the UI, just not the wire payload. */
@@ -87,6 +91,7 @@ function buildChatSystemPrompt(
     parts.push(
       "",
       EDUCATION_ENTRY_RULES,
+      REFERENCE_ENTRY_RULES,
       "",
       "The user's latest message includes text extracted from an attached file. If that text is a resume or CV, this is an import: you MUST include the full extracted resume in \"resume\", replacing the current content, even when the user's message is only a file name or says nothing about importing. Only leave \"resume\" out if the file clearly is not a resume and the user asked something else about it. Keep \"reply\" to one short sentence saying what you imported.",
     );

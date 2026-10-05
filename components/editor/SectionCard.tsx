@@ -6,6 +6,7 @@ import type {
   ResumeSection,
   SectionKind,
 } from "@/lib/schema/resume";
+import { isReferencesSectionTitle } from "@/lib/schema/resume";
 import { EntryList } from "./EntryList";
 import { Button, SwitchField, ConfirmDialog, Tooltip } from "@/components/ui";
 import {
@@ -62,7 +63,7 @@ export function SectionCard({
   isDragging,
   className,
 }: SectionCardProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const KindIcon = SECTION_KIND_ICONS[section.kind] || LayoutGrid;
@@ -152,9 +153,26 @@ export function SectionCard({
 
       {isExpanded && (
         <div className="section-card__body">
+          {section.kind === "skills" && (
+            <div className="section-card__option">
+              <SwitchField
+                checked={section.showSkillIcons}
+                onCheckedChange={(checked) =>
+                  onUpdateSection({ showSkillIcons: checked })
+                }
+                label="Show Skill Icons"
+              />
+              <p className="section-card__option-hint">
+                Adds a logo next to common tools and technologies. Skills
+                without a logo stay as text.
+              </p>
+            </div>
+          )}
+
           <EntryList
             entries={section.entries}
             sectionKind={section.kind}
+            isReferences={isReferencesSectionTitle(section.title)}
             onUpdateEntry={onUpdateEntry}
             onRemoveEntry={onRemoveEntry}
             onReorderEntries={onReorderEntries}

@@ -219,6 +219,7 @@ describe("ResumeDataSchema", () => {
             title: "Experience",
             visible: true,
             layout: "list",
+            showSkillIcons: false,
             entries: [
               {
                 id: "e1",

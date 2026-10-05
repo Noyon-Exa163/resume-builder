@@ -75,8 +75,9 @@
 .section-card__title-area {
   flex: 1;
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
   min-width: 0;
 }
 
@@ -109,6 +110,8 @@
 }
 
 .section-card__count-badge {
+  /* Lines up with the title text, past the input's padding and border. */
+  margin-left: calc(var(--space-2) + 1px);
   font-family: var(--font-mono);
   font-size: 11px;
   padding: 2px 6px;
@@ -158,6 +161,20 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+}
+
+.section-card__option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.section-card__option-hint {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: var(--leading-caption);
+  color: var(--color-text-tertiary);
 }
 
 .section-card__footer {

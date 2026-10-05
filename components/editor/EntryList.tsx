@@ -23,11 +23,14 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, ChevronDown, ChevronUp, Trash2, ListOrdered } from "lucide-react";
 import { EmptyState, ConfirmDialog, Tooltip } from "@/components/ui";
 import { formatDateRange } from "@/lib/date";
+import { entrySubtitle } from "@/lib/schema/entryOrganization";
 import "./EntryList.css";
 
 export interface EntryListProps {
   entries: ResumeEntry[];
   sectionKind: SectionKind;
+  /** A references section: entries are people, with a company box. */
+  isReferences?: boolean;
   onUpdateEntry: (entryId: string, patch: Partial<ResumeEntry>) => void;
   onRemoveEntry: (entryId: string) => void;
   onReorderEntries: (orderedIds: string[]) => void;
@@ -37,6 +40,8 @@ export interface EntryListProps {
 interface SortableEntryItemProps {
   entry: ResumeEntry;
   sectionKind: SectionKind;
+  /** A references section: entries are people, with a company box. */
+  isReferences?: boolean;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onUpdate: (patch: Partial<ResumeEntry>) => void;
@@ -46,6 +51,7 @@ interface SortableEntryItemProps {
 function SortableEntryItem({
   entry,
   sectionKind,
+  isReferences,
   isExpanded,
   onToggleExpand,
   onUpdate,
@@ -68,7 +74,7 @@ function SortableEntryItem({
   };
 
   const displayTitle = entry.title || "Untitled Entry";
-  const displaySubtitle = [entry.subtitle, formatDateRange(entry) || null]
+  const displaySubtitle = [entrySubtitle(entry), formatDateRange(entry) || null]
     .filter(Boolean)
     .join(" • ");
 
@@ -144,6 +150,7 @@ function SortableEntryItem({
           <EntryForm
             value={entry}
             sectionKind={sectionKind}
+            isReferences={isReferences}
             onChange={onUpdate}
           />
         </div>
@@ -163,15 +170,21 @@ function SortableEntryItem({
 export function EntryList({
   entries,
   sectionKind,
+  isReferences,
   onUpdateEntry,
   onRemoveEntry,
   onReorderEntries,
   className,
 }: EntryListProps) {
-  // Store set of expanded entry IDs. Default newly added/first entry open.
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(
-    () => new Set(entries.length > 0 ? [entries[0].id] : [])
-  );
+  // Entries start collapsed; only the person expands them. An entry they just
+  // added opens so they can fill it in.
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+  const [knownIds, setKnownIds] = useState(() => new Set(entries.map((e) => e.id)));
+  const addedIds = entries.map((e) => e.id).filter((id) => !knownIds.has(id));
+  if (addedIds.length > 0) {
+    setKnownIds(new Set(entries.map((e) => e.id)));
+    setExpandedIds((prev) => new Set([...prev, ...addedIds]));
+  }
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => {
@@ -236,6 +249,7 @@ export function EntryList({
               key={entry.id}
               entry={entry}
               sectionKind={sectionKind}
+              isReferences={isReferences}
               isExpanded={expandedIds.has(entry.id)}
               onToggleExpand={() => toggleExpand(entry.id)}
               onUpdate={(patch) => onUpdateEntry(entry.id, patch)}

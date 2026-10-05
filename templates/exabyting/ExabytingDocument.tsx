@@ -25,9 +25,14 @@ import {
   type EntryContactItem,
 } from "@/lib/contact";
 import { formatDateRange } from "@/lib/date";
+import { entrySubtitle } from "@/lib/schema/entryOrganization";
 import { normalizeHeadline } from "@/lib/schema/headline";
 import { formatFullNameForDisplay } from "@/lib/schema/personalInfo";
 import { resolveLanguageFlagSrc } from "../languageFlags";
+import type { Style } from "@react-pdf/types";
+import { splitDesignationAndCompany } from "@/lib/schema/entryOrganization";
+import { SkillList, type SkillListItem } from "../SkillList";
+import { resolveSkillIcon } from "@/lib/skillIcons/resolveSkillIcon";
 import type {
   PageSize,
   ResumeEntry,
@@ -81,6 +86,15 @@ const SKILL_SEPARATOR = " · ";
 const LANGUAGE_FLAG_MARGIN_TOP =
   ((inter.ascent - inter.capHeight / 2) / inter.unitsPerEm) * fonts.sizeSmall -
   layout.languageFlagSize / 2;
+
+/**
+ * How far Inter's glyphs sit below the middle of a one-line chip label (line
+ * height 1). The skill chip centres its icon on the chip, so the label is
+ * lifted by this much to put its letters on the same centre.
+ */
+const SKILL_LABEL_OFFSET_TOP =
+  ((inter.ascent - inter.capHeight / 2) / inter.unitsPerEm - 0.5) *
+  fonts.sizeChip;
 
 const styles = StyleSheet.create({
   page: {
@@ -504,6 +518,23 @@ const styles = StyleSheet.create({
     lineHeight: fonts.lineHeightSection,
     color: colors.text,
   },
+  /** Capsule around one skill — white with a light grey
+   *  outline so full-colour logos sit on a clean ground, at a fixed height so
+   *  chips with and without an icon match. */
+  skillChip: {
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.border,
+    borderRadius: layout.tagRadius,
+    paddingHorizontal: layout.skillChipPadX,
+    height: layout.skillChipHeight,
+  },
+  skillChipLabel: {
+    fontFamily: fonts.family,
+    fontSize: fonts.sizeChip,
+    lineHeight: fonts.lineHeightTag,
+    color: colors.tagText,
+  },
   skillValues: {
     flex: 1,
     fontSize: fonts.sizeSmall,
@@ -516,10 +547,52 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     gap: 6,
   },
+  refRow: {
+    flexDirection: "row",
+    gap: layout.referenceCardGap,
+    marginBottom: layout.referenceCardGap,
+  },
+  /** One referee: white with a light outline, like the skill chips. */
+  refCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 0.5,
+    borderColor: colors.border,
+    borderRadius: layout.referenceCardRadius,
+    padding: layout.referenceCardPad,
+  },
+  refName: {
+    fontFamily: fonts.display,
+    fontSize: fonts.sizeBody,
+    fontWeight: 700,
+    lineHeight: fonts.lineHeightEntryTitle,
+    color: colors.text,
+  },
+  refRole: {
+    marginTop: layout.entryFollowGap,
+    fontSize: fonts.sizeSmall,
+    lineHeight: fonts.lineHeightBody,
+    color: colors.textSecondary,
+  },
+  refCompany: {
+    fontSize: fonts.sizeSmall,
+    lineHeight: fonts.lineHeightBody,
+    color: colors.textSecondary,
+  },
+  refDetail: {
+    fontSize: fonts.sizeSmall,
+    lineHeight: fonts.lineHeightBody,
+    color: colors.textMuted,
+  },
+  refContactCard: {
+    marginTop: space[2],
+    flexDirection: "column",
+    gap: 5,
+  },
   refContactRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: space[1],
+    maxWidth: "100%",
     textDecoration: "none",
   },
   refContactGlyph: {
@@ -529,6 +602,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   refContactValue: {
+    flexShrink: 1,
     fontSize: fonts.sizeSmall,
     lineHeight: 1,
     color: colors.textSecondary,
@@ -678,9 +752,7 @@ function pageContentWidth(pageSize: PageSize) {
 
 function timelineBodyWidth(pageSize: PageSize) {
   return (
-    pageContentWidth(pageSize) -
-    layout.timelineRailWidth -
-    layout.timelineGap
+    pageContentWidth(pageSize) - layout.timelineRailWidth - layout.timelineGap
   );
 }
 
@@ -814,10 +886,25 @@ function sectionNodes(
 ): ReactElement[] {
   const entries = section.entries.filter(entryHasContent);
   const heading = (
-    <SectionHeading key={`${section.id}-heading`} title={section.title} spaced />
+    <SectionHeading
+      key={`${section.id}-heading`}
+      title={section.title}
+      spaced
+    />
   );
 
   if (entries.length === 0) return [heading];
+
+  if (isReferencesSectionTitle(section.title)) {
+    const [leadRow, ...restRows] = referenceRows(entries, section, pageSize);
+    return [
+      <View key={`${section.id}-lead`} wrap={false}>
+        {heading}
+        {leadRow}
+      </View>,
+      ...restRows,
+    ];
+  }
 
   if (sectionUsesGrid(section)) {
     const leadCells = entries.slice(0, 2);
@@ -839,7 +926,12 @@ function sectionNodes(
   }
 
   if (section.layout === "tags") {
-    const rows = skillRows(section.id, entries, section.kind);
+    const rows = skillRows(
+      section.id,
+      entries,
+      section.kind,
+      section.showSkillIcons,
+    );
     // entries can pass entryHasContent (e.g. via a startDate) while none of
     // them carry a title or tags, which skillRows renders as zero rows.
     if (rows.length === 0) return [heading];
@@ -854,8 +946,15 @@ function sectionNodes(
 
   const [first, ...rest] = entries;
   const firstParts = entryNodes(first, false, section, pageSize);
+  // minPresenceAhead on the lead group itself (not on the head nested inside
+  // it, where it is ignored) keeps the heading and first entry head from
+  // sitting at the foot of a page with their first bullet stranded overleaf.
   return [
-    <View key={`${section.id}-lead`} wrap={false}>
+    <View
+      key={`${section.id}-lead`}
+      wrap={false}
+      minPresenceAhead={layout.entryHeadMinPresence}
+    >
       {heading}
       {firstParts[0]}
     </View>,
@@ -922,7 +1021,9 @@ function entryFollowLines(
 } {
   return {
     dates: formatDateRange(entry),
-    metaLine: [entry.subtitle, entry.location].filter(hasText).join(separator),
+    metaLine: [entrySubtitle(entry), entry.location]
+      .filter(hasText)
+      .join(separator),
   };
 }
 
@@ -1006,9 +1107,14 @@ function EntryHeading({
           <View style={[styles.timelineHeadingFollow, { width: contentWidth }]}>
             <TimelineRail />
             <View
-              style={[styles.timelineFollowBody, { width: bodyWidth, paddingTop: 0 }]}
+              style={[
+                styles.timelineFollowBody,
+                { width: bodyWidth, paddingTop: 0 },
+              ]}
             >
-              {metaLine ? <Text style={styles.entryMeta}>{metaLine}</Text> : null}
+              {metaLine ? (
+                <Text style={styles.entryMeta}>{metaLine}</Text>
+              ) : null}
               {descriptionNode}
             </View>
           </View>
@@ -1123,13 +1229,21 @@ function entryNodes(
       timeline ? (
         <View
           key={`${entry.id}-b-${index}`}
-          style={[styles.timelineBulletRow, { width: pageContentWidth(pageSize) }]}
+          style={[
+            styles.timelineBulletRow,
+            { width: pageContentWidth(pageSize) },
+          ]}
           wrap={false}
         >
           <TimelineRail />
           <View style={[styles.timelineBulletBody, { width: bodyWidth }]}>
             <View style={styles.timelineBulletDot} />
-            <View style={[styles.timelineBulletTextWrap, { width: bulletTextWidth }]}>
+            <View
+              style={[
+                styles.timelineBulletTextWrap,
+                { width: bulletTextWidth },
+              ]}
+            >
               <Text style={styles.timelineBulletText}>{bullet}</Text>
             </View>
           </View>
@@ -1276,12 +1390,114 @@ function referenceDisplay(entry: ResumeEntry, section: ResumeSection) {
   };
 }
 
-function ReferenceContactList({ items }: { items: EntryContactItem[] }) {
+/** Most referee cards that share a row; more wrap onto the next row. */
+const REFERENCE_MAX_COLUMNS = 3;
+
+/**
+ * Referees as equal-width cards in rows. The column count follows how many
+ * there are — one card sits at half width instead of stretching across the
+ * page, two split the row, three or more fill rows of three — and a short
+ * last row keeps the same card width so nothing looks stretched. Cards in a
+ * row stretch to the tallest, so a card without an email still lines up.
+ */
+function referenceRows(
+  entries: ResumeEntry[],
+  section: ResumeSection,
+  pageSize: PageSize,
+): ReactElement[] {
+  const columns = Math.min(Math.max(entries.length, 2), REFERENCE_MAX_COLUMNS);
+  const cardWidth =
+    (pageContentWidth(pageSize) - layout.referenceCardGap * (columns - 1)) /
+    columns;
+  const rows: ReactElement[] = [];
+  for (let start = 0; start < entries.length; start += columns) {
+    const cards = entries.slice(start, start + columns);
+    rows.push(
+      <View
+        key={`${section.id}-ref-row-${start}`}
+        style={styles.refRow}
+        wrap={false}
+      >
+        {cards.map((entry) => (
+          <ReferenceCard
+            key={entry.id}
+            entry={entry}
+            section={section}
+            width={cardWidth}
+          />
+        ))}
+      </View>,
+    );
+  }
+  return rows;
+}
+
+function ReferenceCard({
+  entry,
+  section,
+  width,
+}: {
+  entry: ResumeEntry;
+  section: ResumeSection;
+  width: number;
+}) {
+  const display = referenceDisplay(entry, section);
+  const { title, location, description } = display.entry;
+  const { designation, company } = splitDesignationAndCompany(display.entry);
+  const tags = entry.tags.filter(hasText);
+
+  return (
+    <View style={[styles.refCard, { width }]}>
+      {hasText(title) ? (
+        <Text style={styles.refName}>{title.trim()}</Text>
+      ) : null}
+      {hasText(designation) ? (
+        <Text style={styles.refRole}>{designation}</Text>
+      ) : null}
+      {hasText(company) ? (
+        <Text style={styles.refCompany}>{company}</Text>
+      ) : null}
+      {hasText(location) ? (
+        <Text style={styles.refDetail}>{location.trim()}</Text>
+      ) : null}
+      {hasText(description) ? (
+        <Text style={[styles.refDetail, { marginTop: layout.entryFollowGap }]}>
+          {description.trim()}
+        </Text>
+      ) : null}
+      {display.contact.length > 0 ? (
+        <ReferenceContactList
+          items={display.contact}
+          style={styles.refContactCard}
+        />
+      ) : null}
+      {display.bullets.map((bullet, index) => (
+        <Text key={`${entry.id}-b-${index}`} style={styles.refDetail}>
+          {`• ${bullet}`}
+        </Text>
+      ))}
+      {tags.length > 0 ? <TagRow tags={tags} /> : null}
+      {hasText(display.link) ? (
+        <Link src={normalizeHref(display.link)} style={styles.link}>
+          {displayLink(display.link)}
+        </Link>
+      ) : null}
+    </View>
+  );
+}
+
+function ReferenceContactList({
+  items,
+  style = styles.refContactList,
+}: {
+  items: EntryContactItem[];
+  style?: Style;
+}) {
   const color = colors.textMuted;
   const size = 8;
 
   return (
-    <View style={styles.refContactList} wrap={false}>
+    <View style={style} wrap={false}>
       {items.map((item, index) => {
         const href = contactHref(item);
         const label =
@@ -1339,6 +1555,7 @@ function skillRows(
   sectionId: string,
   entries: ResumeEntry[],
   sectionKind: SectionKind,
+  showSkillIcons: boolean,
 ): ReactElement[] {
   if (sectionKind === "languages") {
     const languages = entries.filter((entry) => hasText(entry.title));
@@ -1370,23 +1587,45 @@ function skillRows(
     .filter((row) => row.skills.length === 0 && row.label)
     .map((row) => row.label);
 
+  // Skills sections lay out as a wrapping run of chips, each with its icon
+  // only when icons are on. Other tag sections keep the single line of text
+  // joined by SKILL_SEPARATOR.
+  const skillValues = (skills: string[]): ReactElement =>
+    sectionKind === "skills" ? (
+      <SkillList
+        items={skills.map((label) =>
+          showSkillIcons ? skillListItem(label) : { label },
+        )}
+        chipStyle={styles.skillChip}
+        labelStyle={styles.skillChipLabel}
+        iconSize={layout.skillIconSize}
+        iconGap={layout.skillChipGap}
+        chipGap={space[1]}
+        labelOffsetTop={SKILL_LABEL_OFFSET_TOP}
+      />
+    ) : (
+      <Text style={styles.skillValues}>{skills.join(SKILL_SEPARATOR)}</Text>
+    );
+
+  // A category is one row. wrap={false} moves the label and its chips
+  // together when they do not fit, so the row never straddles a page break.
   const nodes = rows
     .filter((row) => row.skills.length > 0)
     .map((row) => (
-      <View key={row.id} style={styles.skillRow}>
+      <View key={row.id} style={styles.skillRow} wrap={false}>
         {row.label ? <Text style={styles.skillLabel}>{row.label}</Text> : null}
-        <Text style={styles.skillValues}>
-          {row.skills.join(SKILL_SEPARATOR)}
-        </Text>
+        {skillValues(row.skills)}
       </View>
     ));
 
   if (uncategorised.length > 0) {
     nodes.push(
-      <View key={`${sectionId}-uncategorised-skills`} style={styles.skillRow}>
-        <Text style={styles.skillValues}>
-          {uncategorised.join(SKILL_SEPARATOR)}
-        </Text>
+      <View
+        key={`${sectionId}-uncategorised-skills`}
+        style={styles.skillRow}
+        wrap={false}
+      >
+        {skillValues(uncategorised)}
       </View>,
     );
   }
@@ -1394,9 +1633,15 @@ function skillRows(
   return nodes;
 }
 
+function skillListItem(label: string): SkillListItem {
+  return { label, icon: resolveSkillIcon(label) };
+}
+
 function TagRow({ tags, indented }: { tags: string[]; indented?: boolean }) {
   return (
-    <View style={[styles.tagRow, indented ? styles.entryFollowIndent : undefined]}>
+    <View
+      style={[styles.tagRow, indented ? styles.entryFollowIndent : undefined]}
+    >
       {tags.map((tag) => (
         <View key={tag} style={styles.tag} wrap={false}>
           <Text style={styles.tagLabel}>{tag}</Text>
@@ -1453,6 +1698,7 @@ function entryHasContent(entry: ResumeEntry): boolean {
   return (
     hasText(entry.title) ||
     hasText(entry.subtitle) ||
+    hasText(entry.organization) ||
     hasText(entry.location) ||
     hasText(entry.startDate) ||
     hasText(entry.endDate) ||

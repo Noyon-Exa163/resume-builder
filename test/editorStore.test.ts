@@ -112,6 +112,7 @@ describe("editorStore.load", () => {
           title: "Skills",
           visible: true,
           layout: "list",
+          showSkillIcons: false,
           entries: [
             { id: "dup-entry", title: "Languages", bullets: [], tags: [] },
             { id: "dup-entry", title: "Cloud", bullets: [], tags: [] },
