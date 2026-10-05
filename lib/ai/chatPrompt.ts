@@ -19,14 +19,42 @@ export function buildChatPrompt(input: {
   history: AIChatMessage[];
   message: string;
   attachedFileText?: string;
+  /** Earlier-attached file, reference only. Ignored when a new file is attached. */
+  sourceFileText?: string;
 }): { system: string; messages: AIChatMessage[] } {
   return {
-    system: buildChatSystemPrompt(input.resume, Boolean(input.attachedFileText)),
+    system: buildChatSystemPrompt(
+      input.resume,
+      Boolean(input.attachedFileText),
+      input.attachedFileText ? undefined : input.sourceFileText,
+    ),
     messages: [...input.history, { role: "user", content: buildUserTurn(input) }],
   };
 }
 
-function buildChatSystemPrompt(resume: ResumeData, hasAttachment: boolean): string {
+/**
+ * Reference text from a file attached earlier. Placed BEFORE the current
+ * resume JSON in both prompts: the file never changes between turns but the
+ * resume does after every edit, so keeping the stable text first lets the
+ * provider's prompt cache reuse everything up to that point.
+ */
+function buildSourceFileBlock(sourceFileText: string, canEdit: boolean): string[] {
+  return [
+    canEdit
+      ? "The current resume was imported from a file the user attached earlier in this conversation. Its extracted text is below, for reference only. This is NOT a new import: do not re-import it unless the user asks. Use it when the user says something is missing, wrong, or incomplete — restore or correct that part from this text, and still apply ONLY the change they asked for. The text comes from OCR or PDF extraction, so columns may be interleaved and characters misread; use judgement."
+      : "The current resume was imported from a file the user attached earlier in this conversation. Its extracted text is below as extra context for answering. The text comes from OCR or PDF extraction, so columns may be interleaved and characters misread; use judgement.",
+    "",
+    "[Earlier attached file content]",
+    sourceFileText,
+    "",
+  ];
+}
+
+function buildChatSystemPrompt(
+  resume: ResumeData,
+  hasAttachment: boolean,
+  sourceFileText?: string,
+): string {
   const parts = [
     "Your entire response must be RAW JSON: a single JSON object, nothing before or after it, no markdown code fences, no bullet lists or headings outside the JSON. This applies no matter what the user asks, including questions that would normally invite a bulleted answer — put that content, as plain sentences, inside the \"reply\" string instead.",
     "",
@@ -50,6 +78,7 @@ function buildChatSystemPrompt(resume: ResumeData, hasAttachment: boolean): stri
     "Resume JSON shape:",
     RESUME_SCHEMA_DESCRIPTION,
     "",
+    ...(sourceFileText ? buildSourceFileBlock(sourceFileText, true) : []),
     "Current resume (JSON):",
     JSON.stringify(resume),
   ];
@@ -76,14 +105,15 @@ export function buildQaChatPrompt(input: {
   resume: ResumeData;
   history: AIChatMessage[];
   message: string;
+  sourceFileText?: string;
 }): { system: string; messages: AIChatMessage[] } {
   return {
-    system: buildQaSystemPrompt(input.resume),
+    system: buildQaSystemPrompt(input.resume, input.sourceFileText),
     messages: [...input.history, { role: "user", content: input.message }],
   };
 }
 
-function buildQaSystemPrompt(resume: ResumeData): string {
+function buildQaSystemPrompt(resume: ResumeData, sourceFileText?: string): string {
   return [
     'Your entire response must be RAW JSON: a single JSON object of exactly this shape, nothing before or after it, no markdown code fences: { "reply": string }',
     "",
@@ -91,6 +121,7 @@ function buildQaSystemPrompt(resume: ResumeData): string {
     "",
     'Keep "reply" concise — 1 to 3 sentences, plain prose (no markdown, no bullet characters like "-" or "*"). Never restate the full resume, never repeat back JSON.',
     "",
+    ...(sourceFileText ? buildSourceFileBlock(sourceFileText, false) : []),
     "Current resume (JSON):",
     JSON.stringify(resume),
   ].join("\n");

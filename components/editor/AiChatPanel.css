@@ -61,6 +61,13 @@
   color: var(--color-text-secondary);
 }
 
+.ai-chat-panel__thinking-hint {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
 .ai-chat-panel__thinking-elapsed {
   font-family: var(--font-mono);
   font-size: 12px;

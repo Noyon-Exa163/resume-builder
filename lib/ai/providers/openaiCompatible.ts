@@ -38,7 +38,12 @@ interface ChatCompletionMessage {
 }
 
 interface ChatCompletionResponse {
-  choices?: Array<{ message?: { content?: string | null } }>;
+  choices?: Array<{
+    message?: { content?: string | null };
+    finish_reason?: string | null;
+  }>;
+  /** Some hosts return an error object with a 200 status. */
+  error?: { message?: string };
   /** The model that actually served the request — OpenRouter echoes the
    *  resolved model here even when the request asked for an auto-router
    *  id like "openrouter/auto" or "openrouter/free". */
@@ -130,7 +135,14 @@ export function createOpenAICompatibleProvider(
     const json = (await response.json()) as ChatCompletionResponse;
     const content = json.choices?.[0]?.message?.content;
     if (typeof content !== "string") {
-      throw new Error(`${options.label} returned no message content.`);
+      const reason =
+        json.error?.message ??
+        (json.choices?.[0]?.finish_reason
+          ? `finish reason: ${json.choices[0].finish_reason}`
+          : undefined);
+      throw new Error(
+        `${options.label} returned no message content${reason ? ` (${reason})` : ""}.`,
+      );
     }
     return {
       content,

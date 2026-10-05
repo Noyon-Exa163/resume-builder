@@ -1,5 +1,6 @@
 import type { ResumeData } from "@/lib/schema/resume";
 import type { AIChatMessage } from "@/lib/ai/types";
+import type { ChatStreamEvent, ChatTurnStage } from "@/lib/ai/chatTypes";
 
 export interface AiChatTurnResult {
   reply: string;
@@ -41,14 +42,21 @@ export async function sendChatMessage(args: {
   resume: ResumeData;
   history: AIChatMessage[];
   message: string;
+  /** Text of a file attached in THIS message — treated as an import. */
   attachedFileText?: string;
+  /** Text of a file attached earlier in the conversation — reference only,
+   *  so a follow-up can correct or complete the import without re-attaching. */
+  sourceFileText?: string;
+  /** Called as the server reports real milestones while it works. */
+  onStage?: (stage: ChatTurnStage) => void;
 }): Promise<AiChatTurnResult> {
+  const { onStage, ...payload } = args;
   let res: Response;
   try {
     res = await fetch("/api/import/ai-chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(args),
+      body: JSON.stringify(payload),
     });
   } catch {
     throw new Error(
@@ -61,5 +69,57 @@ export async function sendChatMessage(args: {
     throw new Error(body?.error || describeHttpFailure(res.status));
   }
 
-  return res.json();
+  return readChatStream(res, onStage);
+}
+
+/**
+ * Reads the route's newline-delimited JSON stream: stage events as they
+ * arrive, then one result or error. A stream that ends without either was
+ * cut off by something outside our code (usually a gateway timeout).
+ */
+async function readChatStream(
+  res: Response,
+  onStage?: (stage: ChatTurnStage) => void,
+): Promise<AiChatTurnResult> {
+  if (!res.body) throw new Error(describeHttpFailure(504));
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  function handleLine(line: string): AiChatTurnResult | undefined {
+    if (!line.trim()) return undefined;
+    const event = JSON.parse(line) as ChatStreamEvent;
+    if (event.type === "stage") onStage?.(event.stage);
+    if (event.type === "error") throw new Error(event.error);
+    if (event.type === "result") {
+      return {
+        reply: event.reply,
+        resumeUpdate: event.resumeUpdate,
+        model: event.model,
+        totalTokens: event.totalTokens,
+      };
+    }
+    return undefined;
+  }
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      buffer += decoder.decode(value, { stream: !done });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        const result = handleLine(line);
+        if (result) return result;
+      }
+      if (done) break;
+    }
+    const result = handleLine(buffer);
+    if (result) return result;
+  } catch (error) {
+    if (error instanceof SyntaxError) throw new Error(describeHttpFailure(504));
+    throw error;
+  }
+  throw new Error(describeHttpFailure(504));
 }

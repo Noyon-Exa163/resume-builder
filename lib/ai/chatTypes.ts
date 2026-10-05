@@ -22,6 +22,10 @@ export interface ChatMessage {
   createdAt: string;
   /** Present only on a user message that came from a file attach. */
   attachment?: ChatFileAttachment;
+  /** Text extracted from that attached file, kept so follow-up messages
+   *  ("you missed my older jobs") can still see the source. Never sent as
+   *  conversation history — see sourceFileText in lib/import/aiChat.ts. */
+  sourceText?: string;
   /** Present only on an assistant message that changed the resume — the
    *  revert target when this turn is later edited or regenerated. */
   appliedChange?: {
@@ -33,3 +37,18 @@ export interface ChatMessage {
   model?: string;
   totalTokens?: number;
 }
+
+/** Real milestones the chat route reports while it works on a turn. */
+export type ChatTurnStage = "deciding" | "writing" | "checking";
+
+/** One line of the ai-chat route's streamed (newline-delimited JSON) response. */
+export type ChatStreamEvent =
+  | { type: "stage"; stage: ChatTurnStage }
+  | {
+      type: "result";
+      reply: string;
+      resumeUpdate?: ResumeData;
+      model?: string;
+      totalTokens?: number;
+    }
+  | { type: "error"; error: string };

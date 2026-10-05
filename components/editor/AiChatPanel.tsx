@@ -21,13 +21,21 @@ import {
 import { ActionDialog, EmptyState, Tooltip } from "@/components/ui";
 import type { ResumeData } from "@/lib/schema/resume";
 import type { DeepPartial } from "@/lib/schema/normalize";
-import type { ChatFileAttachment, ChatMessage } from "@/lib/ai/chatTypes";
+import type {
+  ChatFileAttachment,
+  ChatMessage,
+  ChatTurnStage,
+} from "@/lib/ai/chatTypes";
 import type { AIChatMessage } from "@/lib/ai/types";
 import { AI_CHAT_HISTORY_LIMIT } from "@/lib/ai/chatPrompt";
 import { detectFormat } from "@/lib/import/detectFormat";
 import { parseResumeJson } from "@/lib/import/jsonImport";
 import { truncateFilenameMiddle } from "@/lib/utils/truncateFilename";
 import { extractPdfText } from "@/lib/import/extractors/pdfText";
+import {
+  extractPdfTextWithOcr,
+  type OcrProgress,
+} from "@/lib/import/extractors/pdfOcr";
 import { extractDocxText } from "@/lib/import/extractors/docxText";
 import { extractMarkdownText } from "@/lib/import/extractors/markdownText";
 import { sendChatMessage } from "@/lib/import/aiChat";
@@ -38,6 +46,27 @@ import "./AiChatPanel.css";
 
 type Status = "idle" | "sending";
 type LoadingStage = "reading" | "thinking" | null;
+
+/** Plain-language wording for each real milestone — no technical terms. */
+const STAGE_TEXT: Record<ChatTurnStage, string> = {
+  deciding: "Working out what you're asking for…",
+  writing: "The AI is writing your update…",
+  checking: "Checking that everything looks right…",
+};
+const IMPORT_WRITING_TEXT = "The AI is organizing your resume into sections…";
+
+/** After this long, reassure the person that a slow import is normal. */
+const SLOW_WAIT_HINT_SECONDS = 20;
+
+function describeOcrProgress(progress: OcrProgress): string {
+  if (progress.step === "preparing") {
+    return "Getting ready to read your scanned pages (the first time can take a moment)…";
+  }
+  const base = `Reading page ${progress.page} of ${progress.totalPages}…`;
+  return progress.skippedPages > 0
+    ? `${base} Only the first ${progress.totalPages} pages are read.`
+    : base;
+}
 
 const ACCEPTED_EXTENSIONS = ".pdf,.docx,.md,.markdown,.txt,.json";
 /** Keeps the composer's file chip from forcing the sidebar wider than its
@@ -91,6 +120,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
   const [instruction, setInstruction] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [loadingStage, setLoadingStage] = useState<LoadingStage>(null);
+  const [progressText, setProgressText] = useState("");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
   const [isDragging, setIsDragging] = useState(false);
@@ -184,6 +214,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
     commitMessages(withUserMessage);
     setStatus("sending");
     setLoadingStage("thinking");
+    setProgressText("Sending your request to the AI…");
     setErrorMessage("");
     setFailedRequest(null);
 
@@ -192,12 +223,26 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
         .slice(-AI_CHAT_HISTORY_LIMIT)
         .map((m) => ({ role: m.role, content: m.content }));
 
+      // A regenerated or edited file message still carries its own text.
+      const attachedFileText = args.attachedFileText ?? args.userMessage.sourceText;
+      const sourceFileText = attachedFileText
+        ? undefined
+        : findLatestSourceText(args.baseMessages);
+
       const result = await sendChatMessage({
         resume: args.currentResume,
         history: wireHistory,
         message: args.userMessage.content,
-        attachedFileText: args.attachedFileText,
+        attachedFileText,
+        sourceFileText,
+        onStage: (stage) =>
+          setProgressText(
+            stage === "writing" && attachedFileText
+              ? IMPORT_WRITING_TEXT
+              : STAGE_TEXT[stage],
+          ),
       });
+      setProgressText("Applying the changes to your resume…");
 
       const resumeUpdate = result.resumeUpdate as DeepPartial<ResumeData> | undefined;
 
@@ -285,6 +330,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       attachment = { name: currentFile.name, format };
       setStatus("sending");
       setLoadingStage("reading");
+      setProgressText("Opening your file…");
       try {
         if (format === "json") {
           const parsedJson = parseResumeJson(await currentFile.text());
@@ -302,7 +348,9 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
             directResumeUpdate = parsedJson.data;
           }
         } else {
-          const rawText = await extractText(currentFile, format);
+          const rawText = await extractText(currentFile, format, (progress) =>
+            setProgressText(describeOcrProgress(progress)),
+          );
           if (!rawText.trim()) {
             setErrorMessage("Couldn't find any readable text in that file.");
             setStatus("idle");
@@ -325,6 +373,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       content: trimmedInstruction || `Attached ${currentFile?.name ?? "a file"}`,
       createdAt: new Date().toISOString(),
       attachment,
+      sourceText: attachedFileText,
     };
     const baseMessages = messages;
     resetComposer();
@@ -486,9 +535,16 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
           <div className="ai-chat-panel__thinking" aria-live="polite">
             <Loader2 size={16} className="button__icon--spin" />
             <span className="ai-chat-panel__thinking-label">
-              {loadingStage === "reading"
-                ? "Reading your file…"
-                : "Talking to AI…"}
+              {progressText ||
+                (loadingStage === "reading"
+                  ? "Reading your file…"
+                  : "Talking to AI…")}
+              {loadingStage === "thinking" &&
+                elapsedSeconds >= SLOW_WAIT_HINT_SECONDS && (
+                  <span className="ai-chat-panel__thinking-hint">
+                    Long resumes can take about a minute. Hang tight.
+                  </span>
+                )}
             </span>
             <span className="ai-chat-panel__thinking-elapsed">
               {elapsedSeconds}s
@@ -627,11 +683,21 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
   );
 }
 
+/** The most recent file text in the conversation, for follow-up turns. */
+function findLatestSourceText(messages: ChatMessage[]): string | undefined {
+  return [...messages].reverse().find((m) => m.sourceText)?.sourceText;
+}
+
 async function extractText(
   file: File,
   format: "pdf" | "docx" | "markdown" | "text",
+  onOcrProgress: (progress: OcrProgress) => void,
 ): Promise<string> {
-  if (format === "pdf") return extractPdfText(file);
+  if (format === "pdf") {
+    const text = await extractPdfText(file);
+    // A scanned PDF has no text layer, so fall back to reading it with OCR.
+    return text.trim() ? text : extractPdfTextWithOcr(file, onOcrProgress);
+  }
   if (format === "docx") return extractDocxText(file);
   return extractMarkdownText(file);
 }
