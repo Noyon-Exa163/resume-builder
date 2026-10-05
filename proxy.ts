@@ -45,7 +45,10 @@ export const config = {
      * - public folder assets, including the resume-template fonts
      *   (public/fonts/*.ttf) that react-pdf fetches while rendering a PDF —
      *   these must never redirect to /login, cookie or no cookie.
+     * - ocr/ and pdfjs/ (scanned-PDF engine files, see
+     *   scripts/copyOcrAssets.mjs) — fetched from inside a web worker,
+     *   same reasoning as the fonts.
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|ttf|otf|woff|woff2)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|ocr/|pdfjs/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|ttf|otf|woff|woff2)$).*)",
   ],
 };
