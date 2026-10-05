@@ -16,6 +16,10 @@ const eslintConfig = defineConfig([
     // by the defaults above, so a local `netlify deploy` run leaves behind
     // a compiled bundle that previously drowned real lint output in noise.
     ".netlify/**",
+    // Third-party OCR/pdfjs engine files copied in by
+    // scripts/copyOcrAssets.mjs — generated and minified, not our code.
+    "public/ocr/**",
+    "public/pdfjs/**",
   ]),
 ]);
 
