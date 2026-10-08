@@ -1,9 +1,9 @@
-import { FilePlus, FileText, Menu, User } from "lucide-react";
+import { FilePlus } from "lucide-react";
+import { AppSidebar } from "@/components/common/AppSidebar";
+import { AppTopBar } from "@/components/common/AppTopBar";
+import { ResumeCardSkeleton } from "@/components/dashboard/ResumeCardSkeleton";
 import { Button, Skeleton } from "@/components/ui";
 import "@/components/common/AppShell.css";
-import "@/components/common/AppSidebar.css";
-import "@/components/common/AppTopBar.css";
-import "@/components/common/AppNavContent.css";
 import "./page.css";
 
 /**
@@ -14,75 +14,21 @@ import "./page.css";
  *
  * AppShell itself can't run here — it's an async Server Component that
  * fetches the user, and awaiting that would defeat the point of an
- * instant fallback. This replicates its static shape (sidebar at desktop
- * width, top bar below it, same classes from AppShell/AppSidebar/
- * AppTopBar/AppNavContent.css) without the data fetch, so the content
- * area is exactly as wide as it is once AppShell mounts for real — the
- * nav items that don't depend on the signed-in user (brand, "Resumes",
- * "Account") render as themselves; the user-specific bits skeleton.
+ * instant fallback. AppSidebar and AppTopBar don't fetch anything
+ * themselves, though, so rendering them directly (with placeholder props
+ * for the user data this fallback doesn't have yet) reserves the exact
+ * same width/height AppShell's real chrome will, and never drifts from
+ * it — there's nothing here to keep in sync by hand.
  */
 export default function DashboardLoading() {
   return (
     <div className="app-shell">
-      <TopBarSkeleton />
-      <SidebarSkeleton />
+      <AppTopBar isAdmin={false} user={null} />
+      <AppSidebar isAdmin={false} user={null} />
       <div className="app-shell__content">
         <DashboardSkeleton />
       </div>
     </div>
-  );
-}
-
-function SidebarSkeleton() {
-  return (
-    <aside className="app-sidebar">
-      <div className="app-nav">
-        <span className="app-nav__brand">
-          <img
-            src="/assets/Logos/ExaResume_Full.svg"
-            alt="ExaResume"
-            className="app-nav__brand-logo"
-          />
-        </span>
-        <nav className="app-nav__links" aria-hidden="true">
-          <span className="app-nav__link">
-            <FileText size={18} className="app-nav__link-icon" />
-            Resumes
-          </span>
-          <span className="app-nav__link">
-            <User size={18} className="app-nav__link-icon" />
-            Account
-          </span>
-        </nav>
-        <div className="app-nav__user" aria-hidden="true">
-          <Skeleton width={36} height={36} radius="full" />
-          <span className="app-nav__user-identity">
-            <Skeleton width="80%" height={14} />
-            <Skeleton width="60%" height={12} />
-          </span>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function TopBarSkeleton() {
-  return (
-    <header className="app-topbar">
-      <Button type="button" variant="tertiary" size="m" iconOnly disabled>
-        <Menu size={20} />
-      </Button>
-      <span className="app-topbar__brand">
-        <img
-          src="/assets/Logos/ExaResume_Full.svg"
-          alt="ExaResume"
-          className="app-topbar__brand-logo"
-        />
-      </span>
-      <span className="app-topbar__account" aria-hidden="true">
-        <Skeleton width={32} height={32} radius="full" />
-      </span>
-    </header>
   );
 }
 
@@ -109,34 +55,9 @@ function DashboardSkeleton() {
           </div>
         </div>
       </div>
-      <ul className="dashboard__list" aria-hidden="true">
+      <ul className="dashboard__list">
         {Array.from({ length: 8 }, (_, index) => (
-          <li key={index} className="resume-card">
-            <div className="resume-card__link">
-              <Skeleton height="var(--space-24)" radius="md" />
-              <span className="resume-card__text">
-                <Skeleton width="70%" height={16} />
-                <Skeleton width="45%" height={13} />
-              </span>
-            </div>
-            <div className="resume-card__actions">
-              <div className="resume-card__actions-group">
-                <Skeleton width={32} height={32} radius="full" />
-                <span className="resume-card__inline-actions">
-                  <Skeleton width={32} height={32} radius="full" />
-                </span>
-              </div>
-              <div className="resume-card__actions-group resume-card__actions-group--end">
-                <Skeleton width={72} height={20} radius="full" />
-                <span className="resume-card__inline-actions">
-                  <Skeleton width={32} height={32} radius="full" />
-                </span>
-                <span className="resume-card__menu">
-                  <Skeleton width={32} height={32} radius="full" />
-                </span>
-              </div>
-            </div>
-          </li>
+          <ResumeCardSkeleton key={index} />
         ))}
       </ul>
     </main>

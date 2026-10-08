@@ -233,19 +233,19 @@ export default function EditorPage() {
   }, [isResizingSidebar]);
 
   function handleBack() {
-    if (useEditorStore.getState().isDirty) void save();
+    if (isDirty) void save();
     router.push("/");
   }
 
   async function handleNewResume() {
     setIsCreating(true);
     try {
-      // save() persists the resume we're leaving; fetchDefaultTemplateId()
-      // is for the new one — independent requests, so run them together
+      // fetchDefaultTemplateId() is for the new resume; save() persists the
+      // one we're leaving — independent requests, so run them together
       // instead of paying both round trips back-to-back.
-      const [, templateId] = await Promise.all([
-        save(),
+      const [templateId] = await Promise.all([
         fetchDefaultTemplateId(),
+        save(),
       ]);
       const blank = createBlankResume(templateId);
       await resumeRepository.set(blank.meta.id, blank);
