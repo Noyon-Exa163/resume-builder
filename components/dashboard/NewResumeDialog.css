@@ -1,0 +1,120 @@
+.dialog-popup.new-resume-dialog {
+  /* A touch wider than the default dialog-popup (560px) — the dropzone
+     and instructions field read as cramped at the default width. */
+  max-width: 640px;
+}
+
+.new-resume-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.new-resume-dialog__dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 120px;
+  padding: var(--space-5);
+  /* --color-info-subtle is the semantic alias for --exa-1 — raw palette
+     steps stay out of component CSS even when a token's own name doesn't
+     hint at reusing it here. */
+  background: var(--color-info-subtle);
+  border: 2px dashed var(--color-brand-light);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-base) var(--ease-default),
+    border-color var(--duration-base) var(--ease-default);
+}
+
+.new-resume-dialog__dropzone:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.new-resume-dialog__dropzone--dragging {
+  background: var(--color-brand-subtle);
+  border-color: var(--color-brand);
+}
+
+.new-resume-dialog__dropzone-icon {
+  color: var(--color-brand);
+}
+
+.new-resume-dialog__dropzone-text {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.new-resume-dialog__file-input {
+  display: none;
+}
+
+.new-resume-dialog__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  min-width: 0;
+  background: var(--color-surface);
+  border-radius: var(--radius-full);
+  padding: var(--space-1) var(--space-3);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.new-resume-dialog__chip-name {
+  min-width: 0;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.new-resume-dialog__chip-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-full);
+}
+
+.new-resume-dialog__chip-remove:hover {
+  color: var(--color-text-primary);
+}
+
+.new-resume-dialog__error {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-danger-text);
+}
+
+/* Pinned to the left end of the footer row — the wider desktop dialog has
+   room for it beside Cancel/Create Resume instead of its own full-width
+   row (compound selector to clear .dialog-footer .button's specificity). */
+.new-resume-dialog .dialog-footer .new-resume-dialog__blank-button {
+  margin-right: auto;
+}
+
+/* Phone bottom sheet: keep it on its own full-width row above Cancel/Create
+   — three auto-width buttons don't fit size="m" on one phone-width row. */
+@media (max-width: 639px) {
+  .new-resume-dialog .dialog-footer {
+    flex-wrap: wrap;
+  }
+
+  .new-resume-dialog .dialog-footer .new-resume-dialog__blank-button {
+    flex: 1 0 100%;
+  }
+}

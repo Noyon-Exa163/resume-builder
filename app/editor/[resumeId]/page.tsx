@@ -13,7 +13,6 @@ import {
   ArrowLeft,
   Eye,
   FilePlus,
-  Loader2,
   MoreVertical,
   Palette,
   Pencil,
@@ -21,10 +20,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useEditorStore } from "@/lib/store/editorStore";
-import { createBlankResume, type DeepPartial } from "@/lib/schema/normalize";
+import type { DeepPartial } from "@/lib/schema/normalize";
 import type { ResumeData } from "@/lib/schema/resume";
-import { resumeRepository } from "@/lib/storage/api/resumeRepository";
-import { fetchDefaultTemplateId } from "@/lib/storage/api/appDefaults";
 import { canManageResume } from "@/lib/storage/api/resumeAccess";
 import { restoreResumeVersion } from "@/lib/storage/api/resumeHistory";
 import { resumeHasContent } from "@/lib/export/shared";
@@ -36,6 +33,7 @@ import {
   TabsField,
 } from "@/components/ui";
 import { ShareDialog } from "@/components/common/ShareDialog";
+import { NewResumeDialog } from "@/components/dashboard/NewResumeDialog";
 import { SaveStatusButton } from "@/components/editor/SaveStatusButton";
 import { ResumeHistoryDialog } from "@/components/editor/ResumeHistoryDialog";
 import {
@@ -172,7 +170,7 @@ export default function EditorPage() {
     setIsPreviewShown(false);
     setActiveTab(view);
   }
-  const [isCreating, setIsCreating] = useState(false);
+  const [isNewResumeOpen, setIsNewResumeOpen] = useState(false);
 
   // Drag-to-resize the sidebar, dragging from its left edge. The sidebar
   // sits on the right, so its width is the distance from the cursor to the
@@ -235,24 +233,6 @@ export default function EditorPage() {
   function handleBack() {
     if (isDirty) void save();
     router.push("/");
-  }
-
-  async function handleNewResume() {
-    setIsCreating(true);
-    try {
-      // fetchDefaultTemplateId() is for the new resume; save() persists the
-      // one we're leaving — independent requests, so run them together
-      // instead of paying both round trips back-to-back.
-      const [templateId] = await Promise.all([
-        fetchDefaultTemplateId(),
-        save(),
-      ]);
-      const blank = createBlankResume(templateId);
-      await resumeRepository.set(blank.meta.id, blank);
-      router.push(`/editor/${blank.meta.id}`);
-    } finally {
-      setIsCreating(false);
-    }
   }
 
   // A completed AI/heuristic extraction is a deliberate, commit-worthy
@@ -391,14 +371,9 @@ export default function EditorPage() {
                 size="m"
                 iconOnly
                 aria-label="New Resume"
-                disabled={isCreating}
-                onClick={() => void handleNewResume()}
+                onClick={() => setIsNewResumeOpen(true)}
               >
-                {isCreating ? (
-                  <Loader2 size={18} className="button__icon--spin" />
-                ) : (
-                  <FilePlus size={18} />
-                )}
+                <FilePlus size={18} />
               </Button>
             </div>
             <span className="editor-page__more-actions">
@@ -424,8 +399,7 @@ export default function EditorPage() {
                   {
                     label: "New Resume",
                     icon: FilePlus,
-                    disabled: isCreating,
-                    onSelect: () => void handleNewResume(),
+                    onSelect: () => setIsNewResumeOpen(true),
                   },
                 ]}
               />
@@ -556,6 +530,12 @@ export default function EditorPage() {
           onValueChange={handleCompactViewChange}
         />
       )}
+
+      <NewResumeDialog
+        open={isNewResumeOpen}
+        onOpenChange={setIsNewResumeOpen}
+        beforeCreate={save}
+      />
 
       <ResumeHistoryDialog
         resumeId={resume.meta.id}

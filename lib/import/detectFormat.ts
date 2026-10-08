@@ -20,6 +20,19 @@ export const IMAGE_EXTENSIONS = [
   ".bmp",
 ];
 
+/** Every format the import pipeline can read — shared by every file input
+ *  that accepts a resume to import (the AI chat composer, the New Resume
+ *  dialog's dropzone). */
+export const ACCEPTED_IMPORT_EXTENSIONS = [
+  ".pdf",
+  ".docx",
+  ".md",
+  ".markdown",
+  ".txt",
+  ".json",
+  ...IMAGE_EXTENSIONS,
+];
+
 /**
  * Detects an uploaded file's format by MIME type, falling back to extension
  * for the many browsers/OSes that report an empty or generic `file.type`.

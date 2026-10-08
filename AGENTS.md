@@ -798,7 +798,7 @@ Never use `outline: none` without a replacement. Minimum touch target: 44×44px 
 
 Apply these when building custom app-chrome components without a shared library:
 
-**Button** — variants `primary`/`secondary`/`tertiary`, sizes `l`(48px)/`m`(40px)/`s`(32px). `primary`: `--color-brand` bg, `--color-text-on-brand` text. `secondary`: transparent bg, `--color-brand` text/border. `tertiary`: transparent, `--color-text-primary`. Labels always Title Case, never ALL CAPS.
+**Button** — variants `primary`/`secondary`/`tertiary`, sizes `l`(48px)/`m`(40px)/`s`(32px). `primary`: `--color-brand` bg, `--color-text-on-brand` text. `secondary`: transparent bg, `--color-brand` text/border. `tertiary`: transparent, `--color-brand` text/icons. Labels always Title Case, never ALL CAPS.
 
 **Input / Text Field** — sizes `l`(56px)/`m`(48px)/`s`(40px), `--radius-lg`, `--color-border` default, `--color-border-focus` on focus, `--color-danger` when `aria-invalid`.
 

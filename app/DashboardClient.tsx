@@ -1,12 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import "./page.css";
 import type { ResumeData } from "@/lib/schema/resume";
-import { createBlankResume } from "@/lib/schema/normalize";
 import { resumeRepository } from "@/lib/storage/api/resumeRepository";
-import { fetchDefaultTemplateId } from "@/lib/storage/api/appDefaults";
 import { deleteResumeThumbnails } from "@/lib/export/resumeThumbnail";
 import { aiChatRepository } from "@/lib/storage/aiChat/aiChatRepository";
 import {
@@ -14,6 +11,7 @@ import {
   type ResumeAccessEntry,
 } from "@/lib/storage/api/resumeAccess";
 import { ResumeCardPreview } from "@/components/dashboard/ResumeCardPreview";
+import { NewResumeDialog } from "@/components/dashboard/NewResumeDialog";
 import { ShareDialog } from "@/components/common/ShareDialog";
 import { formatDisplayDate } from "@/lib/date";
 import { formatDateTime } from "@/lib/utils/formatDateTime";
@@ -63,13 +61,12 @@ interface DashboardClientProps {
 export default function DashboardClient({
   initialEntries,
 }: DashboardClientProps) {
-  const router = useRouter();
   const [entries, setEntries] = useState<ResumeAccessEntry[]>(initialEntries);
   const [searchQuery, setSearchQuery] = useState("");
   const [ownerFilter, setOwnerFilter] = useState(ALL_OWNERS);
   const [sortField, setSortField] = useState(DEFAULT_SORT_FIELD);
   const [sortDirection, setSortDirection] = useState(DEFAULT_SORT_DIRECTION);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isNewResumeOpen, setIsNewResumeOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ResumeData | null>(null);
   const [shareTarget, setShareTarget] = useState<ResumeData | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -121,18 +118,6 @@ export default function DashboardClient({
     );
   }, [entries, searchQuery, activeOwnerFilter, sortField, sortDirection]);
 
-  async function handleCreate() {
-    setIsCreating(true);
-    try {
-      const templateId = await fetchDefaultTemplateId();
-      const blank = createBlankResume(templateId);
-      await resumeRepository.set(blank.meta.id, blank);
-      router.push(`/editor/${blank.meta.id}`);
-    } finally {
-      setIsCreating(false);
-    }
-  }
-
   async function handleDownload(resume: ResumeData) {
     setDownloadingId(resume.meta.id);
     try {
@@ -175,15 +160,10 @@ export default function DashboardClient({
             type="button"
             variant="primary"
             size="m"
-            onClick={handleCreate}
-            disabled={isCreating}
+            onClick={() => setIsNewResumeOpen(true)}
           >
-            {isCreating ? (
-              <Loader2 size={16} className="button__icon--spin" />
-            ) : (
-              <FilePlus size={16} />
-            )}
-            {isCreating ? "Creating…" : "New Resume"}
+            <FilePlus size={16} />
+            New Resume
           </Button>
         </header>
 
@@ -418,6 +398,11 @@ export default function DashboardClient({
           ))}
         </ul>
       )}
+
+      <NewResumeDialog
+        open={isNewResumeOpen}
+        onOpenChange={setIsNewResumeOpen}
+      />
 
       <ActionDialog
         illustration="/assets/spots/trash-delete.svg"

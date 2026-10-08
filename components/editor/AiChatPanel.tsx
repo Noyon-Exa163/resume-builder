@@ -29,7 +29,10 @@ import type {
 import type { AIChatMessage } from "@/lib/ai/types";
 import { AI_CHAT_HISTORY_LIMIT } from "@/lib/ai/chatPrompt";
 import { applySkillIconDefaults } from "@/lib/skillIcons/defaults";
-import { detectFormat, IMAGE_EXTENSIONS } from "@/lib/import/detectFormat";
+import {
+  ACCEPTED_IMPORT_EXTENSIONS,
+  detectFormat,
+} from "@/lib/import/detectFormat";
 import { extractImageTextWithOcr } from "@/lib/import/extractors/imageOcr";
 import { parseResumeJson } from "@/lib/import/jsonImport";
 import { truncateFilenameMiddle } from "@/lib/utils/truncateFilename";
@@ -42,6 +45,7 @@ import { extractDocxText } from "@/lib/import/extractors/docxText";
 import { extractMarkdownText } from "@/lib/import/extractors/markdownText";
 import { sendChatMessage } from "@/lib/import/aiChat";
 import { aiChatRepository } from "@/lib/storage/aiChat/aiChatRepository";
+import { pendingImportRepository } from "@/lib/storage/pendingImport/pendingImportRepository";
 import { createId } from "@/lib/utils/ids";
 import { AiChatMessageBubble } from "./AiChatMessageBubble";
 import "./AiChatPanel.css";
@@ -73,15 +77,7 @@ function describeOcrProgress(progress: OcrProgress): string {
     : base;
 }
 
-const ACCEPTED_EXTENSIONS = [
-  ".pdf",
-  ".docx",
-  ".md",
-  ".markdown",
-  ".txt",
-  ".json",
-  ...IMAGE_EXTENSIONS,
-].join(",");
+const ACCEPTED_EXTENSIONS = ACCEPTED_IMPORT_EXTENSIONS.join(",");
 /** Keeps the composer's file chip from forcing the sidebar wider than its
  *  fixed width — see .ai-chat-panel__chip-name's max-width:220px. */
 const CHIP_NAME_MAX_LENGTH = 28;
@@ -129,6 +125,9 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
+  // Armed by the pending-import effect below, consumed by the one right
+  // after it — a ref so consuming it isn't itself a setState call.
+  const autoSendArmedRef = useRef(false);
   const [file, setFile] = useState<File | null>(null);
   const [instruction, setInstruction] = useState("");
   const [status, setStatus] = useState<Status>("idle");
@@ -165,6 +164,45 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       cancelled = true;
     };
   }, [resume.meta.id]);
+
+  // Picks up a file/prompt handed off from the New Resume dialog. Consumed
+  // (deleted) as soon as it's read so revisiting this resume later, or a
+  // remount, never re-sends it.
+  useEffect(() => {
+    let cancelled = false;
+    pendingImportRepository
+      .get(resume.meta.id)
+      .then((record) => {
+        if (!record) return;
+        void pendingImportRepository.delete(resume.meta.id);
+        if (cancelled || (!record.file && !record.prompt)) return;
+        if (record.file) setFile(record.file);
+        if (record.prompt) setInstruction(record.prompt);
+        autoSendArmedRef.current = true;
+      })
+      .catch((error) => {
+        console.error("Failed to load pending import:", error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [resume.meta.id]);
+
+  // Fires once the hand-off above has actually committed file/instruction
+  // into state (a ref, not another state flag, so there's no setState to
+  // call from this effect's body — only file/instruction/isHistoryLoaded
+  // changing can re-run it) — the same send path a manual attach-and-send
+  // takes, so OCR/parsing/gating all behave identically.
+  useEffect(() => {
+    if (autoSendArmedRef.current && isHistoryLoaded) {
+      autoSendArmedRef.current = false;
+      void handleSend();
+    }
+    // handleSend is a plain (non-memoized) function recreated every render,
+    // so adding it here would fire this effect on every render instead of
+    // only when the hand-off actually changes file/instruction/history.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file, instruction, isHistoryLoaded]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: "end" });
