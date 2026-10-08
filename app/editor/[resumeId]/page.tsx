@@ -232,16 +232,21 @@ export default function EditorPage() {
     return () => window.removeEventListener("mouseup", stop);
   }, [isResizingSidebar]);
 
-  async function handleBack() {
-    await save();
+  function handleBack() {
+    if (useEditorStore.getState().isDirty) void save();
     router.push("/");
   }
 
   async function handleNewResume() {
     setIsCreating(true);
     try {
-      await save();
-      const templateId = await fetchDefaultTemplateId();
+      // save() persists the resume we're leaving; fetchDefaultTemplateId()
+      // is for the new one — independent requests, so run them together
+      // instead of paying both round trips back-to-back.
+      const [, templateId] = await Promise.all([
+        save(),
+        fetchDefaultTemplateId(),
+      ]);
       const blank = createBlankResume(templateId);
       await resumeRepository.set(blank.meta.id, blank);
       router.push(`/editor/${blank.meta.id}`);
@@ -336,7 +341,7 @@ export default function EditorPage() {
           size="m"
           iconOnly
           aria-label="Back to Resumes"
-          onClick={() => void handleBack()}
+          onClick={handleBack}
         >
           <ArrowLeft size={18} />
         </Button>
