@@ -37,21 +37,29 @@ export async function createOcrWorker(): Promise<Worker> {
     // message handler instead of ever reaching our catch.
     errorHandler: () => {},
   });
-  const worker = await Promise.race([
-    creation,
-    new Promise<never>((_, reject) => {
-      window.setTimeout(() => {
-        reject(
-          new Error(
-            "Couldn't load the OCR engine. Check your connection and try again.",
-          ),
-        );
-        // The real creation may still resolve after we give up on it —
-        // terminate that worker instead of leaking it.
-        void creation.then((w) => w.terminate()).catch(() => {});
-      }, OCR_STARTUP_TIMEOUT_MS);
-    }),
-  ]);
+  let timeoutId = 0;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = window.setTimeout(() => {
+      reject(
+        new Error(
+          "Couldn't load the OCR engine. Check your connection and try again.",
+        ),
+      );
+      // The real creation may still resolve after we give up on it —
+      // terminate that worker instead of leaking it.
+      void creation.then((w) => w.terminate()).catch(() => {});
+    }, OCR_STARTUP_TIMEOUT_MS);
+  });
+
+  let worker: Worker;
+  try {
+    worker = await Promise.race([creation, timeout]);
+  } finally {
+    // Otherwise this timer outlives a successful creation and force-
+    // terminates the worker 30s later regardless of whether it's still
+    // legitimately in use (a multi-page scan can easily run past 30s).
+    clearTimeout(timeoutId);
+  }
   // Sparse mode returns each fragment with its position, which lets
   // orderOcrBoxes keep multi-column CVs from being read straight across.
   await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
