@@ -375,8 +375,14 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
           }
           attachedFileText = rawText;
         }
-      } catch {
-        setErrorMessage("Couldn't read that file — try a different one.");
+      } catch (err) {
+        // Surface the real reason (e.g. the OCR engine timing out) instead
+        // of always blaming the file — it usually isn't the file's fault.
+        setErrorMessage(
+          err instanceof Error
+            ? err.message
+            : "Couldn't read that file — try a different one.",
+        );
         setStatus("idle");
         setLoadingStage(null);
         return;
