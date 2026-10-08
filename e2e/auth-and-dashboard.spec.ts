@@ -73,6 +73,13 @@ test.describe("auth and dashboard smoke", () => {
     await expect(page.getByRole("button", { name: "Log Out" })).toBeVisible();
 
     await page.getByRole("button", { name: "New Resume" }).click();
+    const newResumeDialog = page.getByRole("dialog", {
+      name: "Start a New Resume",
+    });
+    await expect(newResumeDialog).toBeVisible();
+    await newResumeDialog
+      .getByRole("button", { name: "Start From Blank" })
+      .click();
     await page.waitForURL(/\/editor\/[^/]+$/);
     const resumeId = page.url().match(/\/editor\/([^/?#]+)/)?.[1];
     expect(resumeId, "expected an editor resume id in the URL").toBeTruthy();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectFormat } from "@/lib/import/detectFormat";
+import { ACCEPTED_IMPORT_EXTENSIONS, detectFormat } from "@/lib/import/detectFormat";
 
 const file = (name: string, type = "") => new File(["x"], name, { type });
 
@@ -24,5 +24,15 @@ describe("detectFormat", () => {
     expect(detectFormat(file("a.txt"))).toBe("text");
     expect(detectFormat(file("a.json"))).toBe("json");
     expect(detectFormat(file("a.zip"))).toBe("unknown");
+  });
+
+  it("recognizes every extension the import dropzones advertise accepting", () => {
+    // Shared by the AI chat composer and the New Resume dialog's dropzone
+    // (both pass this straight to <input accept>) — every extension it
+    // lists must actually be detected as something other than "unknown",
+    // or a dropped file would silently fail right after being accepted.
+    for (const extension of ACCEPTED_IMPORT_EXTENSIONS) {
+      expect(detectFormat(file(`resume${extension}`))).not.toBe("unknown");
+    }
   });
 });
