@@ -47,7 +47,7 @@
 .ai-chat-panel__thinking {
   align-self: flex-start;
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
   background: var(--color-surface-inset);
   border-radius: var(--radius-lg);
