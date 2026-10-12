@@ -1,9 +1,12 @@
-import type { AIProviderId } from "@/lib/ai/types";
-import { PROVIDER_MARK_INK, PROVIDER_MARK_SRC } from "@/lib/ai/providerMarks";
+import {
+  PROVIDER_MARK_INK,
+  PROVIDER_MARK_SRC,
+  type AIMarkId,
+} from "@/lib/ai/providerMarks";
 import "./AiProviderMark.css";
 
 export interface AiProviderMarkProps {
-  id: AIProviderId;
+  id: AIMarkId;
   className?: string;
 }
 

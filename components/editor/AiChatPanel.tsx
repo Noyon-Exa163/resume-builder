@@ -43,11 +43,17 @@ import {
 } from "@/lib/import/extractors/pdfOcr";
 import { extractDocxText } from "@/lib/import/extractors/docxText";
 import { extractMarkdownText } from "@/lib/import/extractors/markdownText";
-import { sendChatMessage } from "@/lib/import/aiChat";
+import {
+  fetchChatModels,
+  sendChatMessage,
+  type ChatModelChoice,
+} from "@/lib/import/aiChat";
+import { DEFAULT_CHAT_MODEL_ID } from "@/lib/ai/chatModels";
 import { aiChatRepository } from "@/lib/storage/aiChat/aiChatRepository";
 import { pendingImportRepository } from "@/lib/storage/pendingImport/pendingImportRepository";
 import { createId } from "@/lib/utils/ids";
 import { AiChatMessageBubble } from "./AiChatMessageBubble";
+import { AiModelPicker } from "./AiModelPicker";
 import "./AiChatPanel.css";
 
 type Status = "idle" | "sending";
@@ -143,6 +149,26 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
   // reply just arrived this session, never for history loaded from storage,
   // so reopening a resume doesn't replay the animation for old messages.
   const [animateMessageId, setAnimateMessageId] = useState<string | null>(null);
+  // Empty until the server says which models may be offered — and stays
+  // empty (no picker) when the configured provider has no choice to give.
+  const [models, setModels] = useState<ChatModelChoice[]>([]);
+  const [defaultModelId, setDefaultModelId] = useState(DEFAULT_CHAT_MODEL_ID);
+  // Only set once the person actively picks a model, and deliberately not
+  // remembered: every time the panel opens it starts on the admin's default,
+  // so a change made in AI Settings reaches everyone.
+  const [pickedModelId, setPickedModelId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchChatModels().then((choices) => {
+      if (cancelled) return;
+      setModels(choices.models);
+      if (choices.defaultModelId) setDefaultModelId(choices.defaultModelId);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Keyed by resume.meta.id from the parent (see page.tsx) so navigating to
   // a different resume remounts this panel with fresh initial state,
@@ -286,6 +312,9 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
         message: args.userMessage.content,
         attachedFileText,
         sourceFileText,
+        // Nothing picked means "use the default" — left to the server, which
+        // always knows the admin's current choice.
+        model: pickedModelId ?? undefined,
         onStage: (stage) =>
           setProgressText(
             stage === "writing" && attachedFileText
@@ -692,6 +721,16 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
                 <Paperclip size={18} />
               </button>
             </Tooltip>
+
+            {models.length > 0 && (
+              <AiModelPicker
+                models={models}
+                recommendedModelId={defaultModelId}
+                value={pickedModelId ?? defaultModelId}
+                onChange={setPickedModelId}
+                disabled={isBusy}
+              />
+            )}
 
             <Tooltip label="Send">
               <button

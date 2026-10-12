@@ -1,11 +1,14 @@
 import { postgresSettingsStore } from "@/lib/storage/settings/postgresStore";
 import type { AIProviderConfig } from "@/lib/storage/settings/types";
+import { resolveDefaultChatModelId } from "./chatModels";
 import { getProvider } from "./registry";
 import type { AIProvider, AIProviderId } from "./types";
 
 export interface ResolvedProvider {
   provider: AIProvider;
   config: AIProviderConfig;
+  /** The admin's default model for the AI chat (see lib/ai/chatModels.ts). */
+  defaultChatModelId: string;
 }
 
 export type ResolveProviderResult =
@@ -41,5 +44,12 @@ export async function resolveConfiguredProvider(): Promise<ResolveProviderResult
     };
   }
 
-  return { ok: true, result: { provider: getProvider(providerId), config } };
+  return {
+    ok: true,
+    result: {
+      provider: getProvider(providerId),
+      config,
+      defaultChatModelId: resolveDefaultChatModelId(settings.defaultChatModelId),
+    },
+  };
 }

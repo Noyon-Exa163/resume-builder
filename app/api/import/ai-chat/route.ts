@@ -12,13 +12,23 @@ import {
   AI_TURN_MAX_CHARS,
 } from "@/lib/ai/limits";
 import { resolveConfiguredProvider } from "@/lib/ai/resolveConfiguredProvider";
+import { chatModelIdsFor, isChatModelId } from "@/lib/ai/chatModels";
+import { estimateChatModelCosts } from "@/lib/ai/chatModelPricing";
 import {
   buildChatPrompt,
   buildQaChatPrompt,
   AI_CHAT_HISTORY_LIMIT,
 } from "@/lib/ai/chatPrompt";
-import { classifyChatIntent, runQaChat } from "@/lib/ai/chatRouting";
-import { EXTRACT_MAX_TOKENS, parseModelJson } from "@/lib/ai/http";
+import {
+  classifyChatIntent,
+  runEditChat,
+  runQaChat,
+} from "@/lib/ai/chatRouting";
+import {
+  EXTRACT_MAX_TOKENS,
+  PROVIDER_FETCH_TIMEOUT_MS,
+  parseModelJson,
+} from "@/lib/ai/http";
 import { ResumeDataSchema } from "@/lib/schema/resume";
 import { normalizeAndValidate, type DeepPartial } from "@/lib/schema/normalize";
 import type { ResumeData } from "@/lib/schema/resume";
@@ -49,6 +59,8 @@ const AiChatRequestSchema = z.object({
   message: z.string().min(1).max(AI_MESSAGE_MAX_CHARS),
   attachedFileText: z.string().max(AI_ATTACHED_TEXT_MAX_CHARS).optional(),
   sourceFileText: z.string().max(AI_ATTACHED_TEXT_MAX_CHARS).optional(),
+  /** The model picked in the chat box — only ids from chatModels.ts. */
+  model: z.string().refine(isChatModelId).optional(),
 });
 
 const ChatEnvelopeSchema = z.object({
@@ -59,6 +71,26 @@ const ChatEnvelopeSchema = z.object({
 const QaEnvelopeSchema = z.object({
   reply: z.string(),
 });
+
+/**
+ * GET /api/import/ai-chat — which models the chat box may offer, each with
+ * an estimated cost per resume import at OpenRouter's current prices. Empty
+ * when the configured provider has no choice to give (anything but
+ * OpenRouter), which is the picker's signal to stay hidden. Never exposes keys.
+ */
+export async function GET() {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const resolved = await resolveConfiguredProvider();
+  if (!resolved.ok) return NextResponse.json({ models: [] });
+  const { provider, defaultChatModelId } = resolved.result;
+  return NextResponse.json({
+    models: await estimateChatModelCosts(chatModelIdsFor(provider.id)),
+    defaultModelId: defaultChatModelId,
+  });
+}
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -135,13 +167,19 @@ type ChatTurnOutcome =
 
 async function runChatTurn(
   data: z.infer<typeof AiChatRequestSchema>,
-  { provider, config }: ResolvedProvider,
+  { provider, config, defaultChatModelId }: ResolvedProvider,
   onStage: (stage: ChatTurnStage) => void,
 ): Promise<ChatTurnOutcome> {
   const incompleteReply: ChatTurnOutcome = {
     ok: false,
     error: "The AI didn't return a response. Try rephrasing your message.",
   };
+
+  // One budget for every provider call this turn makes (classifier, then
+  // the answer and any fallback) — separate full timeouts would add up past
+  // the platform's hard limit and the turn would be cut off with no message.
+  const deadline = Date.now() + PROVIDER_FETCH_TIMEOUT_MS;
+  const remainingMs = () => deadline - Date.now();
 
   try {
     // Route plain Q&A turns to a cheap/free model — only meaningful on
@@ -172,6 +210,7 @@ async function runChatTurn(
         // providers that support one) can actually hit across turns. Pure
         // routing hint, ignored by every other provider.
         sessionId: data.resume.meta.id,
+        timeoutMs: remainingMs(),
       });
       onStage("checking");
       const json = parseModelJson(result.content);
@@ -195,7 +234,9 @@ async function runChatTurn(
       attachedFileText: data.attachedFileText,
       sourceFileText: data.sourceFileText,
     });
-    const result = await provider.chat(
+    const result = await runEditChat(
+      provider,
+      config,
       {
         system,
         messages,
@@ -203,10 +244,9 @@ async function runChatTurn(
         temperature: 0,
         maxTokens: EXTRACT_MAX_TOKENS,
         sessionId: data.resume.meta.id,
+        timeoutMs: remainingMs(),
       },
-      config.apiKey,
-      config.model ?? "",
-      config.baseUrl,
+      { pickedModel: data.model, defaultModel: defaultChatModelId },
     );
 
     onStage("checking");

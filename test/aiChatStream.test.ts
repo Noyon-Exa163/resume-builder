@@ -55,6 +55,26 @@ describe("sendChatMessage streaming", () => {
     await expect(sendChatMessage(baseArgs)).rejects.toThrow(/too long/);
   });
 
+  it("explains a connection dropped mid-stream instead of a bare network error", async () => {
+    const encoder = new TextEncoder();
+    let pulls = 0;
+    mockFetch(
+      new Response(
+        new ReadableStream({
+          pull(controller) {
+            pulls += 1;
+            if (pulls === 1) {
+              controller.enqueue(encoder.encode('{"type":"stage","stage":"writing"}\n'));
+            } else {
+              controller.error(new TypeError("network error"));
+            }
+          },
+        }),
+      ),
+    );
+    await expect(sendChatMessage(baseArgs)).rejects.toThrow(/too long/);
+  });
+
   it("still maps plain HTTP failures", async () => {
     mockFetch(new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }));
     await expect(sendChatMessage(baseArgs)).rejects.toThrow("Unauthorized");

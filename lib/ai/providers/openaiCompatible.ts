@@ -2,6 +2,7 @@ import { formatExtractionPrompt } from "../extractionPrompt";
 import {
   DEFAULT_CHAT_MAX_TOKENS,
   EXTRACT_MAX_TOKENS,
+  PROVIDER_FETCH_TIMEOUT_MS,
   TEST_MAX_TOKENS,
   TEST_USER_MESSAGE,
   chatCompletionsUrl,
@@ -58,6 +59,17 @@ interface ChatCompletionResult {
 }
 
 /**
+ * Sent to OpenRouter on every request. Its auto-router often lands on a
+ * "thinking" model, and left alone that model spends most of `max_tokens`
+ * (and 20+ seconds) reasoning before it writes a word — on a resume import
+ * that is the difference between ~7s and a platform timeout. Nothing this
+ * app asks for needs it: every call is extraction or a short reply.
+ * "minimal" rather than "none" because some models reject switching
+ * reasoning off outright.
+ */
+const OPENROUTER_REASONING = { effort: "minimal" } as const;
+
+/**
  * Shared OpenAI-compatible chat-completions transport (OpenRouter, DeepSeek,
  * custom OpenAI-compatible slot). `response_format: { type: "json_object" }`
  * is the documented JSON-mode flag for these APIs.
@@ -92,6 +104,7 @@ export function createOpenAICompatibleProvider(
     temperature?: number;
     jsonObject?: boolean;
     sessionId?: string;
+    timeoutMs?: number;
   }): Promise<ChatCompletionResult> => {
     requireApiKey(args.apiKey, options.label);
     const url = chatCompletionsUrl(resolveBaseUrl(args.baseUrl));
@@ -114,15 +127,31 @@ export function createOpenAICompatibleProvider(
       body.response_format = { type: "json_object" };
     }
 
-    const response = await fetchWithTimeout(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${args.apiKey}`,
-        "Content-Type": "application/json",
-        ...options.extraHeaders,
-      },
-      body: JSON.stringify(body),
-    });
+    const deadline = Date.now() + (args.timeoutMs ?? PROVIDER_FETCH_TIMEOUT_MS);
+    const post = (payload: Record<string, unknown>) =>
+      fetchWithTimeout(
+        url,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${args.apiKey}`,
+            "Content-Type": "application/json",
+            ...options.extraHeaders,
+          },
+          body: JSON.stringify(payload),
+        },
+        deadline - Date.now(),
+      );
+
+    const useReasoningHint = options.id === "openrouter";
+    let response = await post(
+      useReasoningHint ? { ...body, reasoning: OPENROUTER_REASONING } : body,
+    );
+    // A model that doesn't accept the reasoning hint rejects the request
+    // outright (400) rather than ignoring it — send it again without.
+    if (useReasoningHint && response.status === 400) {
+      response = await post(body);
+    }
 
     if (!response.ok) {
       throw httpError(
@@ -201,6 +230,7 @@ export function createOpenAICompatibleProvider(
         temperature: input.temperature,
         jsonObject: input.jsonMode,
         sessionId: input.sessionId,
+        timeoutMs: input.timeoutMs,
       });
     },
 

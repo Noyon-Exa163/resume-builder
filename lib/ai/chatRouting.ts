@@ -1,5 +1,10 @@
 import type { AIProviderConfig } from "@/lib/storage/settings/types";
-import { parseModelJson, QA_CHAT_MAX_TOKENS } from "./http";
+import {
+  parseModelJson,
+  PROVIDER_FETCH_TIMEOUT_MS,
+  QA_CHAT_MAX_TOKENS,
+} from "./http";
+import { DEFAULT_CHAT_MODEL_ID } from "./chatModels";
 import type { AIChatInput, AIChatResult, AIProvider } from "./types";
 
 /**
@@ -14,6 +19,14 @@ export const QA_FREE_ROUTER_MODEL = "openrouter/free";
 
 /** Same free router for classification — the prompt is a few dozen tokens either way. */
 const CLASSIFIER_MODEL = QA_FREE_ROUTER_MODEL;
+
+const OPENROUTER_AUTO_MODEL = "openrouter/auto";
+
+/** The classifier only picks a route — never let it eat the turn's budget. */
+const CLASSIFIER_TIMEOUT_MS = 8_000;
+
+/** A fallback attempt with less time than this left would only time out too. */
+const MIN_ATTEMPT_MS = 5_000;
 
 export type ChatIntent = "edit" | "question";
 
@@ -44,6 +57,7 @@ export async function classifyChatIntent(
         jsonMode: true,
         temperature: 0,
         maxTokens: 20,
+        timeoutMs: CLASSIFIER_TIMEOUT_MS,
       },
       config.apiKey,
       CLASSIFIER_MODEL,
@@ -56,25 +70,48 @@ export async function classifyChatIntent(
   }
 }
 
-/** Tries each model in order, returning the first success. */
+/**
+ * Tries each model in order, returning the first success. `input.timeoutMs`
+ * is the budget for ALL attempts together, so a slow first model can't push
+ * the request past the platform's limit by handing a fresh timeout to the
+ * next one. `firstAttemptCapMs` keeps a best-effort first choice from using
+ * the whole budget and leaving nothing for the fallback.
+ */
 async function chatWithFallback(
   provider: AIProvider,
   config: AIProviderConfig,
   input: AIChatInput,
   modelCandidates: string[],
+  firstAttemptCapMs?: number,
 ): Promise<AIChatResult> {
+  const deadline = Date.now() + (input.timeoutMs ?? PROVIDER_FETCH_TIMEOUT_MS);
   let lastError: unknown;
-  for (const model of modelCandidates) {
+  for (const [index, model] of modelCandidates.entries()) {
+    const remainingMs = deadline - Date.now();
+    if (index > 0 && remainingMs < MIN_ATTEMPT_MS) break;
+    const isLast = index === modelCandidates.length - 1;
+    const timeoutMs =
+      firstAttemptCapMs && !isLast
+        ? Math.min(remainingMs, firstAttemptCapMs)
+        : remainingMs;
     try {
-      return await provider.chat(input, config.apiKey, model, config.baseUrl);
+      return await provider.chat(
+        { ...input, timeoutMs },
+        config.apiKey,
+        model,
+        config.baseUrl,
+      );
     } catch (error) {
       lastError = error;
     }
   }
   throw lastError instanceof Error
     ? lastError
-    : new Error("All Q&A model candidates failed.");
+    : new Error("All model candidates failed.");
 }
+
+/** How long the free router gets before a Q&A turn moves to the paid model. */
+const QA_FREE_ATTEMPT_TIMEOUT_MS = 15_000;
 
 /**
  * Runs a Q&A-only chat turn on the free router, falling back to the admin's
@@ -89,6 +126,38 @@ export async function runQaChat(
     provider,
     config,
     { ...input, maxTokens: QA_CHAT_MAX_TOKENS },
-    [QA_FREE_ROUTER_MODEL, config.model?.trim() || "openrouter/auto"],
+    [QA_FREE_ROUTER_MODEL, config.model?.trim() || OPENROUTER_AUTO_MODEL],
+    QA_FREE_ATTEMPT_TIMEOUT_MS,
   );
+}
+
+/**
+ * Runs an edit-capable chat turn (a resume import or an edit).
+ *
+ * On OpenRouter the model is the one the person picked in the chat box,
+ * else the admin's default from AI Settings — never the bare auto-router,
+ * which lands on models too slow or too flaky for a whole-resume response.
+ * The auto-router stays as the fallback in case the chosen model is ever
+ * unavailable.
+ *
+ * Both ids must already be checked against the allowed list by the caller.
+ * Other providers have a single configured model and ignore them.
+ */
+export async function runEditChat(
+  provider: AIProvider,
+  config: AIProviderConfig,
+  input: AIChatInput,
+  options: { pickedModel?: string; defaultModel?: string } = {},
+): Promise<AIChatResult> {
+  if (provider.id !== "openrouter") {
+    return chatWithFallback(provider, config, input, [
+      config.model?.trim() ?? "",
+    ]);
+  }
+  const model =
+    options.pickedModel || options.defaultModel || DEFAULT_CHAT_MODEL_ID;
+  return chatWithFallback(provider, config, input, [
+    model,
+    OPENROUTER_AUTO_MODEL,
+  ]);
 }

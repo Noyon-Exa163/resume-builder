@@ -11,6 +11,13 @@ import {
   type SelectOption,
 } from "@/components/ui";
 import { AiProviderMark } from "@/components/ai/AiProviderMark";
+import {
+  CHAT_MODEL_OPTIONS,
+  DEFAULT_CHAT_MODEL_ID,
+  describeChatModel,
+  resolveDefaultChatModelId,
+} from "@/lib/ai/chatModels";
+import { fetchChatModels, type ChatModelChoice } from "@/lib/import/aiChat";
 import type { AIProviderId } from "@/lib/ai/types";
 import { templateRegistry } from "@/templates";
 import "./page.css";
@@ -28,6 +35,7 @@ interface AdminSettingsResponse {
     Record<AIProviderId, { apiKey: string; model?: string; baseUrl?: string }>
   >;
   defaultProviderId?: AIProviderId;
+  defaultChatModelId?: string;
   defaultTemplateId: string;
 }
 
@@ -55,7 +63,7 @@ const PROVIDER_LABELS: Record<AIProviderId, string> = {
 /** One-line, per-provider guidance shown under its Model field. */
 const PROVIDER_HINTS: Record<AIProviderId, string> = {
   openrouter:
-    "Leave Model empty to let OpenRouter route each request automatically. Plain questions in the AI chat panel always use a free model regardless of this setting — only edits to the resume use the model configured here.",
+    "Leave Model empty to let OpenRouter route each request automatically. Resume imports and edits use the Default Model chosen under Settings, or the one a person picks in the chat box. Plain questions use a free model and only fall back to the model set here.",
   gemini:
     "Model is required — check Google AI Studio for current model ids (e.g. gemini-2.5-flash).",
   anthropic:
@@ -86,6 +94,12 @@ export default function AiSettingsPageClient() {
   const [defaultTemplateId, setDefaultTemplateId] = useState<string | null>(
     null,
   );
+  const [defaultChatModelId, setDefaultChatModelId] = useState(
+    DEFAULT_CHAT_MODEL_ID,
+  );
+  // Live cost estimates for the Default Model list — decoration only, so
+  // the list still works (without prices) if they can't be loaded.
+  const [modelEstimates, setModelEstimates] = useState<ChatModelChoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [savingProviderId, setSavingProviderId] = useState<AIProviderId | null>(
     null,
@@ -129,6 +143,9 @@ export default function AiSettingsPageClient() {
         setSavedProviders(loaded);
         setDefaultProviderId(data.defaultProviderId ?? null);
         setDefaultTemplateId(data.defaultTemplateId ?? "exabyting");
+        setDefaultChatModelId(
+          resolveDefaultChatModelId(data.defaultChatModelId),
+        );
       })
       .catch((err: Error) => {
         if (!ignore) setError(err.message);
@@ -136,6 +153,10 @@ export default function AiSettingsPageClient() {
       .finally(() => {
         if (!ignore) setIsLoading(false);
       });
+
+    void fetchChatModels().then((choices) => {
+      if (!ignore) setModelEstimates(choices.models);
+    });
 
     return () => {
       ignore = true;
@@ -204,6 +225,17 @@ export default function AiSettingsPageClient() {
     icon: <AiProviderMark id={id} />,
   }));
 
+  const chatModelOptions: SelectOption[] = CHAT_MODEL_OPTIONS.map((option) => ({
+    value: option.id,
+    label: option.name,
+    description: describeChatModel(
+      option,
+      modelEstimates.find((estimate) => estimate.id === option.id)
+        ?.estimatedCostUsd,
+    ),
+    icon: <AiProviderMark id={option.markId} />,
+  }));
+
   const templateOptions: SelectOption[] = Object.values(templateRegistry).map(
     (t) => ({ value: t.meta.id, label: t.meta.name }),
   );
@@ -252,6 +284,7 @@ export default function AiSettingsPageClient() {
     providersPayload: AdminSettingsResponse["providers"],
     nextDefaultProviderId: AIProviderId | null,
     nextDefaultTemplateId: string,
+    nextDefaultChatModelId: string = defaultChatModelId,
   ): Promise<boolean> {
     const res = await fetch("/api/settings", {
       method: "PUT",
@@ -259,6 +292,7 @@ export default function AiSettingsPageClient() {
       body: JSON.stringify({
         providers: providersPayload,
         defaultProviderId: nextDefaultProviderId ?? undefined,
+        defaultChatModelId: nextDefaultChatModelId,
         defaultTemplateId: nextDefaultTemplateId,
       }),
     });
@@ -272,12 +306,13 @@ export default function AiSettingsPageClient() {
   }
 
   /**
-   * Persists default provider / template immediately. Uses last-saved
+   * Persists default provider / template / chat model immediately. Uses last-saved
    * provider rows so picking a dropdown can't leak an unsaved API key.
    */
   async function persistDefaults(
     nextDefaultProviderId: AIProviderId | null,
     nextDefaultTemplateId: string,
+    nextDefaultChatModelId: string = defaultChatModelId,
   ) {
     setError("");
     setSavingDefaults(true);
@@ -291,10 +326,12 @@ export default function AiSettingsPageClient() {
         payload,
         resolvedDefault,
         nextDefaultTemplateId,
+        nextDefaultChatModelId,
       );
       if (!ok) return;
       setDefaultProviderId(resolvedDefault);
       setDefaultTemplateId(nextDefaultTemplateId);
+      setDefaultChatModelId(nextDefaultChatModelId);
       setDefaultsSavedAt(Date.now());
     } catch {
       setError("Something went wrong saving defaults.");
@@ -558,6 +595,23 @@ export default function AiSettingsPageClient() {
               : "Used for every AI-assisted import — users don't pick a provider themselves."
           }
         />
+        {defaultProviderId === "openrouter" && (
+          <SelectField
+            label="Default Model"
+            options={chatModelOptions}
+            value={defaultChatModelId}
+            onValueChange={(value) => {
+              if (!value) return;
+              void persistDefaults(
+                defaultProviderId as AIProviderId | null,
+                defaultTemplateId ?? "exabyting",
+                value,
+              );
+            }}
+            disabled={savingDefaults}
+            helperText="Used for resume imports and edits in the AI chat, and shown there as Recommended. People can still pick another model per chat."
+          />
+        )}
         <SelectField
           label="Default Template"
           options={templateOptions}

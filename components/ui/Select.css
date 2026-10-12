@@ -148,9 +148,29 @@
   flex-shrink: 0;
 }
 
-.select__item-text {
+.select__item-body {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
+}
+
+.select__item-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.select__item-heading .select__item-text {
+  flex: 0 1 auto;
+}
+
+.select__item-description {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: var(--leading-caption);
+  color: var(--color-text-secondary);
 }
 
 .select__item[data-highlighted] {
@@ -168,6 +188,89 @@
   margin-left: auto;
   flex-shrink: 0;
   color: var(--color-brand);
+}
+
+/* Inline variant — a compact trigger inside another control. No border or
+   fill of its own; the popup is sized to its options, not the trigger. */
+.select--inline {
+  min-width: 0;
+}
+
+.select--inline .select__trigger {
+  width: auto;
+  max-width: 100%;
+  height: var(--space-8);
+  padding: 0 var(--space-2);
+  border: none;
+  border-radius: var(--radius-full);
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.select--inline .select__trigger:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.select--inline .select__trigger:disabled {
+  background-color: transparent;
+}
+
+.select--inline .select__icon {
+  margin-left: var(--space-1);
+}
+
+@media (hover: hover) {
+  .select--inline .select__trigger:hover:not(:disabled) {
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+  }
+}
+
+@media (pointer: coarse) {
+  .select--inline .select__trigger {
+    height: var(--size-touch-target);
+  }
+}
+
+.select__popup--inline {
+  width: max-content;
+  min-width: max(var(--anchor-width), calc(var(--space-20) * 4));
+  max-width: var(--available-width, 100vw);
+}
+
+.select__popup--inline .select__item {
+  gap: var(--space-3);
+}
+
+/* Option icon in a tinted circle as tall as the two text lines beside it
+   (14px and 12px text at 1.4 line height = 36px). A fixed size, because a
+   circle sized from the row's stretched height collapses in width. */
+.select__popup--inline .select__item-icon {
+  flex: none;
+  justify-content: center;
+  width: var(--space-9);
+  height: var(--space-9);
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-inset);
+}
+
+.select__popup--inline .select__item-text {
+  line-height: var(--leading-ui);
+}
+
+/* Those row states already use a tint, so the circle switches to the plain
+   surface to stay visible. */
+.select__popup--inline .select__item[data-highlighted] .select__item-icon,
+.select__popup--inline .select__item[data-selected] .select__item-icon {
+  background-color: var(--color-surface);
+}
+
+/* Keeps the checkmark clear of the longest option's text. */
+.select__popup--inline .select__item-indicator {
+  padding-left: var(--space-6);
 }
 
 .select__error {

@@ -76,6 +76,7 @@ async function generateContent(args: {
   responseSchema?: unknown;
   maxOutputTokens: number;
   temperature?: number;
+  timeoutMs?: number;
 }): Promise<GenerateContentResult> {
   requireApiKey(args.apiKey, "Gemini");
 
@@ -118,6 +119,7 @@ async function generateContent(args: {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     },
+    args.timeoutMs,
   );
 
   if (!response.ok) {
@@ -188,6 +190,7 @@ export const geminiProvider: AIProvider = {
       jsonMime: input.jsonMode,
       maxOutputTokens: input.maxTokens ?? DEFAULT_CHAT_MAX_TOKENS,
       temperature: input.temperature,
+      timeoutMs: input.timeoutMs,
     });
     // Gemini doesn't echo the model back in the response body — report the
     // one we actually requested (unlike OpenRouter, there's no auto-router

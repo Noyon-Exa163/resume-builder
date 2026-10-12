@@ -156,6 +156,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-1);
 }
 
 .ai-chat-panel__icon-button {

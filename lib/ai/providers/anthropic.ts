@@ -69,6 +69,7 @@ async function postMessages(args: {
   tools?: unknown[];
   toolChoice?: unknown;
   baseUrl?: string;
+  timeoutMs?: number;
 }): Promise<AnthropicMessageResponse> {
   requireApiKey(args.apiKey, "Anthropic");
 
@@ -82,15 +83,19 @@ async function postMessages(args: {
   if (args.tools) body.tools = args.tools;
   if (args.toolChoice) body.tool_choice = args.toolChoice;
 
-  const response = await fetchWithTimeout(messagesUrl(args.baseUrl), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": args.apiKey,
-      "anthropic-version": ANTHROPIC_VERSION,
+  const response = await fetchWithTimeout(
+    messagesUrl(args.baseUrl),
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": args.apiKey,
+        "anthropic-version": ANTHROPIC_VERSION,
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  });
+    args.timeoutMs,
+  );
 
   if (!response.ok) {
     throw httpError(
@@ -179,6 +184,7 @@ export const anthropicProvider: AIProvider = {
       baseUrl,
       maxTokens: input.maxTokens ?? DEFAULT_CHAT_MAX_TOKENS,
       temperature: input.temperature,
+      timeoutMs: input.timeoutMs,
       system,
       messages: input.messages.map((message) => ({
         role: message.role,

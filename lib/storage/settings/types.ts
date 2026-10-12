@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isChatModelId } from "@/lib/ai/chatModels";
 import type { AIProviderId } from "@/lib/ai/types";
 
 export type { AIProviderId };
@@ -19,6 +20,9 @@ export interface AIProviderConfig {
 export interface AdminSettings {
   providers: Partial<Record<AIProviderId, AIProviderConfig>>;
   defaultProviderId?: AIProviderId;
+  /** Model the AI chat uses for resume imports and edits until a person
+   *  picks another in the chat box. One of lib/ai/chatModels.ts's ids. */
+  defaultChatModelId?: string;
   defaultTemplateId: string;
 }
 
@@ -56,6 +60,7 @@ export const AdminSettingsInputSchema = z.object({
   // subset, so this needs `partialRecord` (every key optional) instead.
   providers: z.partialRecord(z.enum(AI_PROVIDER_IDS), AIProviderConfigSchema),
   defaultProviderId: z.enum(AI_PROVIDER_IDS).optional(),
+  defaultChatModelId: z.string().refine(isChatModelId).optional(),
   defaultTemplateId: z.string().min(1),
 });
 

@@ -1,0 +1,87 @@
+/* Sits in the composer's toolbar row, between Attach and Send. */
+.ai-model-picker {
+  flex: 1;
+  align-items: flex-start;
+}
+
+.ai-model-picker__mark {
+  width: var(--space-4);
+  height: var(--space-4);
+}
+
+/* "Recommended" chip beside a model's name: a gradient border that drifts
+   sideways, plus a twinkling sparkle. The gradient holds two full colour
+   cycles across twice the chip's width, so sliding it by one chip-width
+   lands on an identical frame and the loop has no visible seam. */
+.ai-model-picker__recommended {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  background:
+    linear-gradient(var(--color-surface-raised), var(--color-surface-raised))
+      padding-box,
+    linear-gradient(
+        90deg,
+        var(--color-brand),
+        var(--chart-purple),
+        var(--chart-cyan),
+        var(--color-brand),
+        var(--chart-purple),
+        var(--chart-cyan),
+        var(--color-brand)
+      )
+      border-box;
+  background-size:
+    100% 100%,
+    200% 100%;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: var(--leading-ui);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  animation: ai-model-picker-border calc(var(--duration-slower) * 3) linear
+    infinite;
+}
+
+.ai-model-picker__recommended-icon {
+  color: var(--color-brand);
+  animation: ai-model-picker-twinkle calc(var(--duration-slower) * 2)
+    var(--ease-default) infinite;
+}
+
+@keyframes ai-model-picker-border {
+  from {
+    background-position:
+      0 0,
+      0% 0;
+  }
+  to {
+    background-position:
+      0 0,
+      100% 0;
+  }
+}
+
+@keyframes ai-model-picker-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8) rotate(15deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-model-picker__recommended,
+  .ai-model-picker__recommended-icon {
+    animation: none;
+  }
+}

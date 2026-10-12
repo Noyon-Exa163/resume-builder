@@ -36,6 +36,12 @@ export interface AIChatInput {
    * is interpreted. Ignored by providers other than OpenRouter.
    */
   sessionId?: string;
+  /**
+   * Hard ceiling for this one provider call, response body included.
+   * Defaults to PROVIDER_FETCH_TIMEOUT_MS; a route that makes several calls
+   * in one request passes what is left of its overall budget.
+   */
+  timeoutMs?: number;
 }
 
 export interface AIChatResult {

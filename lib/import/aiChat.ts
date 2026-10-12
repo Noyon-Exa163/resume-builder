@@ -47,6 +47,8 @@ export async function sendChatMessage(args: {
   /** Text of a file attached earlier in the conversation — reference only,
    *  so a follow-up can correct or complete the import without re-attaching. */
   sourceFileText?: string;
+  /** Model picked in the chat box — omitted to use the server's default. */
+  model?: string;
   /** Called as the server reports real milestones while it works. */
   onStage?: (stage: ChatTurnStage) => void;
 }): Promise<AiChatTurnResult> {
@@ -70,6 +72,49 @@ export async function sendChatMessage(args: {
   }
 
   return readChatStream(res, onStage);
+}
+
+/** One model the chat box may offer, as reported by the server. */
+export interface ChatModelChoice {
+  id: string;
+  /** Estimated cost of one resume import at the provider's current prices. */
+  estimatedCostUsd: number;
+}
+
+export interface ChatModelChoices {
+  /** Empty when the configured AI provider has no choice to give. */
+  models: ChatModelChoice[];
+  /** The admin's default — preselected, and marked as recommended. */
+  defaultModelId?: string;
+}
+
+/**
+ * What the chat box's model picker may offer. Any failure means "no
+ * picker" — the chat itself still works on the server's default.
+ */
+export async function fetchChatModels(): Promise<ChatModelChoices> {
+  try {
+    const res = await fetch("/api/import/ai-chat");
+    if (!res.ok) return { models: [] };
+    const body = (await res.json()) as {
+      models?: unknown;
+      defaultModelId?: unknown;
+    };
+    if (!Array.isArray(body.models)) return { models: [] };
+    return {
+      models: body.models.filter(
+        (model): model is ChatModelChoice =>
+          typeof model?.id === "string" &&
+          typeof model?.estimatedCostUsd === "number",
+      ),
+      defaultModelId:
+        typeof body.defaultModelId === "string"
+          ? body.defaultModelId
+          : undefined,
+    };
+  } catch {
+    return { models: [] };
+  }
 }
 
 /**
@@ -105,7 +150,11 @@ async function readChatStream(
 
   try {
     for (;;) {
-      const { done, value } = await reader.read();
+      // A connection dropped mid-stream rejects here with the browser's own
+      // bare "network error" — same cause as a stream that just ends early.
+      const { done, value } = await reader.read().catch(() => {
+        throw new Error(describeHttpFailure(504));
+      });
       buffer += decoder.decode(value, { stream: !done });
       const lines = buffer.split("\n");
       buffer = lines.pop() ?? "";
