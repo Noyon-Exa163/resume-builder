@@ -12,7 +12,7 @@ import {
   AI_TURN_MAX_CHARS,
 } from "@/lib/ai/limits";
 import { resolveConfiguredProvider } from "@/lib/ai/resolveConfiguredProvider";
-import { chatModelIdsFor, isChatModelId } from "@/lib/ai/chatModels";
+import { isChatModelId, offersChatModelChoice } from "@/lib/ai/chatModels";
 import { estimateChatModelCosts } from "@/lib/ai/chatModelPricing";
 import {
   buildChatPrompt,
@@ -84,11 +84,12 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const resolved = await resolveConfiguredProvider();
-  if (!resolved.ok) return NextResponse.json({ models: [] });
-  const { provider, defaultChatModelId } = resolved.result;
+  if (!resolved.ok || !offersChatModelChoice(resolved.result.provider.id)) {
+    return NextResponse.json({ models: [] });
+  }
   return NextResponse.json({
-    models: await estimateChatModelCosts(chatModelIdsFor(provider.id)),
-    defaultModelId: defaultChatModelId,
+    models: await estimateChatModelCosts(),
+    defaultModelId: resolved.result.defaultChatModelId,
   });
 }
 
@@ -246,7 +247,7 @@ async function runChatTurn(
         sessionId: data.resume.meta.id,
         timeoutMs: remainingMs(),
       },
-      { pickedModel: data.model, defaultModel: defaultChatModelId },
+      data.model ?? defaultChatModelId,
     );
 
     onStage("checking");

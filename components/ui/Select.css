@@ -162,6 +162,12 @@
   min-width: 0;
 }
 
+.select__item-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Beside a badge the label keeps its own width instead of filling the row. */
 .select__item-heading .select__item-text {
   flex: 0 1 auto;
 }
@@ -188,6 +194,34 @@
   margin-left: auto;
   flex-shrink: 0;
   color: var(--color-brand);
+}
+
+/* Detailed option — one with a description line. Its icon sits in a tinted
+   circle as tall as the two text lines beside it (14px and 12px text at 1.4
+   line height = 36px). A fixed size, because a circle sized from the row's
+   stretched height collapses in width. */
+.select__item--detailed {
+  gap: var(--space-3);
+}
+
+.select__item--detailed .select__item-icon {
+  flex: none;
+  justify-content: center;
+  width: var(--space-9);
+  height: var(--space-9);
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-inset);
+}
+
+.select__item--detailed .select__item-text {
+  line-height: var(--leading-ui);
+}
+
+/* Those row states already use a tint, so the circle switches to the plain
+   surface to stay visible. */
+.select__item--detailed[data-highlighted] .select__item-icon,
+.select__item--detailed[data-selected] .select__item-icon {
+  background-color: var(--color-surface);
 }
 
 /* Inline variant — a compact trigger inside another control. No border or
@@ -237,40 +271,8 @@
 
 .select__popup--inline {
   width: max-content;
-  min-width: max(var(--anchor-width), calc(var(--space-20) * 4));
+  min-width: var(--anchor-width);
   max-width: var(--available-width, 100vw);
-}
-
-.select__popup--inline .select__item {
-  gap: var(--space-3);
-}
-
-/* Option icon in a tinted circle as tall as the two text lines beside it
-   (14px and 12px text at 1.4 line height = 36px). A fixed size, because a
-   circle sized from the row's stretched height collapses in width. */
-.select__popup--inline .select__item-icon {
-  flex: none;
-  justify-content: center;
-  width: var(--space-9);
-  height: var(--space-9);
-  border-radius: var(--radius-full);
-  background-color: var(--color-surface-inset);
-}
-
-.select__popup--inline .select__item-text {
-  line-height: var(--leading-ui);
-}
-
-/* Those row states already use a tint, so the circle switches to the plain
-   surface to stay visible. */
-.select__popup--inline .select__item[data-highlighted] .select__item-icon,
-.select__popup--inline .select__item[data-selected] .select__item-icon {
-  background-color: var(--color-surface);
-}
-
-/* Keeps the checkmark clear of the longest option's text. */
-.select__popup--inline .select__item-indicator {
-  padding-left: var(--space-6);
 }
 
 .select__error {

@@ -2,16 +2,6 @@ import type { AIMarkId } from "./providerMarks";
 import type { AIProviderId } from "./types";
 
 /**
- * The models a person can pick in the AI chat box. Only offered when the
- * admin's provider is OpenRouter (the one provider that can reach all of
- * them with a single key) — see chatModelIdsFor.
- *
- * Every entry was timed on a real 3-page resume import and finished in well
- * under the hosting platform's 60-second limit. Models that "think" for
- * 30+ seconds regardless of settings (several were tested) are left out on
- * purpose: they get cut off mid-import. Re-time a model before adding it.
- */
-/**
  * What a typical resume import uses on one model — measured by importing a
  * real 3-page resume (October 2026, averaged over repeat runs). Token counts
  * differ per model for the same text because each maker counts tokens its
@@ -39,6 +29,16 @@ export interface ChatModelOption {
   markId: AIMarkId;
 }
 
+/**
+ * The models a person can pick in the AI chat box. Only offered when the
+ * admin's provider is OpenRouter (the one provider that can reach all of
+ * them with a single key) — see offersChatModelChoice.
+ *
+ * Every entry was timed on a real 3-page resume import and finished in well
+ * under the hosting platform's 60-second limit. Models that "think" for
+ * 30+ seconds regardless of settings (several were tested) are left out on
+ * purpose: they get cut off mid-import. Re-time a model before adding it.
+ */
 export const CHAT_MODEL_OPTIONS: readonly ChatModelOption[] = [
   {
     id: "anthropic/claude-haiku-5.5",
@@ -62,7 +62,7 @@ export const CHAT_MODEL_OPTIONS: readonly ChatModelOption[] = [
       fallbackCostUsd: 0.0018,
     },
     detail: "Cheapest",
-    markId: "customOpenAICompatible",
+    markId: "openai",
   },
   {
     id: "openai/gpt-6-sol",
@@ -74,7 +74,7 @@ export const CHAT_MODEL_OPTIONS: readonly ChatModelOption[] = [
       fallbackCostUsd: 0.0348,
     },
     detail: "More capable — best value",
-    markId: "customOpenAICompatible",
+    markId: "openai",
   },
   {
     id: "anthropic/claude-sonnet-5.5",
@@ -126,9 +126,14 @@ export function isChatModelId(value: unknown): value is string {
   return CHAT_MODEL_OPTIONS.some((option) => option.id === value);
 }
 
-/** The model ids a person may choose from under the given provider. */
-export function chatModelIdsFor(providerId: AIProviderId): string[] {
-  return providerId === "openrouter"
-    ? CHAT_MODEL_OPTIONS.map((option) => option.id)
-    : [];
+/** Whether people get to choose a chat model under the given provider. */
+export function offersChatModelChoice(providerId: AIProviderId): boolean {
+  return providerId === "openrouter";
+}
+
+/** One model the chat box may offer, as the server reports it to the client. */
+export interface ChatModelEstimate {
+  id: string;
+  /** Estimated cost of one resume import at the provider's current prices. */
+  estimatedCostUsd: number;
 }

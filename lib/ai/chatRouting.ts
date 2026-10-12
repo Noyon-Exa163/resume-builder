@@ -4,7 +4,8 @@ import {
   PROVIDER_FETCH_TIMEOUT_MS,
   QA_CHAT_MAX_TOKENS,
 } from "./http";
-import { DEFAULT_CHAT_MODEL_ID } from "./chatModels";
+import { offersChatModelChoice } from "./chatModels";
+import { OPENROUTER_AUTO_MODEL } from "./providers/openrouter";
 import type { AIChatInput, AIChatResult, AIProvider } from "./types";
 
 /**
@@ -20,10 +21,11 @@ export const QA_FREE_ROUTER_MODEL = "openrouter/free";
 /** Same free router for classification — the prompt is a few dozen tokens either way. */
 const CLASSIFIER_MODEL = QA_FREE_ROUTER_MODEL;
 
-const OPENROUTER_AUTO_MODEL = "openrouter/auto";
-
 /** The classifier only picks a route — never let it eat the turn's budget. */
 const CLASSIFIER_TIMEOUT_MS = 8_000;
+
+/** How long the free router gets before a Q&A turn moves to the paid model. */
+const QA_FREE_ATTEMPT_TIMEOUT_MS = 15_000;
 
 /** A fallback attempt with less time than this left would only time out too. */
 const MIN_ATTEMPT_MS = 5_000;
@@ -110,9 +112,6 @@ async function chatWithFallback(
     : new Error("All model candidates failed.");
 }
 
-/** How long the free router gets before a Q&A turn moves to the paid model. */
-const QA_FREE_ATTEMPT_TIMEOUT_MS = 15_000;
-
 /**
  * Runs a Q&A-only chat turn on the free router, falling back to the admin's
  * configured model if the free router is unavailable.
@@ -134,30 +133,21 @@ export async function runQaChat(
 /**
  * Runs an edit-capable chat turn (a resume import or an edit).
  *
- * On OpenRouter the model is the one the person picked in the chat box,
- * else the admin's default from AI Settings — never the bare auto-router,
+ * Under a provider that offers a choice of models, `chatModel` — the one
+ * picked in the chat box, else the admin's default, already checked against
+ * the allowed list by the caller — is used rather than the bare auto-router,
  * which lands on models too slow or too flaky for a whole-resume response.
- * The auto-router stays as the fallback in case the chosen model is ever
- * unavailable.
- *
- * Both ids must already be checked against the allowed list by the caller.
- * Other providers have a single configured model and ignore them.
+ * The auto-router stays as the fallback in case that model is ever
+ * unavailable. Other providers have a single configured model.
  */
 export async function runEditChat(
   provider: AIProvider,
   config: AIProviderConfig,
   input: AIChatInput,
-  options: { pickedModel?: string; defaultModel?: string } = {},
+  chatModel: string,
 ): Promise<AIChatResult> {
-  if (provider.id !== "openrouter") {
-    return chatWithFallback(provider, config, input, [
-      config.model?.trim() ?? "",
-    ]);
-  }
-  const model =
-    options.pickedModel || options.defaultModel || DEFAULT_CHAT_MODEL_ID;
-  return chatWithFallback(provider, config, input, [
-    model,
-    OPENROUTER_AUTO_MODEL,
-  ]);
+  const candidates = offersChatModelChoice(provider.id)
+    ? [chatModel, OPENROUTER_AUTO_MODEL]
+    : [config.model?.trim() ?? ""];
+  return chatWithFallback(provider, config, input, candidates);
 }

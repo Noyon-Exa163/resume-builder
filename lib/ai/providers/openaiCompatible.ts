@@ -31,6 +31,14 @@ interface OpenAICompatibleOptions {
   /** Used when the caller does not pass `model` (or passes an empty one). */
   defaultModel?: string;
   extraHeaders?: Record<string, string>;
+  /**
+   * Host-specific request fields that are worth sending but not essential.
+   * A model that doesn't accept one rejects the whole request (400) rather
+   * than ignoring it, so the request is sent once more without them.
+   */
+  optionalBody?: Record<string, unknown>;
+  /** Whether the host documents `session_id` (see AIChatInput.sessionId). */
+  sendsSessionId?: boolean;
 }
 
 interface ChatCompletionMessage {
@@ -57,17 +65,6 @@ interface ChatCompletionResult {
   model?: string;
   totalTokens?: number;
 }
-
-/**
- * Sent to OpenRouter on every request. Its auto-router often lands on a
- * "thinking" model, and left alone that model spends most of `max_tokens`
- * (and 20+ seconds) reasoning before it writes a word — on a resume import
- * that is the difference between ~7s and a platform timeout. Nothing this
- * app asks for needs it: every call is extraction or a short reply.
- * "minimal" rather than "none" because some models reject switching
- * reasoning off outright.
- */
-const OPENROUTER_REASONING = { effort: "minimal" } as const;
 
 /**
  * Shared OpenAI-compatible chat-completions transport (OpenRouter, DeepSeek,
@@ -114,10 +111,7 @@ export function createOpenAICompatibleProvider(
       max_tokens: args.maxTokens,
     };
     if (args.temperature !== undefined) body.temperature = args.temperature;
-    // OpenRouter-specific routing hint (see AIChatInput.sessionId) — other
-    // OpenAI-compatible hosts (DeepSeek, a custom slot) don't document this
-    // field, so it's only sent to the one that does.
-    if (args.sessionId && options.id === "openrouter") {
+    if (args.sessionId && options.sendsSessionId) {
       body.session_id = args.sessionId;
     }
     if (args.jsonObject) {
@@ -143,13 +137,8 @@ export function createOpenAICompatibleProvider(
         deadline - Date.now(),
       );
 
-    const useReasoningHint = options.id === "openrouter";
-    let response = await post(
-      useReasoningHint ? { ...body, reasoning: OPENROUTER_REASONING } : body,
-    );
-    // A model that doesn't accept the reasoning hint rejects the request
-    // outright (400) rather than ignoring it — send it again without.
-    if (useReasoningHint && response.status === 400) {
+    let response = await post({ ...body, ...options.optionalBody });
+    if (options.optionalBody && response.status === 400) {
       response = await post(body);
     }
 

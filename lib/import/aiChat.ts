@@ -1,5 +1,6 @@
 import type { ResumeData } from "@/lib/schema/resume";
 import type { AIChatMessage } from "@/lib/ai/types";
+import type { ChatModelEstimate } from "@/lib/ai/chatModels";
 import type { ChatStreamEvent, ChatTurnStage } from "@/lib/ai/chatTypes";
 
 export interface AiChatTurnResult {
@@ -74,16 +75,9 @@ export async function sendChatMessage(args: {
   return readChatStream(res, onStage);
 }
 
-/** One model the chat box may offer, as reported by the server. */
-export interface ChatModelChoice {
-  id: string;
-  /** Estimated cost of one resume import at the provider's current prices. */
-  estimatedCostUsd: number;
-}
-
 export interface ChatModelChoices {
   /** Empty when the configured AI provider has no choice to give. */
-  models: ChatModelChoice[];
+  models: ChatModelEstimate[];
   /** The admin's default — preselected, and marked as recommended. */
   defaultModelId?: string;
 }
@@ -103,7 +97,7 @@ export async function fetchChatModels(): Promise<ChatModelChoices> {
     if (!Array.isArray(body.models)) return { models: [] };
     return {
       models: body.models.filter(
-        (model): model is ChatModelChoice =>
+        (model): model is ChatModelEstimate =>
           typeof model?.id === "string" &&
           typeof model?.estimatedCostUsd === "number",
       ),

@@ -4,15 +4,17 @@ import { runEditChat, runQaChat } from "@/lib/ai/chatRouting";
 import { estimateImportCostUsd } from "@/lib/ai/chatModelPricing";
 import {
   CHAT_MODEL_OPTIONS,
-  chatModelIdsFor,
   DEFAULT_CHAT_MODEL_ID,
   isChatModelId,
+  offersChatModelChoice,
   resolveDefaultChatModelId,
 } from "@/lib/ai/chatModels";
 import { openrouterProvider } from "@/lib/ai/providers/openrouter";
 import type { AIChatInput, AIProvider } from "@/lib/ai/types";
 
 afterEach(() => vi.unstubAllGlobals());
+
+const input: AIChatInput = { messages: [{ role: "user", content: "Hi" }] };
 
 /** Headers arrive at once, the body never does — how a slow model looks. */
 function stalledBodyFetch() {
@@ -54,8 +56,6 @@ function completion(content: string): Response {
 }
 
 describe("OpenRouter reasoning hint", () => {
-  const input: AIChatInput = { messages: [{ role: "user", content: "Hi" }] };
-
   it("asks for minimal reasoning", async () => {
     const fetchMock = vi.fn().mockResolvedValue(completion("ok"));
     vi.stubGlobal("fetch", fetchMock);
@@ -77,8 +77,6 @@ describe("OpenRouter reasoning hint", () => {
 });
 
 describe("chat model routing", () => {
-  const input: AIChatInput = { messages: [{ role: "user", content: "Hi" }] };
-
   function fakeProvider(chat: AIProvider["chat"]): AIProvider {
     return {
       id: "openrouter",
@@ -88,27 +86,30 @@ describe("chat model routing", () => {
     };
   }
 
-  it("uses the model picked in the chat box over the admin default", async () => {
-    const chat = vi.fn().mockResolvedValue({ content: "{}" });
-    await runEditChat(fakeProvider(chat), { apiKey: "k" }, input, {
-      pickedModel: "openai/gpt-6-sol",
-      defaultModel: "openai/gpt-6-luna",
-    });
-    expect(chat.mock.calls[0][2]).toBe("openai/gpt-6-sol");
+  it("uses the chat model, with the auto-router as fallback", async () => {
+    const chat = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("No such model"))
+      .mockResolvedValueOnce({ content: "{}" });
+    await runEditChat(
+      fakeProvider(chat),
+      { apiKey: "k", model: "admin/qa-fallback" },
+      input,
+      "openai/gpt-6-sol",
+    );
+    expect(chat.mock.calls.map((call) => call[2])).toEqual([
+      "openai/gpt-6-sol",
+      "openrouter/auto",
+    ]);
   });
 
-  it("uses the admin's default model when nothing is picked", async () => {
+  it("uses the single configured model on providers without a choice", async () => {
     const chat = vi.fn().mockResolvedValue({ content: "{}" });
-    await runEditChat(fakeProvider(chat), { apiKey: "k" }, input, {
-      defaultModel: "openai/gpt-6-luna",
-    });
-    expect(chat.mock.calls[0][2]).toBe("openai/gpt-6-luna");
-  });
-
-  it("defaults to the built-in model, never the bare auto-router", async () => {
-    const chat = vi.fn().mockResolvedValue({ content: "{}" });
-    await runEditChat(fakeProvider(chat), { apiKey: "k" }, input);
-    expect(chat.mock.calls[0][2]).toBe(DEFAULT_CHAT_MODEL_ID);
+    const provider = { ...fakeProvider(chat), id: "gemini" as const };
+    const config = { apiKey: "k", model: "gemini-model" };
+    await runEditChat(provider, config, input, "openai/gpt-6-sol");
+    expect(chat).toHaveBeenCalledTimes(1);
+    expect(chat.mock.calls[0][2]).toBe("gemini-model");
   });
 
   it("ignores a saved default that is no longer on the list", () => {
@@ -120,29 +121,9 @@ describe("chat model routing", () => {
     );
   });
 
-  it("falls back to the auto-router if the chosen model fails", async () => {
-    const chat = vi
-      .fn()
-      .mockRejectedValueOnce(new Error("No such model"))
-      .mockResolvedValueOnce({ content: "{}" });
-    await runEditChat(fakeProvider(chat), { apiKey: "k" }, input);
-    expect(chat.mock.calls[1][2]).toBe("openrouter/auto");
-  });
-
-  it("ignores a picked model on providers with a single model", async () => {
-    const chat = vi.fn().mockResolvedValue({ content: "{}" });
-    const provider = { ...fakeProvider(chat), id: "gemini" as const };
-    const config = { apiKey: "k", model: "gemini-model" };
-    await runEditChat(provider, config, input, {
-      pickedModel: "openai/gpt-6-sol",
-    });
-    expect(chat).toHaveBeenCalledTimes(1);
-    expect(chat.mock.calls[0][2]).toBe("gemini-model");
-  });
-
   it("only offers a model choice on OpenRouter", () => {
-    expect(chatModelIdsFor("openrouter")[0]).toBe(DEFAULT_CHAT_MODEL_ID);
-    expect(chatModelIdsFor("anthropic")).toEqual([]);
+    expect(offersChatModelChoice("openrouter")).toBe(true);
+    expect(offersChatModelChoice("anthropic")).toBe(false);
     expect(isChatModelId("openrouter/auto")).toBe(false);
   });
 

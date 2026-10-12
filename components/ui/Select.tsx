@@ -33,6 +33,8 @@ export interface SelectFieldProps {
   disabled?: boolean;
   name?: string;
   className?: string;
+  /** Extra class for the option list, which renders outside `className`. */
+  popupClassName?: string;
   id?: string;
 }
 
@@ -53,6 +55,7 @@ const SelectField = forwardRef<HTMLButtonElement, SelectFieldProps>(
       disabled,
       name,
       className,
+      popupClassName,
       id,
     },
     ref,
@@ -104,13 +107,23 @@ const SelectField = forwardRef<HTMLButtonElement, SelectFieldProps>(
               align="start"
             >
               <Select.Popup
-                className={`select__popup select__popup--${variant}`}
+                className={[
+                  "select__popup",
+                  `select__popup--${variant}`,
+                  popupClassName,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
               >
                 {options.map((opt) => (
                   <Select.Item
                     key={opt.value}
                     value={opt.value}
-                    className="select__item"
+                    className={
+                      opt.description
+                        ? "select__item select__item--detailed"
+                        : "select__item"
+                    }
                   >
                     {opt.icon ? (
                       <span className="select__item-icon">{opt.icon}</span>

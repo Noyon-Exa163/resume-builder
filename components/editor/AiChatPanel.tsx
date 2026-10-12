@@ -43,12 +43,11 @@ import {
 } from "@/lib/import/extractors/pdfOcr";
 import { extractDocxText } from "@/lib/import/extractors/docxText";
 import { extractMarkdownText } from "@/lib/import/extractors/markdownText";
+import { fetchChatModels, sendChatMessage } from "@/lib/import/aiChat";
 import {
-  fetchChatModels,
-  sendChatMessage,
-  type ChatModelChoice,
-} from "@/lib/import/aiChat";
-import { DEFAULT_CHAT_MODEL_ID } from "@/lib/ai/chatModels";
+  DEFAULT_CHAT_MODEL_ID,
+  type ChatModelEstimate,
+} from "@/lib/ai/chatModels";
 import { aiChatRepository } from "@/lib/storage/aiChat/aiChatRepository";
 import { pendingImportRepository } from "@/lib/storage/pendingImport/pendingImportRepository";
 import { createId } from "@/lib/utils/ids";
@@ -151,7 +150,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
   const [animateMessageId, setAnimateMessageId] = useState<string | null>(null);
   // Empty until the server says which models may be offered — and stays
   // empty (no picker) when the configured provider has no choice to give.
-  const [models, setModels] = useState<ChatModelChoice[]>([]);
+  const [models, setModels] = useState<ChatModelEstimate[]>([]);
   const [defaultModelId, setDefaultModelId] = useState(DEFAULT_CHAT_MODEL_ID);
   // Only set once the person actively picks a model, and deliberately not
   // remembered: every time the panel opens it starts on the admin's default,

@@ -1,4 +1,10 @@
-import { CHAT_MODEL_OPTIONS, type ChatModelOption } from "./chatModels";
+import {
+  CHAT_MODEL_OPTIONS,
+  isChatModelId,
+  type ChatModelEstimate,
+  type ChatModelOption,
+} from "./chatModels";
+import { fetchWithTimeout } from "./http";
 
 /**
  * Estimated cost of one resume import per chat-box model, priced from
@@ -11,6 +17,8 @@ const OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models";
 const PRICING_FETCH_TIMEOUT_MS = 4_000;
 /** Prices change rarely; re-read a few times a day per server instance. */
 const PRICING_TTL_MS = 6 * 60 * 60 * 1000;
+/** After a failed read, serve fallbacks for a while instead of retrying. */
+const PRICING_RETRY_MS = 60 * 1000;
 
 interface OpenRouterPricing {
   prompt?: string;
@@ -20,28 +28,41 @@ interface OpenRouterPricing {
 
 type PricingById = Map<string, OpenRouterPricing>;
 
-let cached: { at: number; pricing: PricingById } | undefined;
+/** Holds the request itself, so concurrent callers share one download. */
+let cached: { expiresAt: number; pricing: Promise<PricingById> } | undefined;
 
-async function loadPricing(): Promise<PricingById | undefined> {
-  if (cached && Date.now() - cached.at < PRICING_TTL_MS) return cached.pricing;
-  try {
-    const response = await fetch(OPENROUTER_MODELS_URL, {
-      signal: AbortSignal.timeout(PRICING_FETCH_TIMEOUT_MS),
-    });
-    if (!response.ok) return cached?.pricing;
-    const body = (await response.json()) as {
-      data?: Array<{ id?: string; pricing?: OpenRouterPricing }>;
-    };
-    const pricing: PricingById = new Map();
-    for (const model of body.data ?? []) {
-      if (model.id && model.pricing) pricing.set(model.id, model.pricing);
-    }
-    cached = { at: Date.now(), pricing };
-    return pricing;
-  } catch {
-    // Stale prices beat none; with neither, callers use the fallback figure.
-    return cached?.pricing;
+/** Pricing for the catalog's models only — the full list is ~450 models. */
+async function fetchPricing(): Promise<PricingById> {
+  const response = await fetchWithTimeout(
+    OPENROUTER_MODELS_URL,
+    {},
+    PRICING_FETCH_TIMEOUT_MS,
+  );
+  if (!response.ok) throw new Error(`OpenRouter pricing: ${response.status}`);
+  const body = (await response.json()) as {
+    data?: Array<{ id?: string; pricing?: OpenRouterPricing }>;
+  };
+  const pricing: PricingById = new Map();
+  for (const model of body.data ?? []) {
+    if (!model.id || !model.pricing || !isChatModelId(model.id)) continue;
+    const { prompt, completion, input_cache_write } = model.pricing;
+    pricing.set(model.id, { prompt, completion, input_cache_write });
   }
+  return pricing;
+}
+
+function loadPricing(): Promise<PricingById> {
+  if (cached && Date.now() < cached.expiresAt) return cached.pricing;
+  const entry = {
+    expiresAt: Date.now() + PRICING_TTL_MS,
+    // No prices means every model shows its fallback figure.
+    pricing: fetchPricing().catch((): PricingById => {
+      entry.expiresAt = Date.now() + PRICING_RETRY_MS;
+      return new Map();
+    }),
+  };
+  cached = entry;
+  return entry.pricing;
 }
 
 /** Per-token USD price as a number, or undefined if missing or not a price. */
@@ -65,20 +86,11 @@ export function estimateImportCostUsd(
   return profile.inputTokens * inputPrice + profile.outputTokens * outputPrice;
 }
 
-export interface ChatModelEstimate {
-  id: string;
-  estimatedCostUsd: number;
-}
-
-export async function estimateChatModelCosts(
-  modelIds: string[],
-): Promise<ChatModelEstimate[]> {
-  if (modelIds.length === 0) return [];
+/** Every chat-box model with its estimated cost per resume import. */
+export async function estimateChatModelCosts(): Promise<ChatModelEstimate[]> {
   const pricing = await loadPricing();
-  return CHAT_MODEL_OPTIONS.filter((option) =>
-    modelIds.includes(option.id),
-  ).map((option) => ({
+  return CHAT_MODEL_OPTIONS.map((option) => ({
     id: option.id,
-    estimatedCostUsd: estimateImportCostUsd(option, pricing?.get(option.id)),
+    estimatedCostUsd: estimateImportCostUsd(option, pricing.get(option.id)),
   }));
 }

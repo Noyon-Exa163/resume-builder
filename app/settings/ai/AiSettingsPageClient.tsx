@@ -11,13 +11,14 @@ import {
   type SelectOption,
 } from "@/components/ui";
 import { AiProviderMark } from "@/components/ai/AiProviderMark";
+import { chatModelSelectOptions } from "@/components/editor/AiModelPicker";
 import {
-  CHAT_MODEL_OPTIONS,
   DEFAULT_CHAT_MODEL_ID,
-  describeChatModel,
+  offersChatModelChoice,
   resolveDefaultChatModelId,
+  type ChatModelEstimate,
 } from "@/lib/ai/chatModels";
-import { fetchChatModels, type ChatModelChoice } from "@/lib/import/aiChat";
+import { fetchChatModels } from "@/lib/import/aiChat";
 import type { AIProviderId } from "@/lib/ai/types";
 import { templateRegistry } from "@/templates";
 import "./page.css";
@@ -99,7 +100,7 @@ export default function AiSettingsPageClient() {
   );
   // Live cost estimates for the Default Model list — decoration only, so
   // the list still works (without prices) if they can't be loaded.
-  const [modelEstimates, setModelEstimates] = useState<ChatModelChoice[]>([]);
+  const [modelEstimates, setModelEstimates] = useState<ChatModelEstimate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [savingProviderId, setSavingProviderId] = useState<AIProviderId | null>(
     null,
@@ -225,16 +226,7 @@ export default function AiSettingsPageClient() {
     icon: <AiProviderMark id={id} />,
   }));
 
-  const chatModelOptions: SelectOption[] = CHAT_MODEL_OPTIONS.map((option) => ({
-    value: option.id,
-    label: option.name,
-    description: describeChatModel(
-      option,
-      modelEstimates.find((estimate) => estimate.id === option.id)
-        ?.estimatedCostUsd,
-    ),
-    icon: <AiProviderMark id={option.markId} />,
-  }));
+  const chatModelOptions = chatModelSelectOptions(modelEstimates);
 
   const templateOptions: SelectOption[] = Object.values(templateRegistry).map(
     (t) => ({ value: t.meta.id, label: t.meta.name }),
@@ -595,7 +587,8 @@ export default function AiSettingsPageClient() {
               : "Used for every AI-assisted import — users don't pick a provider themselves."
           }
         />
-        {defaultProviderId === "openrouter" && (
+        {defaultProviderId &&
+          offersChatModelChoice(defaultProviderId as AIProviderId) && (
           <SelectField
             label="Default Model"
             options={chatModelOptions}

@@ -4,23 +4,24 @@
   align-items: flex-start;
 }
 
-.ai-model-picker__mark {
-  width: var(--space-4);
-  height: var(--space-4);
+/* Wide enough for the longest cost-and-detail line without wrapping. */
+.ai-model-picker__popup {
+  min-width: max(var(--anchor-width), calc(var(--space-20) * 4));
+}
+
+/* Keeps the checkmark clear of the longest option's text. */
+.ai-model-picker__popup .select__item-indicator {
+  padding-left: var(--space-6);
 }
 
 /* "Recommended" chip beside a model's name: a gradient border that drifts
    sideways, plus a twinkling sparkle. The gradient holds two full colour
    cycles across twice the chip's width, so sliding it by one chip-width
    lands on an identical frame and the loop has no visible seam. */
-.ai-model-picker__recommended {
-  display: inline-flex;
-  align-items: center;
+.badge.ai-model-picker__recommended {
   flex-shrink: 0;
-  gap: var(--space-1);
   padding: 0 var(--space-2);
-  border: 1px solid transparent;
-  border-radius: var(--radius-full);
+  border-color: transparent;
   background:
     linear-gradient(var(--color-surface-raised), var(--color-surface-raised))
       padding-box,
@@ -38,12 +39,8 @@
   background-size:
     100% 100%,
     200% 100%;
-  font-family: var(--font-body);
-  font-size: 11px;
   font-weight: 600;
-  line-height: var(--leading-ui);
   color: var(--color-text-primary);
-  white-space: nowrap;
   animation: ai-model-picker-border calc(var(--duration-slower) * 3) linear
     infinite;
 }
@@ -80,7 +77,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ai-model-picker__recommended,
+  .badge.ai-model-picker__recommended,
   .ai-model-picker__recommended-icon {
     animation: none;
   }
