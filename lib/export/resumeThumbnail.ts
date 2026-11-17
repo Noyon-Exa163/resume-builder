@@ -35,7 +35,7 @@ export function computeThumbnailKey(resume: ResumeData): string {
     // Affects every template's contact row (see the toggle in
     // components/editor/PersonalInfoForm.tsx) — without this, flipping it
     // wouldn't bust the cached header crop.
-    alternatePhoneVisible: resume.meta.alternatePhoneVisible ?? true,
+    alternatePhoneVisible: resume.meta.alternatePhoneVisible ?? false,
     personalInfo: resume.personalInfo,
     summary: resume.summary ?? "",
   });

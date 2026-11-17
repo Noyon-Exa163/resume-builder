@@ -62,3 +62,6 @@ export type { DrawerProps } from "./Drawer";
 
 export { BottomTabBar } from "./BottomTabBar";
 export type { BottomTabBarProps, BottomTabBarItem } from "./BottomTabBar";
+
+export { ToastProvider, useToast } from "./Toast";
+export type { Toast, ToastType } from "./Toast";

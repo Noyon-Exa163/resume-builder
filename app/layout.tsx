@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { AppProviders } from "@/components/common/AppProviders";
+import { ThemeToggle } from "@/components/common/ThemeToggle";
 import "../styles/globals.css";
 
 const displayFont = localFont({
@@ -69,7 +70,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}
     >
       <body>
+        {/* Applies the stored theme before first paint — no flash of the
+            wrong mode. Kept in sync with lib/theme (THEME_STORAGE_KEY). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(localStorage.getItem("exaresume-theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}})()`,
+          }}
+        />
         <AppProviders>{children}</AppProviders>
+        {/* Floating theme toggle — pinned to the top-right of every page.
+            Editor/mobile-topbar pages offset it below their own chrome so
+            it never overlaps page actions (see ThemeToggle.css). */}
+        <ThemeToggle className="theme-toggle--floating" />
       </body>
     </html>
   );

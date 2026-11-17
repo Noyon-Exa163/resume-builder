@@ -8,38 +8,11 @@
  * environment (and from .env.local / .env if present). Not used by the app
  * at runtime.
  */
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
-
-function applyEnvFile(filename: string): void {
-  const filePath = resolve(process.cwd(), filename);
-  if (!existsSync(filePath)) return;
-
-  for (const rawLine of readFileSync(filePath, "utf8").split("\n")) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-    const trimmed = line.startsWith("export ")
-      ? line.slice("export ".length)
-      : line;
-    const eq = trimmed.indexOf("=");
-    if (eq === -1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    if (!key || process.env[key] !== undefined) continue;
-    let value = trimmed.slice(eq + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-    process.env[key] = value;
-  }
-}
+import { loadScriptEnv } from "./lib/env";
 
 // Load before any dynamic import of lib/db/client (it reads DATABASE_URL at
 // module init). Shell env wins; .env.local beats .env.
-applyEnvFile(".env.local");
-applyEnvFile(".env");
+loadScriptEnv();
 
 async function main(): Promise<void> {
   const email = process.env.ADMIN_EMAIL?.trim().toLowerCase() ?? "";
@@ -64,6 +37,7 @@ async function main(): Promise<void> {
   `;
   if (existing.length > 0) {
     console.log(`Admin user ${email} already exists; nothing to do.`);
+    await sql.end();
     return;
   }
 
@@ -74,6 +48,7 @@ async function main(): Promise<void> {
     VALUES (${id}, ${email}, ${passwordHash}, true)
   `;
   console.log(`Created admin user ${email} (id: ${id}).`);
+  await sql.end();
 }
 
 main().catch((error: unknown) => {

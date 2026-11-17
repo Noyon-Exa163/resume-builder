@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sql } from "@/lib/db/client";
+import { parseJsonb, sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
 import { recordResumeActivity } from "@/lib/db/resumeActivity";
 import { canManageAllResumes, resolveResumeAccess } from "@/lib/auth/permissions";
@@ -62,7 +62,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const parsed = ResumeDataSchema.safeParse(row.data);
+  const parsed = ResumeDataSchema.safeParse(parseJsonb(row.data));
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Stored resume data corrupted" },
@@ -138,11 +138,12 @@ export async function PUT(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const resumeJson = JSON.stringify(resume);
-
+  // Bind the object itself — postgres.js serializes it to JSON for the
+  // ::jsonb cast. Pre-stringifying would store a double-encoded string
+  // scalar (see db/migrations/0011).
   const updated = (await sql`
     UPDATE resumes
-    SET data = ${resumeJson}::jsonb,
+    SET data = ${resume}::jsonb,
         updated_at = now()
     WHERE id = ${id}
       AND (
@@ -161,7 +162,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
       resumeId: id,
       userId: user.id,
       action: "edited",
-      resumeJson,
+      snapshot: resume,
     });
   }
 

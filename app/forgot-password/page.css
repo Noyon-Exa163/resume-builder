@@ -1,0 +1,280 @@
+/* Forgot password page — split screen matching the login page concept:
+   brand panel (50%) on desktop + form panel (50%). */
+
+.forgot-page {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  background-color: var(--color-bg);
+}
+
+/* ── Brand panel (lg+ only) ─────────────────────────────────────────── */
+
+.forgot-brand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 50%;
+  max-width: none;
+  padding: var(--space-10);
+  overflow: hidden;
+  background-color: var(--color-brand);
+  color: var(--color-text-on-brand);
+  text-align: center;
+}
+
+.forgot-brand::before {
+  content: "";
+  position: absolute;
+  top: var(--space-8);
+  right: var(--space-8);
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(
+    circle at 70% 30%,
+    color-mix(in srgb, var(--color-text-on-brand) 16%, transparent),
+    transparent 60%
+  );
+  border-radius: var(--radius-full);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.forgot-brand > * {
+  position: relative;
+  z-index: 1;
+}
+
+.forgot-brand__logo-chip {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  margin-bottom: var(--space-10);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-3);
+}
+
+.forgot-brand__logo {
+  height: 32px;
+  width: auto;
+  filter: drop-shadow(0 2px 4px rgba(7, 12, 17, 0.12));
+}
+
+.forgot-brand__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+  max-width: 480px;
+}
+
+.forgot-brand__headline {
+  font-family: var(--font-display);
+  font-weight: var(--font-display-weight);
+  font-size: 40px;
+  line-height: var(--leading-display);
+  letter-spacing: var(--tracking-display);
+  text-wrap: balance;
+  color: var(--color-text-on-brand);
+  margin: 0;
+}
+
+.forgot-brand__subcopy {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: var(--leading-body);
+  color: color-mix(in srgb, var(--color-text-on-brand) 88%, transparent);
+  margin: 0;
+}
+
+/* ── Form panel ─────────────────────────────────────────────────────── */
+
+.forgot-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 50%;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--space-8) var(--space-4);
+  overflow-y: auto;
+}
+
+.forgot-card {
+  width: 100%;
+  max-width: 520px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-2);
+  padding: var(--space-10);
+}
+
+.forgot-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.forgot-header__badge {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-xl);
+  background-color: color-mix(in srgb, var(--color-brand) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-brand) 24%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-brand);
+}
+
+.forgot-header--success .forgot-header__badge {
+  background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-success) 24%, transparent);
+  color: var(--color-success);
+}
+
+.forgot-header__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-heading);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.forgot-header__subtitle {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  margin: 0;
+  max-width: 320px;
+  line-height: var(--leading-body);
+}
+
+.forgot-header__email {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.forgot-header__hint {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  margin: var(--space-2) 0 0;
+}
+
+.forgot-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.forgot-form__error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.57;
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-subtle);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 40%, transparent);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}
+
+.forgot-form__submit {
+  margin-top: var(--space-2);
+}
+
+.forgot-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  margin: var(--space-6) 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.forgot-divider span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-inset);
+  color: var(--color-text-disabled);
+}
+
+.forgot-divider::before,
+.forgot-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: var(--color-border);
+}
+
+.forgot-form__sign-in {
+  width: 100%;
+}
+
+.forgot-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (max-width: 639px) {
+  .forgot-card {
+    padding: var(--space-8);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-1);
+  }
+
+  .forgot-header {
+    margin-bottom: var(--space-6);
+  }
+
+  .forgot-form {
+    gap: var(--space-4);
+  }
+
+  .forgot-divider {
+    margin: var(--space-5) 0;
+  }
+}
+
+/* lg — below desktop: collapse to the single centered card. */
+@media (max-width: 1023px) {
+  .forgot-brand {
+    display: none;
+  }
+
+  .forgot-panel {
+    flex: 1;
+    padding: var(--space-8) var(--space-4);
+  }
+}

@@ -1,9 +1,18 @@
 .dashboard {
   max-width: 1200px;
-  margin-inline: auto;
-  padding: var(--space-8) var(--space-6);
+  /* Left-anchored ~100px (--space-24) from the sidebar edge — content
+     starts at the same position (and same top gap) on every page. */
+  margin: 0;
+  padding: var(--space-8) var(--space-6) var(--space-6) var(--space-24);
   min-height: 100%;
   background-color: var(--color-surface-thumb);
+}
+
+/* Below desktop there is no sidebar — reset the wide left indent. */
+@media (max-width: 1023px) {
+  .dashboard {
+    padding-left: var(--space-6);
+  }
 }
 
 .dashboard__toolbar {
@@ -18,6 +27,18 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
+}
+
+.dashboard__header-text {
+  min-width: 0;
+}
+
+.dashboard__subtitle {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: var(--leading-body);
+  color: var(--color-text-secondary);
+  margin: var(--space-1) 0 0;
 }
 
 .dashboard__filters {
@@ -89,16 +110,33 @@
 .dashboard__title {
   font-family: var(--font-display);
   font-weight: var(--font-display-weight);
-  font-size: 32px;
+  font-size: 28px;
   line-height: var(--leading-title);
-  letter-spacing: var(--tracking-title);
+  letter-spacing: var(--tracking-heading);
   text-wrap: balance;
   color: var(--color-text-primary);
 }
 
+/* Center the empty state vertically within the page content area so the
+   "no resumes yet" / "no matching resumes" illustration reads as centered
+   on the page rather than pinned to the top below the toolbar. */
+.dashboard__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 55vh;
+  text-align: center;
+  padding-top: var(--space-4);
+}
+
+.dashboard__empty-actions {
+  margin-top: 0;
+}
+
 .dashboard__list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--space-7);
   list-style: none;
 }
@@ -106,25 +144,77 @@
 .resume-card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 0;
   min-width: 0;
   background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+  /* Linear-style separation: the 1px border does the work; the shadow is
+     barely-there ambient depth only. */
   box-shadow: var(--shadow-1);
-  padding: var(--space-5);
-  transition: box-shadow var(--duration-base) var(--ease-default);
+  /* No card padding — the preview bleeds to the card edges and each
+     section adds its own, so the document preview reads as the card's
+     full-width header. */
+  padding: 0;
+  overflow: hidden;
+  /* Cards settle in with a short stagger (delays below) — transform and
+     opacity only, so nothing triggers layout. */
+  animation: resume-card-in calc(var(--duration-slow) * 2) var(--ease-out)
+    both;
+  transition:
+    border-color var(--duration-base) var(--ease-default),
+    box-shadow var(--duration-base) var(--ease-default),
+    transform var(--duration-base) var(--ease-out);
 }
+
+/* Full-bleed document preview header */
+.resume-card__preview {
+  display: block;
+  height: calc(var(--space-12) * 3);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-brand-light);
+  overflow: hidden;
+}
+
+.resume-card__preview .resume-card-preview {
+  height: 100%;
+  border-radius: 0;
+  padding: var(--space-5) var(--space-5) 0;
+}
+
+@keyframes resume-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-2));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Settle stagger — capped so a full page of cards never feels sequential. */
+.resume-card:nth-child(2) { animation-delay: 30ms; }
+.resume-card:nth-child(3) { animation-delay: 60ms; }
+.resume-card:nth-child(4) { animation-delay: 90ms; }
+.resume-card:nth-child(5) { animation-delay: 120ms; }
+.resume-card:nth-child(6) { animation-delay: 150ms; }
+.resume-card:nth-child(7) { animation-delay: 180ms; }
+.resume-card:nth-child(n + 8) { animation-delay: 210ms; }
 
 @media (hover: hover) {
   .resume-card:hover {
+    border-color: var(--color-border-strong);
     box-shadow: var(--shadow-2);
+    transform: translateY(calc(var(--space-1) / 2));
   }
 }
 
 .resume-card__link {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 0;
   min-width: 0;
   text-decoration: none;
 }
@@ -140,6 +230,7 @@
   flex-direction: column;
   gap: var(--space-1);
   min-width: 0;
+  padding: var(--space-4) var(--space-5);
 }
 
 .resume-card__title {
@@ -194,6 +285,10 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  /* Card footer — pinned to the bottom edge so cards in a row align. */
+  margin-top: auto;
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--color-border);
 }
 
 .resume-card__actions-group {
@@ -307,9 +402,16 @@
     gap: var(--space-3);
   }
 
-  .resume-card {
-    gap: var(--space-2);
-    padding: var(--space-3);
+  .resume-card__preview {
+    height: var(--space-24);
+  }
+
+  .resume-card__preview .resume-card-preview {
+    padding: var(--space-3) var(--space-3) 0;
+  }
+
+  .resume-card__text {
+    padding: var(--space-3) var(--space-4);
   }
 
   .resume-card__title {
@@ -318,6 +420,10 @@
 
   .resume-card__meta {
     font-size: 12px;
+  }
+
+  .resume-card__actions {
+    padding: var(--space-1) var(--space-2);
   }
 
   .resume-card__inline-actions {
@@ -347,4 +453,15 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+}
+
+/* The title field uses the shared Input component (components/ui/Input);
+   only the dialog's own footer layout lives here. */
+.rename-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
 }

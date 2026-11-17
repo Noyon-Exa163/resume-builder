@@ -18,6 +18,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-4);
   padding: var(--space-6);
@@ -126,6 +127,10 @@
 .dialog-popup--centered .dialog-footer {
   display: grid;
   grid-template-columns: 1fr 1fr;
+}
+
+.dialog-popup--centered.dialog-popup--wide {
+  max-width: 640px;
 }
 
 .dialog-popup--centered .dialog-footer .button {

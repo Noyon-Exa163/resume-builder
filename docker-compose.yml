@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: resume-builder-pg
+    environment:
+      POSTGRES_USER: ${PGUSER:-resume_builder}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-resume_builder_dev_pwd}
+      POSTGRES_DB: ${PGDATABASE:-resume_builder}
+    ports:
+      - "5435:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-resume_builder} -d ${PGDATABASE:-resume_builder}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:

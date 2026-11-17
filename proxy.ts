@@ -5,9 +5,17 @@ import { verifyUserSessionToken } from "@/lib/auth/userSession";
  * Proxy (formerly "middleware" — renamed in Next 16, which now runs it on
  * the Node.js runtime by default; verifyUserSessionToken uses node:crypto).
  * Redirects unauthenticated requests to /login with ?next=<original path>.
- * Exempts: /login itself, /api/auth/*, and static assets.
+ * Exempts: /login itself, /api/auth/*, the invite flow (invitees are logged
+ * out by definition — the whole point of an invite), and static assets.
  */
-const PUBLIC_PATHS = ["/login", "/api/auth"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/api/auth",
+  "/api/invites",
+  "/invite",
+];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some(

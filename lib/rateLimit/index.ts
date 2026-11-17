@@ -96,9 +96,3 @@ export const AI_CHAT_RULE: RateLimitRule = {
   limit: 60,
   windowSeconds: 5 * 60,
 };
-
-export const AI_PARSE_RULE: RateLimitRule = {
-  name: "ai-parse",
-  limit: 20,
-  windowSeconds: 10 * 60,
-};

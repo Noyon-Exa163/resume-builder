@@ -1,0 +1,80 @@
+.onboarding-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  background: var(--color-bg);
+  padding: var(--space-4);
+}
+
+.onboarding-card {
+  width: 100%;
+  max-width: 400px;
+  padding: var(--space-8);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.onboarding-card h1 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-heading);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-2) 0;
+  font-family: var(--font-display);
+}
+
+.onboarding-card p {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-6) 0;
+  line-height: var(--leading-ui);
+}
+
+.onboarding-error {
+  color: var(--color-danger);
+  font-size: 13px;
+  margin: 0 0 var(--space-4) 0;
+}
+
+.onboarding-field {
+  margin-bottom: var(--space-4);
+}
+
+.onboarding-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.onboarding-field input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+}
+
+.onboarding-field input:focus {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+  border-color: var(--color-border-focus);
+}
+
+.onboarding-submit {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.onboarding-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}

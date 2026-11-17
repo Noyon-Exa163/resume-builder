@@ -70,7 +70,17 @@ test.describe("auth and dashboard smoke", () => {
       page.getByRole("button", { name: "New Resume" }),
     ).toBeVisible();
     await expect(page.getByRole("link", { name: "Account" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Log Out" })).toBeVisible();
+    // The account section mounts in two passes (shell, then user data once
+    // the profile fetch resolves) — interacting before it settles races the
+    // menu open against a sidebar re-render that closes it again.
+    const sidebar = page.getByRole("complementary");
+    await expect(sidebar.getByText(email)).toBeVisible();
+    // Log Out lives inside the account menu dropdown — open it first,
+    // assert, then close it again so later menu clicks aren't toggles.
+    // The menu renders in a Base UI portal (outside the sidebar node).
+    await sidebar.getByRole("button", { name: "Account menu" }).click();
+    await expect(page.getByRole("menuitem", { name: "Log Out" })).toBeVisible();
+    await page.keyboard.press("Escape");
 
     await page.getByRole("button", { name: "New Resume" }).click();
     const newResumeDialog = page.getByRole("dialog", {
@@ -117,7 +127,11 @@ test.describe("auth and dashboard smoke", () => {
       page.locator(`a.resume-card__link[href="/editor/${resumeId}"]`),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "Log Out" }).click();
+    // Back on a freshly mounted dashboard — wait for the identity to settle
+    // again before opening the account menu to log out.
+    await expect(sidebar.getByText(email)).toBeVisible();
+    await sidebar.getByRole("button", { name: "Account menu" }).click();
+    await page.getByRole("menuitem", { name: "Log Out" }).click();
     await page.waitForURL(/\/login/);
     await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
   });

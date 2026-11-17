@@ -1,6 +1,7 @@
 import { avatarFromColumns } from "@/lib/avatar";
 import { sql } from "@/lib/db/client";
 import type { ResumeHistoryUser } from "@/lib/db/resumeHistory";
+import type { ResumeData } from "@/lib/schema/resume";
 
 export interface ResumeVersionEntry {
   id: string;
@@ -60,13 +61,13 @@ async function materializeDueVersions(resumeId: string): Promise<void> {
 export async function recordVersionActivity(
   resumeId: string,
   userId: string,
-  resumeJson: string,
+  snapshot: ResumeData,
 ): Promise<void> {
   try {
     await materializeDueVersions(resumeId);
     await sql`
       INSERT INTO resume_version_pending (resume_id, user_id, snapshot, last_saved_at)
-      VALUES (${resumeId}, ${userId}, ${resumeJson}::jsonb, now())
+      VALUES (${resumeId}, ${userId}, ${snapshot}::jsonb, now())
       ON CONFLICT (resume_id, user_id)
       DO UPDATE SET snapshot = EXCLUDED.snapshot, last_saved_at = now()
     `;

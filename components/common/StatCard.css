@@ -1,0 +1,80 @@
+/* StatCard — bordered summary mini-card; grid container is `.stat-grid`.
+   Shared by the dashboard and the users page. */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-7);
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  min-width: 0;
+}
+
+.stat-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--space-9);
+  height: var(--space-9);
+  border-radius: var(--radius-md);
+  background-color: var(--color-brand-subtle);
+  color: var(--color-brand);
+}
+
+.stat-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.stat-card__label {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: var(--leading-caption);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stat-card__value {
+  font-family: var(--font-display);
+  font-weight: var(--font-display-weight);
+  font-size: 24px;
+  line-height: var(--leading-title);
+  letter-spacing: var(--tracking-title);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* sm — phone: compact chips; icon drops, value scales down. */
+@media (max-width: 639px) {
+  .stat-grid {
+    gap: var(--space-2);
+  }
+
+  .stat-card {
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-2);
+  }
+
+  .stat-card__icon {
+    display: none;
+  }
+
+  .stat-card__value {
+    font-size: 20px;
+  }
+}

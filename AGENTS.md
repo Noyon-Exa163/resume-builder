@@ -273,11 +273,13 @@ radius:
   full: "9999px"
 
 # ── Elevation / Shadow ────────────────────────────────────────────────────────
+# Flat, Linear/Vercel-style: very low ambient elevation; separation comes
+# from 1px borders and surface contrast, not glow or gradients.
 shadow:
-  "1": "0 1px 2px 0 rgba(7,12,17,0.06)"
-  "2": "0 2px 6px 0 rgba(7,12,17,0.08), 0 1px 2px 0 rgba(7,12,17,0.06)"
-  "3": "0 4px 16px 0 rgba(7,12,17,0.10), 0 2px 4px 0 rgba(7,12,17,0.06)"
-  "4": "0 8px 32px 0 rgba(7,12,17,0.14), 0 2px 8px 0 rgba(7,12,17,0.08)"
+  "1": "0 1px 2px 0 rgba(7,12,17,0.04)"
+  "2": "0 1px 3px 0 rgba(7,12,17,0.05), 0 2px 8px 0 rgba(7,12,17,0.04)"
+  "3": "0 2px 6px 0 rgba(7,12,17,0.05), 0 8px 24px 0 rgba(7,12,17,0.07)"
+  "4": "0 4px 12px 0 rgba(7,12,17,0.08), 0 16px 48px 0 rgba(7,12,17,0.10)"
 
 # ── Responsive sizing (see §6.9 / §6.11 for breakpoints) ─────────────────────
 size:

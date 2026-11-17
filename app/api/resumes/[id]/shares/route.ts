@@ -109,15 +109,15 @@ export async function PUT(request: Request, { params }: RouteParams) {
     permission,
   }));
 
-  await sql.transaction([
-    sql`DELETE FROM resume_shares WHERE resume_id = ${id}`,
-    ...shares.map(
-      (share) => sql`
+  await sql.begin(async (tx) => {
+    await tx`DELETE FROM resume_shares WHERE resume_id = ${id}`;
+    for (const share of shares) {
+      await tx`
         INSERT INTO resume_shares (resume_id, shared_with_user_id, permission)
         VALUES (${id}, ${share.userId}, ${share.permission})
-      `,
-    ),
-  ]);
+      `;
+    }
+  });
 
   return NextResponse.json({ success: true });
 }

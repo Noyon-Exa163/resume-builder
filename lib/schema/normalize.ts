@@ -65,6 +65,9 @@ export function normalizeAndValidate(
         ),
         description: entry?.description,
         link: entry?.link,
+        cgpa: entry?.cgpa,
+        gpa: entry?.gpa,
+        science: entry?.science,
       })),
     };
   });
@@ -80,7 +83,7 @@ export function normalizeAndValidate(
       pageSize: partial.meta?.pageSize ?? "A4",
       nameCasing: partial.meta?.nameCasing ?? "uppercase",
       accentColor: partial.meta?.accentColor ?? "cyan",
-      alternatePhoneVisible: partial.meta?.alternatePhoneVisible ?? true,
+      alternatePhoneVisible: partial.meta?.alternatePhoneVisible ?? false,
     },
     personalInfo: {
       fullName: partial.personalInfo?.fullName ?? "",

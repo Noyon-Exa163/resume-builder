@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { TooltipProvider } from "@/components/ui/Tooltip";
+import { ToastProvider } from "@/components/ui/Toast";
 
 /**
  * Client-side providers that wrap the whole app. TooltipProvider shares
@@ -9,5 +10,9 @@ import { TooltipProvider } from "@/components/ui/Tooltip";
  * instantly after the first one appears.
  */
 export function AppProviders({ children }: { children: ReactNode }) {
-  return <TooltipProvider delay={200}>{children}</TooltipProvider>;
+  return (
+    <ToastProvider>
+      <TooltipProvider delay={200}>{children}</TooltipProvider>
+    </ToastProvider>
+  );
 }

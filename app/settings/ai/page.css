@@ -1,9 +1,18 @@
 /* Admin AI provider settings page */
 
 .ai-settings-page {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: var(--space-6);
+  /* Left-anchored ~100px (--space-24) from the sidebar edge, in the same
+     760px content column as the account page. */
+  max-width: 1000px;
+  margin: 0;
+  padding: var(--space-8) var(--space-6) var(--space-6) var(--space-24);
+}
+
+/* Below desktop there is no sidebar — reset the wide left indent. */
+@media (max-width: 1023px) {
+  .ai-settings-page {
+    padding-left: var(--space-6);
+  }
 }
 
 .ai-settings-page__title {
@@ -14,15 +23,15 @@
   letter-spacing: var(--tracking-heading);
   text-wrap: balance;
   color: var(--color-text-primary);
-  margin: 0 0 var(--space-2);
+  margin: 0;
 }
 
 .ai-settings-page__intro {
   font-family: var(--font-body);
   font-size: 14px;
-  line-height: 1.57;
+  line-height: var(--leading-body);
   color: var(--color-text-secondary);
-  margin: 0 0 var(--space-6);
+  margin: var(--space-1) 0 var(--space-5);
 }
 
 .ai-settings-page__error {
@@ -44,17 +53,20 @@
   min-width: 0;
 }
 
+/* Stacked full-width cards, like the account page — the defaults card
+   follows the provider cards instead of floating beside them. */
 .ai-settings-page__layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: var(--space-6);
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
   align-items: start;
 }
 
 .ai-settings-page__provider {
   background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--shadow-1);
   padding: var(--space-5);
 }
 
@@ -114,11 +126,10 @@
   flex-direction: column;
   gap: var(--space-6);
   background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--shadow-1);
   padding: var(--space-5);
-  position: sticky;
-  top: var(--space-6);
 }
 
 .ai-settings-page__defaults-title {
@@ -129,16 +140,6 @@
   letter-spacing: var(--tracking-subtitle);
   color: var(--color-text-primary);
   margin: 0;
-}
-
-@media (max-width: 1023px) {
-  .ai-settings-page__layout {
-    grid-template-columns: 1fr;
-  }
-
-  .ai-settings-page__defaults {
-    position: static;
-  }
 }
 
 .ai-settings-page__saved-label {

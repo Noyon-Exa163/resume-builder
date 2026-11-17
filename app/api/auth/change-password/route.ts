@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
 import { verifyPassword, hashPassword } from "@/lib/auth/password";
+import {
+  USER_SESSION_COOKIE,
+  USER_SESSION_MAX_AGE_SECONDS,
+  createUserSessionToken,
+} from "@/lib/auth/userSession";
 
 /**
  * POST /api/auth/change-password
@@ -62,9 +67,31 @@ export async function POST(request: Request) {
   }
 
   const newHash = hashPassword(newPassword);
-  await sql`
-    UPDATE users SET password_hash = ${newHash} WHERE id = ${user.id}
-  `;
+  // Bumping session_version revokes every existing session for this user
+  // (a stolen cookie stops working the moment the password changes); the
+  // fresh token issued below keeps THIS device logged in.
+  const bumped = (await sql`
+    UPDATE users
+    SET password_hash = ${newHash}, session_version = session_version + 1
+    WHERE id = ${user.id}
+    RETURNING session_version
+  `) as Array<{ session_version: number }>;
 
-  return NextResponse.json({ ok: true });
+  const response = NextResponse.json({ ok: true });
+  const newVersion = bumped[0]?.session_version;
+  if (newVersion !== undefined) {
+    response.cookies.set(
+      USER_SESSION_COOKIE,
+      createUserSessionToken(user.id, newVersion),
+      {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: USER_SESSION_MAX_AGE_SECONDS,
+        path: "/",
+      },
+    );
+  }
+
+  return response;
 }

@@ -83,11 +83,74 @@
 
 .app-nav__user {
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  flex-direction: column;
   margin-top: auto;
   padding: var(--space-4) var(--space-2) 0;
   border-top: 1px solid var(--color-border);
+}
+
+/* Row 1: avatar + name/email (links to the account page) side by side. */
+.app-nav__user-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Row 2: a dedicated, full-width Log Out row below the account block. */
+.app-nav__logout {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background-color var(--duration-base) var(--ease-default),
+    color var(--duration-base) var(--ease-default);
+}
+
+@media (hover: hover) {
+  .app-nav__logout:hover {
+    color: var(--color-danger);
+    background-color: var(--color-danger-subtle);
+  }
+}
+
+.app-nav__logout:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Avatar + name/email act as one link to the account details page. */
+.app-nav__user-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2);
+  margin: calc(var(--space-2) * -1);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .app-nav__user-link:hover {
+    background: var(--color-surface-inset);
+  }
+}
+
+.app-nav__user-link:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }
 
 .app-nav__user-identity {
@@ -108,39 +171,14 @@
 .app-nav__user-name {
   font-size: 14px;
   font-weight: 500;
+  line-height: var(--leading-ui);
   color: var(--color-text-primary);
 }
 
 .app-nav__user-email {
   font-size: 12px;
+  line-height: var(--leading-caption);
   color: var(--color-text-tertiary);
-}
-
-.app-nav__user-menu-trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: var(--space-8);
-  height: var(--space-8);
-  color: var(--color-text-tertiary);
-  background: none;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background var(--duration-base) var(--ease-default),
-    color var(--duration-base) var(--ease-default);
-}
-
-.app-nav__user-menu-trigger:hover,
-.app-nav__user-menu-trigger[data-popup-open] {
-  color: var(--color-text-primary);
-  background: var(--color-surface-inset);
-}
-
-.app-nav__user-menu-trigger:focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 2px;
 }
 
 @media (pointer: coarse) {
@@ -148,8 +186,7 @@
     min-height: var(--size-touch-target);
   }
 
-  .app-nav__user-menu-trigger {
-    width: var(--size-touch-target);
-    height: var(--size-touch-target);
+  .app-nav__logout {
+    min-height: var(--size-touch-target);
   }
 }

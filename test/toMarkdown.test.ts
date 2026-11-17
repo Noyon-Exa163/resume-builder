@@ -3,6 +3,7 @@ import { toMarkdown } from "@/lib/export/toMarkdown";
 import { normalizeAndValidate } from "@/lib/schema/normalize";
 
 const resume = normalizeAndValidate({
+  meta: { alternatePhoneVisible: true },
   personalInfo: {
     fullName: "Ada Lovelace",
     headline: "Mathematician",
@@ -41,6 +42,19 @@ describe("toMarkdown", () => {
     expect(markdown).toContain("Mathematician");
     expect(markdown).toContain("ada@example.com");
     expect(markdown).toContain("+880 1676 095 674");
+  });
+
+  it("hides the system alternate number unless the resume opts in", () => {
+    const hidden = toMarkdown(
+      normalizeAndValidate({
+        personalInfo: {
+          fullName: "Ada Lovelace",
+          email: "ada@example.com",
+        },
+      }),
+    );
+    expect(hidden).toContain("ada@example.com");
+    expect(hidden).not.toContain("+880 1676 095 674");
   });
 
   it("renders the name in title case when nameCasing is set", () => {

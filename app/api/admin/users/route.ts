@@ -4,10 +4,27 @@ import { getCurrentUser } from "@/lib/auth";
 import { avatarFromColumns } from "@/lib/avatar";
 import { hashPassword } from "@/lib/auth/password";
 import { createId } from "@/lib/utils/ids";
+import {
+  createInviteToken,
+  inviteUrl,
+} from "@/lib/invites/createInvite";
+import { sendEmail } from "@/lib/email/send";
+import {
+  inviteEmailHtml,
+  inviteEmailText,
+} from "@/lib/email/invite";
+import {
+  welcomeEmailHtml,
+  welcomeEmailText,
+} from "@/lib/email/welcome";
 
 /**
  * GET /api/admin/users — list all users (admin-only).
- * POST /api/admin/users — create a user with email + initial password (admin-only).
+ * POST /api/admin/users — create a user (admin-only), two ways:
+ *   - with an initial password: the account exists immediately and the
+ *     user gets a welcome email (the password is never emailed);
+ *   - without a password: an invite email is sent instead, and the account
+ *     is created when the invitee sets their own password.
  */
 
 function requireAdmin(user: Awaited<ReturnType<typeof getCurrentUser>>) {
@@ -48,6 +65,12 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   const denied = requireAdmin(user);
   if (denied) return denied;
+  if (!user) {
+    return NextResponse.json(
+      { error: "Admin access required." },
+      { status: 403 },
+    );
+  }
 
   let body: unknown;
   try {
@@ -77,20 +100,30 @@ export async function POST(request: Request) {
     typeof name !== "string" ||
     name.trim().length === 0 ||
     typeof email !== "string" ||
-    email.length === 0 ||
-    typeof password !== "string" ||
-    password.length < 6
+    email.trim().length === 0
   ) {
     return NextResponse.json(
-      { error: "A name, an email, and a password of at least 6 characters are required." },
+      { error: "A name and an email address are required." },
+      { status: 400 },
+    );
+  }
+
+  // The initial password is optional. When omitted, the email carries a
+  // setup link instead and the invitee chooses their own password — the
+  // password itself is never transmitted by email.
+  const hasPassword = typeof password === "string" && password.length > 0;
+  if (hasPassword && password.length < 8) {
+    return NextResponse.json(
+      { error: "The initial password must be at least 8 characters — or leave it empty to email a setup link." },
       { status: 400 },
     );
   }
 
   const isAdmin = isAdminInput === true;
+  const normalizedEmail = email.toLowerCase().trim();
 
   const existing = await sql`
-    SELECT id FROM users WHERE email = ${email.toLowerCase().trim()}
+    SELECT id FROM users WHERE email = ${normalizedEmail}
   `;
   if (existing.length > 0) {
     return NextResponse.json(
@@ -99,13 +132,64 @@ export async function POST(request: Request) {
     );
   }
 
-  const id = createId();
-  const passwordHash = hashPassword(password);
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
 
-  await sql`
-    INSERT INTO users (id, name, email, password_hash, is_admin)
-    VALUES (${id}, ${name.trim()}, ${email.toLowerCase().trim()}, ${passwordHash}, ${isAdmin})
-  `;
+  if (hasPassword) {
+    const id = createId();
+    const passwordHash = hashPassword(password);
 
-  return NextResponse.json({ id, name: name.trim(), email: email.toLowerCase().trim(), isAdmin }, { status: 201 });
+    await sql`
+      INSERT INTO users (id, name, email, password_hash, is_admin)
+      VALUES (${id}, ${name.trim()}, ${normalizedEmail}, ${passwordHash}, ${isAdmin})
+    `;
+
+    const delivery = await sendEmail({
+      to: normalizedEmail,
+      subject: "Your ExaResume account is ready",
+      html: welcomeEmailHtml({
+        name: name.trim(),
+        loginUrl: `${baseUrl}/login`,
+      }),
+      text: welcomeEmailText({
+        name: name.trim(),
+        loginUrl: `${baseUrl}/login`,
+      }),
+    });
+
+    return NextResponse.json(
+      {
+        id,
+        name: name.trim(),
+        email: normalizedEmail,
+        isAdmin,
+        invited: false,
+        delivered: delivery.sent,
+      },
+      { status: 201 },
+    );
+  }
+
+  // No initial password — email a setup link; the account is created when
+  // the invitee sets their own password (same onboarding as email invites).
+  const invite = await createInviteToken(normalizedEmail, user.id);
+  const link = inviteUrl(invite.token);
+  const delivery = await sendEmail({
+    to: normalizedEmail,
+    subject: "You've been invited to ExaResume",
+    html: inviteEmailHtml({ inviteUrl: link }),
+    text: inviteEmailText({ inviteUrl: link }),
+  });
+
+  return NextResponse.json(
+    {
+      id: invite.id,
+      email: normalizedEmail,
+      expiresAt: invite.expiresAt,
+      invited: true,
+      inviteUrl: link,
+      delivered: delivery.sent,
+      deliveryError: delivery.error ?? null,
+    },
+    { status: 201 },
+  );
 }

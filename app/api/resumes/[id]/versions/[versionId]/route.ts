@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseJsonb } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
 import { getResumeAccessLevel } from "@/lib/db/resumeQueries";
 import { getResumeVersionSnapshot } from "@/lib/db/resumeVersions";
@@ -29,7 +30,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const parsed = ResumeDataSchema.safeParse(snapshot);
+  const parsed = ResumeDataSchema.safeParse(parseJsonb(snapshot));
   if (!parsed.success) {
     return NextResponse.json(
       { error: "This version's saved content is damaged." },

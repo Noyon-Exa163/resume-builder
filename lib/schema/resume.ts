@@ -24,6 +24,10 @@ export const EntrySchema = z.object({
   description: z.string().optional(),
   /** Free text, not a strict URL — see PersonalInfoSchema. */
   link: z.string().optional(),
+  /** Education-specific academic fields, printed on education entries. */
+  cgpa: z.string().optional(),
+  gpa: z.string().optional(),
+  science: z.string().optional(),
 });
 export type ResumeEntry = z.infer<typeof EntrySchema>;
 
@@ -155,8 +159,9 @@ export const ResumeMetaSchema = z.object({
   ),
   /** Whether to also print Exabyting's system alternate phone number (see
    *  lib/contact/system.ts) on the document. Toggled from the personal
-   *  information form; applies to every template and export. */
-  alternatePhoneVisible: z.boolean().default(true),
+   *  information form; applies to every template and export. New resumes
+   *  start hidden — the company line is an opt-in, not a default. */
+  alternatePhoneVisible: z.boolean().default(false),
 });
 
 export const ResumeDataSchema = z.object({

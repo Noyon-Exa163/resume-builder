@@ -9,6 +9,7 @@ import {
   Badge,
   Skeleton,
   type SelectOption,
+  useToast,
 } from "@/components/ui";
 import { AiProviderMark } from "@/components/ai/AiProviderMark";
 import { chatModelSelectOptions } from "@/components/editor/AiModelPicker";
@@ -115,6 +116,7 @@ export default function AiSettingsPageClient() {
   const [testStatus, setTestStatus] = useState<
     Partial<Record<AIProviderId, TestStatus>>
   >({});
+  const { toast } = useToast();
 
   useEffect(() => {
     let ignore = false;
@@ -261,7 +263,7 @@ export default function AiSettingsPageClient() {
    * Keeps an explicit choice if it's still valid; otherwise auto-picks the
    * single configured provider (adding a key without separately choosing it
    * as "default" is an easy step to miss, and pointless when there's only
-   * one option) — mirrors the same fallback the ai-parse route applies.
+   * one option).
    */
   function resolveDefaultProviderId(
     payload: AdminSettingsResponse["providers"],
@@ -325,6 +327,7 @@ export default function AiSettingsPageClient() {
       setDefaultTemplateId(nextDefaultTemplateId);
       setDefaultChatModelId(nextDefaultChatModelId);
       setDefaultsSavedAt(Date.now());
+      toast({ type: "success", title: "Settings saved successfully!" });
     } catch {
       setError("Something went wrong saving defaults.");
     } finally {
@@ -360,6 +363,7 @@ export default function AiSettingsPageClient() {
         next.delete(id);
         return next;
       });
+      toast({ type: "success", title: "Provider saved successfully!" });
     } catch {
       setError("Something went wrong saving this provider.");
     } finally {
@@ -395,6 +399,7 @@ export default function AiSettingsPageClient() {
       });
       setDefaultProviderId(resolvedDefault);
       setTestStatus((prev) => ({ ...prev, [id]: { state: "idle" } }));
+      toast({ type: "success", title: "Provider removed successfully!" });
     } catch {
       setError("Something went wrong removing the provider.");
     } finally {

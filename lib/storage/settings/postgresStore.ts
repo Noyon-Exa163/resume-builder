@@ -23,9 +23,12 @@ export const postgresSettingsStore: SettingsStore = {
     return rows[0]?.data ?? DEFAULT_ADMIN_SETTINGS;
   },
   async set(settings) {
+    // Bind the object itself — postgres.js serializes it to JSON for the
+    // ::jsonb cast. Pre-stringifying would store a double-encoded string
+    // scalar (see db/migrations/0011).
     await sql`
       INSERT INTO admin_settings (id, data, updated_at)
-      VALUES (${SETTINGS_ROW_ID}, ${JSON.stringify(settings)}::jsonb, now())
+      VALUES (${SETTINGS_ROW_ID}, ${settings}::jsonb, now())
       ON CONFLICT (id) DO UPDATE
       SET data = EXCLUDED.data, updated_at = now()
     `;

@@ -1,0 +1,177 @@
+/* Inline editing popover — anchored just below the clicked text with a
+   spring pop-in, layered elevation, and a brand halo so it reads as a
+   floating editor rather than a plain input. */
+
+.inline-editor {
+  position: absolute;
+  z-index: 50;
+  /* Anchored to the row's bottom edge — the gap keeps the original text
+     visible above the input while editing. */
+  margin-top: var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  /* Brand halo + modal-grade shadow: the halo says "this is the live
+     field", the shadow lifts it off the page. */
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--color-brand) 16%, transparent),
+    var(--shadow-3);
+  padding: var(--space-4);
+  font-family: var(--font-body);
+  display: flex;
+  flex-direction: column;
+  transform-origin: center top;
+  animation: inline-editor-pop calc(var(--duration-base) * 2)
+    var(--ease-spring) both;
+  /* Cap width so long text never overflows the screen, and cap height so
+     long multiline text scrolls instead of pushing the page layout. */
+  max-width: min(640px, calc(100vw - var(--space-8)));
+  max-height: min(260px, calc(100vh - var(--space-10)));
+  overflow: hidden;
+}
+
+@keyframes inline-editor-pop {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--space-1) / 2)) scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header row: title on the left, close (X) button on the right. */
+.inline-editor__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.inline-editor__title {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 15px;
+  line-height: var(--leading-ui);
+  color: var(--color-text-primary);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inline-editor__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--space-7);
+  height: var(--space-7);
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  transition:
+    background-color var(--duration-fast) var(--ease-default),
+    color var(--duration-fast) var(--ease-default);
+}
+
+.inline-editor__close:hover {
+  background: var(--color-surface-inset);
+  color: var(--color-text-primary);
+}
+
+/* Body: the textarea content area with scrolling. */
+.inline-editor__body {
+  flex: 1;
+  min-height: 60px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-top: var(--space-2);
+}
+
+.inline-editor__input {
+  width: 100%;
+  min-height: 60px;
+  max-height: 160px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  caret-color: var(--color-brand);
+  resize: vertical;
+  overflow-y: auto;
+  line-height: 1.57;
+  padding: 0;
+  margin: 0;
+}
+
+.inline-editor__input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* Footer: Cancel on the left of Done, both right-aligned. */
+.inline-editor__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.inline-editor__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: var(--space-8);
+  padding: 0 var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  line-height: 1;
+  transition:
+    background-color var(--duration-fast) var(--ease-default),
+    border-color var(--duration-fast) var(--ease-default),
+    color var(--duration-fast) var(--ease-default);
+}
+
+.inline-editor__button:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-inset);
+  color: var(--color-text-primary);
+}
+
+.inline-editor__button--confirm {
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+  color: var(--color-text-on-brand);
+}
+
+.inline-editor__button--confirm:hover {
+  background: var(--color-brand-hover);
+  color: var(--color-text-on-brand);
+}
+
+.inline-editor__button:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 1px;
+}

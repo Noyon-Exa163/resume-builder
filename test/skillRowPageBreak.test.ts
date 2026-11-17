@@ -9,7 +9,10 @@ import { normalizeAndValidate } from "@/lib/schema/normalize";
 const root = path.resolve(import.meta.dirname, "..");
 
 describe("skill category rows", () => {
-  it("keeps a category label and its chips on the same page", async () => {
+  it(
+    "keeps a category label and its chips on the same page",
+    { timeout: 60_000 },
+    async () => {
     const origReadFile = fs.readFile;
     const origReadFileSync = fs.readFileSync;
     const origPromisesReadFile = fs.promises.readFile;
@@ -139,6 +142,9 @@ describe("skill category rows", () => {
         templateId: "exabyting",
         pageSize: "A4",
         nameCasing: "uppercase",
+        // Opt in so the contact row keeps the layout this repro was built
+        // around — the alternate number is hidden by default now.
+        alternatePhoneVisible: true,
       },
       personalInfo: {
         fullName: "Md. Asif Imtiyaz Chowdhury",

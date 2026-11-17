@@ -1,4 +1,4 @@
-import { sql } from "@/lib/db/client";
+import { parseJsonb, sql } from "@/lib/db/client";
 import { ResumeDataSchema } from "@/lib/schema/resume";
 import { canManageAllResumes, resolveResumeAccess } from "@/lib/auth/permissions";
 import type { CurrentUser } from "@/lib/auth";
@@ -40,7 +40,11 @@ export async function listResumesForUser(
   const manageAll = canManageAllResumes(user.email);
 
   const rows = (await sql`
-    SELECT r.id, jsonb_set(r.data, '{sections}', '[]'::jsonb) AS data,
+    SELECT r.id,
+      CASE
+        WHEN jsonb_typeof(r.data) = 'object' THEN jsonb_set(r.data, '{sections}', '[]'::jsonb)
+        ELSE '{}'::jsonb
+      END AS data,
       r.user_id AS owner_id, u.email AS owner_email, u.name AS owner_name,
       u.avatar_hue AS owner_avatar_hue, u.avatar_expression AS owner_avatar_expression,
       rs.permission
@@ -56,7 +60,7 @@ export async function listResumesForUser(
 
   const entries: ResumeAccessEntry[] = [];
   for (const row of rows) {
-    const parsed = ResumeDataSchema.safeParse(row.data);
+    const parsed = ResumeDataSchema.safeParse(parseJsonb(row.data));
     if (!parsed.success) {
       console.warn(`Skipping resume ${row.id}: stored data failed validation.`);
       continue;

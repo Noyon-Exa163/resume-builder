@@ -7,7 +7,7 @@ import { formatBangladeshiPhone } from "./formatPhone";
  */
 export const SYSTEM_ALTERNATE_PHONE = "+8801676095674";
 
-function digitsOnly(value: string): string {
+export function digitsOnly(value: string): string {
   return value.replace(/\D/g, "");
 }
 

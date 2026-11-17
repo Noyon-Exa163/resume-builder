@@ -12,6 +12,8 @@ export default async function AccountPage() {
       <AccountPageClient
         name={user.name}
         email={user.email}
+        role={user.role}
+        memberSince={user.createdAt}
         avatar={user.avatar}
       />
     </AppShell>

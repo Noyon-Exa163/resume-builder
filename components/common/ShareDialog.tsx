@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Share2 } from "lucide-react";
-import { Avatar, ActionDialog, SelectField, Skeleton } from "@/components/ui";
+import { Avatar, ActionDialog, SelectField, Skeleton, useToast } from "@/components/ui";
 import {
   getResumeShares,
   listShareableUsers,
@@ -47,6 +47,7 @@ export function ShareDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!open) return;
@@ -108,6 +109,7 @@ export function ShareDialog({
         .map(([userId, permission]) => ({ userId, permission }));
       await updateResumeShares(resumeId, shares);
       onOpenChange(false);
+      toast({ type: "success", title: "Resume shared successfully!" });
     } catch (err) {
       setErrorMessage(
         err instanceof Error ? err.message : "Couldn't update sharing.",

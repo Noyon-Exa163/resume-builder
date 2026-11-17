@@ -11,6 +11,8 @@ export interface CurrentUser {
   name: string;
   role: "user" | "admin";
   avatar: AvatarPreferences;
+  /** ISO timestamp the user account was created (users.created_at). */
+  createdAt: string;
 }
 
 /**
@@ -30,7 +32,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   if (!session) return null;
 
   const rows = await sql`
-    SELECT id, email, name, is_admin, avatar_hue, avatar_expression FROM users WHERE id = ${session.userId}
+    SELECT id, email, name, is_admin, avatar_hue, avatar_expression, session_version, created_at FROM users WHERE id = ${session.userId}
   `;
   const row = rows[0] as
     | {
@@ -40,9 +42,16 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
         is_admin: boolean;
         avatar_hue: number | null;
         avatar_expression: string | null;
+        session_version: number;
+        created_at: string | Date;
       }
     | undefined;
   if (!row) return null;
+
+  // Revocation: a token issued before the user's session_version was bumped
+  // (password change, logout) is no longer valid, even though its signature
+  // and expiry are still fine.
+  if (row.session_version !== session.sessionVersion) return null;
 
   return {
     id: row.id,
@@ -50,5 +59,6 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     name: row.name?.trim() || row.email.split("@")[0],
     role: row.is_admin ? "admin" : "user",
     avatar: avatarFromColumns(row.avatar_hue, row.avatar_expression),
+    createdAt: new Date(row.created_at).toISOString(),
   };
 });

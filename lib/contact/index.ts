@@ -1,5 +1,6 @@
 export {
   SYSTEM_ALTERNATE_PHONE,
+  digitsOnly,
   isSystemAlternatePhone,
   phonesForDisplay,
 } from "./system";

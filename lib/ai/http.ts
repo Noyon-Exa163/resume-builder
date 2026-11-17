@@ -45,7 +45,7 @@ export function httpError(
 
 /**
  * Parse model text as JSON. On failure return null — extractResumeData still
- * returns `{ json, raw }` and leaves ResumeDataSchema validation to aiParser.
+ * returns `{ json, raw }` and leaves ResumeDataSchema validation to callers.
  */
 export function parseModelJson(raw: string): unknown {
   const trimmed = raw.trim();

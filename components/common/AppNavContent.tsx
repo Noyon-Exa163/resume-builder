@@ -2,19 +2,16 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ActionMenu, Avatar } from "@/components/ui";
+import { Avatar } from "@/components/ui";
 import type { AvatarPreferences } from "@/lib/avatar";
 import {
   FileText,
   LogOut,
-  MoreVertical,
   Sparkles,
-  User,
   Users,
   type LucideIcon,
 } from "lucide-react";
 import "./AppNavContent.css";
-
 export interface AppNavUser {
   name: string;
   email: string;
@@ -50,7 +47,6 @@ export function AppNavContent({ isAdmin, user, onNavigate }: AppNavContentProps)
 
   const navItems: NavItem[] = [
     { href: "/", label: "Resumes", icon: FileText },
-    { href: "/settings/account", label: "Account", icon: User },
     ...(isAdmin
       ? [
           { href: "/settings/users", label: "Users", icon: Users },
@@ -94,30 +90,27 @@ export function AppNavContent({ isAdmin, user, onNavigate }: AppNavContentProps)
 
       {user && (
         <div className="app-nav__user">
-          <Avatar name={user.email} size={36} {...user.avatar} />
-          <div className="app-nav__user-identity">
-            <span className="app-nav__user-name">{user.name}</span>
-            <span className="app-nav__user-email">{user.email}</span>
+          <div className="app-nav__user-row">
+            <Link
+              href="/settings/account"
+              className="app-nav__user-link"
+              aria-label="Open Account Details"
+            >
+              <Avatar name={user.email} size={36} {...user.avatar} />
+              <div className="app-nav__user-identity">
+                <span className="app-nav__user-name">{user.name}</span>
+                <span className="app-nav__user-email">{user.email}</span>
+              </div>
+            </Link>
           </div>
-          <ActionMenu
-            side="top"
-            trigger={
-              <button
-                type="button"
-                className="app-nav__user-menu-trigger"
-                aria-label="Account menu"
-              >
-                <MoreVertical size={18} />
-              </button>
-            }
-            items={[
-              {
-                label: "Log Out",
-                icon: LogOut,
-                onSelect: () => void handleLogout(),
-              },
-            ]}
-          />
+          <button
+            type="button"
+            className="app-nav__logout"
+            onClick={() => void handleLogout()}
+          >
+            <LogOut size={16} aria-hidden="true" />
+            Log Out
+          </button>
         </div>
       )}
     </div>

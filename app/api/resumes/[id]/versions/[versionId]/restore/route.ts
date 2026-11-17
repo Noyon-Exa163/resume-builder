@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sql } from "@/lib/db/client";
+import { parseJsonb, sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
 import { recordResumeActivity } from "@/lib/db/resumeActivity";
 import { getResumeAccessLevel } from "@/lib/db/resumeQueries";
@@ -37,7 +37,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
   }
 
   const snapshot = await getResumeVersionSnapshot(id, versionId);
-  const parsed = ResumeDataSchema.safeParse(snapshot);
+  const parsed = ResumeDataSchema.safeParse(parseJsonb(snapshot));
   if (!parsed.success) {
     return NextResponse.json(
       { error: "That version no longer exists or its saved content is damaged." },
@@ -54,11 +54,12 @@ export async function POST(_request: Request, { params }: RouteParams) {
       updatedAt: new Date().toISOString(),
     },
   };
-  const restoredJson = JSON.stringify(restored);
-
+  // Bind the object itself — postgres.js serializes it to JSON for the
+  // ::jsonb cast. Pre-stringifying would store a double-encoded string
+  // scalar (see db/migrations/0011).
   const updated = (await sql`
     UPDATE resumes
-    SET data = ${restoredJson}::jsonb, updated_at = now()
+    SET data = ${restored}::jsonb, updated_at = now()
     WHERE id = ${id}
     RETURNING id
   `) as Array<{ id: string }>;
@@ -70,7 +71,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
     resumeId: id,
     userId: user.id,
     action: "edited",
-    resumeJson: restoredJson,
+    snapshot: restored,
   });
 
   return NextResponse.json(restored);

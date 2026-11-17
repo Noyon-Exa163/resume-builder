@@ -22,6 +22,8 @@ import {
 import { useEditorStore } from "@/lib/store/editorStore";
 import type { DeepPartial } from "@/lib/schema/normalize";
 import type { ResumeData } from "@/lib/schema/resume";
+import { flagImportIssues, type ImportIssue } from "@/lib/import/errorFlagging";
+import { applyIssueFixes } from "@/lib/import/applyFixes";
 import { canManageResume } from "@/lib/storage/api/resumeAccess";
 import { restoreResumeVersion } from "@/lib/storage/api/resumeHistory";
 import { resumeHasContent } from "@/lib/export/shared";
@@ -45,6 +47,7 @@ import {
   LivePreviewPane,
   ExportButtons,
   ThemePicker,
+  ImportReviewDialog,
 } from "@/components/editor";
 import "./page.css";
 
@@ -107,6 +110,11 @@ export default function EditorPage() {
 
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isImportReviewOpen, setIsImportReviewOpen] = useState(false);
+  const [pendingImport, setPendingImport] = useState<{
+    partial: DeepPartial<ResumeData>;
+    issues: ImportIssue[];
+  } | null>(null);
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [importCelebrateKey, setImportCelebrateKey] = useState(0);
 
@@ -240,9 +248,33 @@ export default function EditorPage() {
   // keystroke-debounced autosave. Stays on the AI tab: the chat reply
   // already confirms what changed, right where the user is looking.
   function handleImport(partial: DeepPartial<ResumeData>) {
+    const issues = flagImportIssues(partial);
+    if (issues.length > 0) {
+      setPendingImport({ partial, issues });
+      setIsImportReviewOpen(true);
+      return;
+    }
+    commitImport(partial);
+  }
+
+  function commitImport(partial: DeepPartial<ResumeData>) {
     importInto(partial);
     setImportCelebrateKey((key) => key + 1);
     void save();
+  }
+
+  function handleImportReviewConfirm(resolution: {
+    ignored: string[];
+    fixed: string[];
+  }) {
+    if (!pendingImport) return;
+    const { partial, issues } = pendingImport;
+    // Apply the one-click corrections the user accepted; everything they
+    // merely ignored commits as extracted. Paths all refer to the original
+    // partial, which applyIssueFixes honors even around removals.
+    commitImport(applyIssueFixes(partial, issues, resolution.fixed));
+    setPendingImport(null);
+    setIsImportReviewOpen(false);
   }
 
   async function handleRestoreVersion(versionId: string) {
@@ -552,6 +584,13 @@ export default function EditorPage() {
           onOpenChange={setIsShareOpen}
         />
       )}
+
+      <ImportReviewDialog
+        open={isImportReviewOpen}
+        onOpenChange={setIsImportReviewOpen}
+        issues={pendingImport ? pendingImport.issues : []}
+        onImport={handleImportReviewConfirm}
+      />
     </main>
   );
 }

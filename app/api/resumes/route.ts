@@ -53,7 +53,6 @@ export async function POST(request: Request) {
 
   const resume = parsed.data;
   const resumeId = resume.meta.id;
-  const resumeJson = JSON.stringify(resume);
 
   const manageAll = canManageAllResumes(user.email);
 
@@ -80,9 +79,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // Bind the object itself — postgres.js serializes it to JSON for the
+  // ::jsonb cast. Pre-stringifying would store a double-encoded string
+  // scalar (see db/migrations/0011).
   const written = (await sql`
     INSERT INTO resumes (id, user_id, data, created_at, updated_at)
-    VALUES (${resumeId}, ${user.id}, ${resumeJson}::jsonb, now(), now())
+    VALUES (${resumeId}, ${user.id}, ${resume}::jsonb, now(), now())
     ON CONFLICT (id) DO UPDATE
     SET data = EXCLUDED.data,
         updated_at = now()
@@ -100,7 +102,7 @@ export async function POST(request: Request) {
       resumeId,
       userId: user.id,
       action: existing.length > 0 ? "edited" : "created",
-      resumeJson,
+      snapshot: resume,
     });
   }
 

@@ -1,0 +1,102 @@
+.import-review-dialog {
+  --item-gap: 12px;
+}
+
+.import-review-dialog__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--item-gap);
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 16px 0;
+}
+
+.import-review-dialog__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.import-review-dialog__item--error {
+  border-color: var(--color-danger);
+  background: var(--color-danger-subtle);
+}
+
+.import-review-dialog__item--warning {
+  border-color: var(--color-warning);
+  background: var(--color-warning-subtle);
+}
+
+.import-review-dialog__item--info {
+  border-color: var(--color-info);
+  background: var(--color-info-subtle);
+}
+
+.import-review-dialog__item-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.import-review-dialog__item--error .import-review-dialog__item-icon {
+  color: var(--color-danger);
+}
+
+.import-review-dialog__item--warning .import-review-dialog__item-icon {
+  color: var(--color-warning);
+}
+
+.import-review-dialog__item--info .import-review-dialog__item-icon {
+  color: var(--color-info);
+}
+
+.import-review-dialog__item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.import-review-dialog__item-message {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  margin-bottom: 6px;
+}
+
+.import-review-dialog__item-current,
+.import-review-dialog__item-suggested {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text-tertiary);
+  margin-bottom: 4px;
+}
+
+.import-review-dialog__item-current span,
+.import-review-dialog__item-suggested span {
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.import-review-dialog__item-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.import-review-dialog__empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.import-review-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}

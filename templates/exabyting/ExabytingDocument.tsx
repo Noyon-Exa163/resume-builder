@@ -1215,6 +1215,28 @@ function entryNodes(
     />,
   ];
 
+  // Academic info for education entries (CGPA / GPA / Science), shown as a
+  // clickable line under the entry heading so it can be inline-edited.
+  if (section.kind === "education") {
+    const academic = [
+      entry.cgpa && `CGPA ${entry.cgpa}`,
+      entry.gpa && `GPA ${entry.gpa}`,
+      entry.science && entry.science,
+    ]
+      .filter(Boolean)
+      .join("  ·  ");
+    if (academic) {
+      nodes.push(
+        <Text
+          key={`${entry.id}-academic`}
+          style={[styles.entryMeta, styles.entryFollowIndent]}
+        >
+          {academic}
+        </Text>
+      );
+    }
+  }
+
   if (display.contact.length > 0) {
     nodes.push(
       <ReferenceContactList
@@ -1344,6 +1366,21 @@ function CompactEntryBody({
         description
         icon={icon}
       />
+      {section.kind === "education" && entry.cgpa && (
+        <Text key={`${entry.id}-cgpa`} style={[styles.entryMeta, styles.entryFollowIndent]}>
+          CGPA {entry.cgpa}
+        </Text>
+      )}
+      {section.kind === "education" && entry.gpa && (
+        <Text key={`${entry.id}-gpa`} style={[styles.entryMeta, styles.entryFollowIndent]}>
+          GPA {entry.gpa}
+        </Text>
+      )}
+      {section.kind === "education" && entry.science && (
+        <Text key={`${entry.id}-science`} style={[styles.entryMeta, styles.entryFollowIndent]}>
+          {entry.science}
+        </Text>
+      )}
       {display.contact.length > 0 ? (
         <ReferenceContactList items={display.contact} />
       ) : null}

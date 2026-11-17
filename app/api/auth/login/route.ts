@@ -12,6 +12,7 @@ import {
   createUserSessionToken,
   USER_SESSION_COOKIE,
   USER_SESSION_MAX_AGE_SECONDS,
+  USER_SESSION_REMEMBER_MAX_AGE_SECONDS,
 } from "@/lib/auth/userSession";
 
 /**
@@ -39,9 +40,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const { email, password } = body as {
+  const { email, password, remember } = body as {
     email?: string;
     password?: string;
+    remember?: boolean;
   };
 
   if (
@@ -70,10 +72,10 @@ export async function POST(request: Request) {
   }
 
   const rows = await sql`
-    SELECT id, password_hash FROM users WHERE email = ${normalizedEmail}
+    SELECT id, password_hash, session_version FROM users WHERE email = ${normalizedEmail}
   `;
   const user = rows[0] as
-    | { id: string; password_hash: string }
+    | { id: string; password_hash: string; session_version: number }
     | undefined;
 
   if (!user) {
@@ -88,14 +90,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const token = createUserSessionToken(user.id);
+  const token = createUserSessionToken(user.id, user.session_version);
 
   const response = NextResponse.json({ ok: true });
   response.cookies.set(USER_SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: USER_SESSION_MAX_AGE_SECONDS,
+    maxAge: remember
+      ? USER_SESSION_REMEMBER_MAX_AGE_SECONDS
+      : USER_SESSION_MAX_AGE_SECONDS,
     path: "/",
   });
 

@@ -37,13 +37,16 @@ describe("hashPassword / verifyPassword", () => {
 });
 
 describe("createUserSessionToken / verifyUserSessionToken", () => {
-  it("verifies a freshly created token and returns the userId", () => {
-    const token = createUserSessionToken("user_abc123");
-    expect(verifyUserSessionToken(token)).toEqual({ userId: "user_abc123" });
+  it("verifies a freshly created token and returns the userId and version", () => {
+    const token = createUserSessionToken("user_abc123", 2);
+    expect(verifyUserSessionToken(token)).toEqual({
+      userId: "user_abc123",
+      sessionVersion: 2,
+    });
   });
 
   it("rejects a token whose signature has been tampered with", () => {
-    const token = createUserSessionToken("user_abc123");
+    const token = createUserSessionToken("user_abc123", 0);
     const lastDot = token.lastIndexOf(".");
     const payload = token.slice(0, lastDot);
     const signature = token.slice(lastDot + 1);
@@ -52,16 +55,39 @@ describe("createUserSessionToken / verifyUserSessionToken", () => {
   });
 
   it("rejects an expired token", () => {
-    // Mirrors createUserSessionToken's `userId.expiresAt.hmac` layout so we
-    // can pin expiry in the past without waiting on the 7-day max-age.
+    // Mirrors createUserSessionToken's `userId.version.expiresAt.hmac` layout
+    // so we can pin expiry in the past without waiting on the 7-day max-age.
     const userId = "user_abc123";
     const expiresAt = Date.now() - 1_000;
+    const payload = `${userId}.0.${expiresAt}`;
+    const signature = crypto
+      .createHmac("sha256", TEST_SECRET)
+      .update(payload)
+      .digest("hex");
+    expect(verifyUserSessionToken(`${payload}.${signature}`)).toBeNull();
+  });
+
+  it("rejects a legacy pre-version token", () => {
+    // Tokens issued before session revocation had no version segment — they
+    // must not verify, or old (possibly stolen) cookies would keep working.
+    const userId = "user_abc123";
+    const expiresAt = Date.now() + 60_000;
     const payload = `${userId}.${expiresAt}`;
     const signature = crypto
       .createHmac("sha256", TEST_SECRET)
       .update(payload)
       .digest("hex");
     expect(verifyUserSessionToken(`${payload}.${signature}`)).toBeNull();
+  });
+
+  it("carries different versions for the same user", () => {
+    // getCurrentUser compares the embedded version against
+    // users.session_version — different versions must never collide.
+    const before = createUserSessionToken("user_abc123", 4);
+    const after = createUserSessionToken("user_abc123", 5);
+    expect(verifyUserSessionToken(before)?.sessionVersion).toBe(4);
+    expect(verifyUserSessionToken(after)?.sessionVersion).toBe(5);
+    expect(before).not.toBe(after);
   });
 });
 

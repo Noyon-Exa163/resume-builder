@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ResumeData } from "@/lib/schema/resume";
-import { toPdfBlob } from "@/lib/export/toPdfBlob";
+import { getCachedPdfBlob, toPdfBlob } from "@/lib/export/toPdfBlob";
 import { PdfCanvasViewer } from "./PdfCanvasViewer";
 import "./LivePreviewPane.css";
 
@@ -20,7 +20,9 @@ interface LivePreviewPaneProps {
 /**
  * Renders the draft through toPdfBlob() — the same path the download uses —
  * so the preview never drifts from the exported file. Debounced so typing
- * doesn't rebuild the whole PDF per keystroke.
+ * doesn't rebuild the whole PDF per keystroke. Rendered blobs are cached by
+ * content key so toggling between two states (e.g. undo/redo) reuses the
+ * previous render instead of re-rasterising the whole PDF.
  */
 export function LivePreviewPane({
   data,
@@ -62,7 +64,7 @@ export function LivePreviewPane({
 
   useEffect(() => {
     let isStale = false;
-    toPdfBlob(draft.data)
+    void getCachedPdfBlob(draft.key, () => toPdfBlob(draft.data))
       .then((next) => {
         if (!isStale) setRendered({ blob: next, appear: draft.appear });
       })
@@ -75,6 +77,7 @@ export function LivePreviewPane({
   return (
     <PdfCanvasViewer
       blob={rendered.blob}
+      data={draft.data}
       appear={rendered.appear}
       className="live-preview-pane"
       aria-label="Live preview"

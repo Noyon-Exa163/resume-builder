@@ -1,9 +1,23 @@
 /* Account settings page */
 
 .account-page {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: var(--space-6);
+  max-width: 1000px;
+  /* Left-anchored ~100px (--space-24) from the sidebar edge — same
+     content position and top gap as the other in-app pages. */
+  margin: 0;
+  padding: var(--space-8) var(--space-6) var(--space-6) var(--space-24);
+}
+
+/* Below desktop there is no sidebar (AppTopBar takes over), so the wide
+   left indent would be meaningless. */
+@media (max-width: 1023px) {
+  .account-page {
+    padding-left: var(--space-6);
+  }
+}
+
+.account-page__header {
+  margin: 0 0 var(--space-5);
 }
 
 .account-page__title {
@@ -14,24 +28,109 @@
   letter-spacing: var(--tracking-heading);
   text-wrap: balance;
   color: var(--color-text-primary);
-  margin: 0 0 var(--space-6);
+  margin: 0;
+}
+
+.account-page__subtitle {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: var(--leading-body);
+  color: var(--color-text-secondary);
+  margin: var(--space-1) 0 0;
+}
+
+/* Cards stack full-width; the profile card is a horizontal banner so the
+   page fills its width instead of floating sparse columns in the middle. */
+.account-page__grid {
+  display: grid;
+  gap: var(--space-4);
 }
 
 .account-card {
   background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--shadow-1);
   padding: var(--space-5);
 }
 
-.account-card__title {
+@media (pointer: coarse) {
+  .account-profile__avatar-edit.button--s {
+    width: var(--size-touch-target);
+    height: var(--size-touch-target);
+  }
+}
+
+.account-details__title {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   line-height: var(--leading-heading);
   letter-spacing: var(--tracking-subtitle);
   color: var(--color-text-primary);
-  margin: 0 0 var(--space-4);
+  margin: 0 0 var(--space-2);
+}
+
+.account-details__list {
+  margin: 0;
+}
+
+.account-details__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.account-details__row:last-child {
+  border-bottom: none;
+}
+
+.account-details__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: var(--leading-caption);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+/* Small tinted icon chip in front of each label — scannable and friendly. */
+.account-details__label-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface-inset);
+  color: var(--color-text-secondary);
+}
+
+/* Truncates instead of breaking mid-word when the value is long. */
+.account-details__value-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-details__value {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: var(--leading-ui);
+  color: var(--color-text-primary);
+  text-align: right;
+  overflow: hidden;
 }
 
 .account-form {
@@ -70,16 +169,46 @@
 
 .account-profile {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--space-4);
-  text-align: center;
+  gap: var(--space-5);
+  text-align: left;
+}
+
+/* Avatar with a small "edit" affordance docked to its bottom-right —
+   the friendly, direct-manipulation way in. */
+.account-profile__avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.account-profile__avatar-edit {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+}
+
+.account-profile__avatar-edit.button--s {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-1);
+}
+
+@media (hover: hover) {
+  .account-profile__avatar-edit.button--s:hover:not(:disabled) {
+    background-color: var(--color-surface-inset);
+    border-color: var(--color-border-strong);
+  }
 }
 
 .account-profile__identity {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: var(--space-1);
+  flex: 1;
+  min-width: 0;
 }
 
 .account-profile__name {
@@ -89,30 +218,31 @@
   line-height: var(--leading-heading);
   letter-spacing: var(--tracking-subtitle);
   color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .account-profile__email {
   font-family: var(--font-body);
   font-size: 14px;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.account-profile__name-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-}
-
+/* Stacked like a small settings menu on the card's right edge. */
 .account-profile__actions {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
+  flex-shrink: 0;
   gap: var(--space-2);
 }
 
-/* sm — phone */
-@media (max-width: 639px) {
+/* Phone + small tablet — cards stack; the profile banner goes vertical. */
+@media (max-width: 767px) {
   .account-page {
     padding: var(--space-6) var(--space-4);
   }
@@ -121,8 +251,16 @@
     font-size: 24px;
   }
 
-  /* Both labels don't fit side by side at phone width, so the buttons
-     stack and span the card instead of hugging their text. */
+  .account-profile {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .account-profile__identity {
+    align-items: center;
+  }
+
   .account-profile__actions {
     flex-direction: column;
     align-self: stretch;

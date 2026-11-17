@@ -50,9 +50,19 @@ a {
   outline-offset: 2px;
 }
 
+/* Brand-tinted text selection — a small signature detail that keeps
+   AA contrast in both themes (subtle bg + primary text; the vivid brand/on-
+   brand pair would be ~3.6:1, below the project's WCAG AA bar). */
+::selection {
+  background-color: var(--color-brand-subtle);
+  color: var(--color-text-primary);
+}
+
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--neutral-1) transparent;
+  /* Border-strength thumb: visible on both light and dark surfaces, unlike
+     the old near-white --neutral-1 which vanished in light mode. */
+  scrollbar-color: var(--color-border-strong) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -65,6 +75,21 @@ a {
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: var(--neutral-1);
+  background-color: var(--color-border-strong);
   border-radius: var(--radius-full);
+}
+
+/* Motion is an enhancement, never a requirement: anyone with reduced motion
+   enabled gets the same UI with transitions and animations effectively off.
+   (The !important here is the one accepted use — it must beat arbitrary
+   component-level animation/transition declarations.) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
