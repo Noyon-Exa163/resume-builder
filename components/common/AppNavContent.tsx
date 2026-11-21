@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Avatar } from "@/components/ui";
 import type { AvatarPreferences } from "@/lib/avatar";
+import { clearPageDataCache } from "@/lib/utils/pageDataCache";
 import { ThemeToggle } from "./ThemeToggle";
 import {
   FileText,
@@ -43,6 +44,9 @@ export function AppNavContent({ isAdmin, user, onNavigate }: AppNavContentProps)
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
+    // The page cache holds this user's data (users list, settings) — drop it
+    // so the next person on this tab never sees it.
+    clearPageDataCache();
     router.push("/login");
   }
 
@@ -73,6 +77,12 @@ export function AppNavContent({ isAdmin, user, onNavigate }: AppNavContentProps)
             <Link
               key={href}
               href={href}
+              // Prefetch the full route (data included) as soon as the
+              // sidebar paints: these are dynamic pages, whose default
+              // prefetch stops at the loading boundary — meaning every menu
+              // click would wait on a fresh server render. With the full
+              // payload cached, switching menus is instant for five minutes.
+              prefetch={true}
               onClick={onNavigate}
               aria-current={isActive ? "page" : undefined}
               className={[

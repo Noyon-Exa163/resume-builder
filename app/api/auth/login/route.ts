@@ -90,16 +90,24 @@ export async function POST(request: Request) {
     );
   }
 
-  const token = createUserSessionToken(user.id, user.session_version);
+  // The token's embedded expiry must match the cookie's maxAge — the
+  // cookie outliving a shorter token would silently log "Stay signed in"
+  // users out on day 8 despite the 30-day cookie.
+  const maxAgeSeconds = remember
+    ? USER_SESSION_REMEMBER_MAX_AGE_SECONDS
+    : USER_SESSION_MAX_AGE_SECONDS;
+  const token = createUserSessionToken(
+    user.id,
+    user.session_version,
+    maxAgeSeconds,
+  );
 
   const response = NextResponse.json({ ok: true });
   response.cookies.set(USER_SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: remember
-      ? USER_SESSION_REMEMBER_MAX_AGE_SECONDS
-      : USER_SESSION_MAX_AGE_SECONDS,
+    maxAge: maxAgeSeconds,
     path: "/",
   });
 

@@ -29,23 +29,39 @@ function sign(payload: string): string {
 export function createUserSessionToken(
   userId: string,
   sessionVersion: number,
+  /**
+   * Token lifetime in seconds. MUST match the cookie's maxAge: the cookie
+   * can outlive a shorter token (silent logout while the cookie lingers), so
+   * "Stay signed in" passes its 30-day window here, not just to the cookie.
+   */
+  maxAgeSeconds: number = USER_SESSION_MAX_AGE_SECONDS,
 ): string {
-  const expiresAt = Date.now() + USER_SESSION_MAX_AGE_SECONDS * 1000;
+  const expiresAt = Date.now() + maxAgeSeconds * 1000;
   const payload = `${userId}.${sessionVersion}.${expiresAt}`;
   return `${payload}.${sign(payload)}`;
 }
 
 let lastToken: string | null = null;
-let lastResult: { userId: string; sessionVersion: number } | null = null;
+let lastResult: {
+  userId: string;
+  sessionVersion: number;
+  expiresAt: number;
+} | null = null;
 
 export function verifyUserSessionToken(
   token: string | undefined,
 ): { userId: string; sessionVersion: number } | null {
   if (!token) return null;
 
-  // Return cached result if the same token was already verified in this request
+  // Return cached result if the same token was already verified on this
+  // server instance (module state outlives a single request). The cached
+  // expiry is re-checked: a token can expire while it's still the one being
+  // verified over and over.
   if (lastToken === token && lastResult !== null) {
-    return lastResult;
+    if (Date.now() < lastResult.expiresAt) {
+      return { userId: lastResult.userId, sessionVersion: lastResult.sessionVersion };
+    }
+    return null;
   }
 
   const [userId, version, expiresAt, signature] = token.split(".");
@@ -57,12 +73,13 @@ export function verifyUserSessionToken(
   const expectedBuf = Buffer.from(expected);
   if (signatureBuf.length !== expectedBuf.length) return null;
   if (!crypto.timingSafeEqual(signatureBuf, expectedBuf)) return null;
-  if (Date.now() >= Number(expiresAt)) return null;
+  const expiry = Number(expiresAt);
+  if (!Number.isFinite(expiry) || Date.now() >= expiry) return null;
 
   const sessionVersion = Number.parseInt(version, 10);
   if (!Number.isFinite(sessionVersion)) return null;
 
   lastToken = token;
-  lastResult = { userId, sessionVersion };
+  lastResult = { userId, sessionVersion, expiresAt: expiry };
   return { userId, sessionVersion };
 }

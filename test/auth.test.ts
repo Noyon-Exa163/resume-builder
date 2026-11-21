@@ -4,6 +4,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import {
   createUserSessionToken,
+  USER_SESSION_MAX_AGE_SECONDS,
+  USER_SESSION_REMEMBER_MAX_AGE_SECONDS,
   verifyUserSessionToken,
 } from "@/lib/auth/userSession";
 import { PROTECTED_ADMIN_EMAIL } from "@/lib/auth/constants";
@@ -43,6 +45,30 @@ describe("createUserSessionToken / verifyUserSessionToken", () => {
       userId: "user_abc123",
       sessionVersion: 2,
     });
+  });
+
+  it("honors the requested token lifetime (Stay signed in)", () => {
+    // The login route passes the cookie's maxAge into the token — before this
+    // was honored, "Stay signed in" baked a 30-day cookie around a 7-day
+    // token and silently logged those users out on day 8 anyway.
+    const daysOf = (token: string) => {
+      const expiresAt = Number(token.split(".")[2]);
+      return (expiresAt - Date.now()) / (24 * 60 * 60 * 1000);
+    };
+    const session = createUserSessionToken("user_abc123", 2);
+    expect(daysOf(session)).toBeGreaterThan(6.9);
+    expect(daysOf(session)).toBeLessThanOrEqual(7);
+
+    const remembered = createUserSessionToken(
+      "user_abc123",
+      2,
+      USER_SESSION_REMEMBER_MAX_AGE_SECONDS,
+    );
+    expect(daysOf(remembered)).toBeGreaterThan(29.9);
+    expect(daysOf(remembered)).toBeLessThanOrEqual(30);
+    expect(USER_SESSION_REMEMBER_MAX_AGE_SECONDS).toBeGreaterThan(
+      USER_SESSION_MAX_AGE_SECONDS,
+    );
   });
 
   it("rejects a token whose signature has been tampered with", () => {

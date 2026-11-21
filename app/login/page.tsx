@@ -4,6 +4,7 @@ import { Suspense, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Input, Button, useToast } from "@/components/ui";
+import { clearPageDataCache } from "@/lib/utils/pageDataCache";
 import { Loader2, LogIn, Users, Palette, MonitorSmartphone, Mail } from "lucide-react";
 import "./page.css";
 
@@ -65,6 +66,10 @@ function LoginForm() {
         setError(data?.error || "Incorrect email or password.");
         return;
       }
+
+      // Fresh start for the new identity — drop any cached page data the
+      // previous user left in this tab.
+      clearPageDataCache();
 
       router.push(nextPath);
       toast({ type: "success", title: "Signed in successfully!" });
