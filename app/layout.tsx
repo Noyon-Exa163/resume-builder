@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { AppProviders } from "@/components/common/AppProviders";
-import { ThemeToggle } from "@/components/common/ThemeToggle";
 import "../styles/globals.css";
 
 const displayFont = localFont({
@@ -67,6 +66,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      /* suppressHydrationWarning: the no-flash script below adds the theme
+         class to <html> before React hydrates, so the server-rendered class
+         attribute never matches the DOM. React would warn on every page in
+         dark mode; this suppresses exactly that element-attribute warning
+         (the standard next-themes pattern). */
+      suppressHydrationWarning
       className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}
     >
       <body>
@@ -78,10 +83,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           }}
         />
         <AppProviders>{children}</AppProviders>
-        {/* Floating theme toggle — pinned to the top-right of every page.
-            Editor/mobile-topbar pages offset it below their own chrome so
-            it never overlaps page actions (see ThemeToggle.css). */}
-        <ThemeToggle className="theme-toggle--floating" />
       </body>
     </html>
   );

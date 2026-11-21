@@ -231,8 +231,8 @@
   margin: 0;
   padding: 0;
   outline: none;
-  border-radius: var(--radius-full);
-  /* Pill-shaped hover: subtle outline by default, brand fill on hover. */
+  border-radius: var(--radius-xs);
+  /* Rectangular hover: subtle outline by default, brand fill on hover. */
   border: 1px solid transparent;
   transition:
     background-color var(--duration-fast) var(--ease-default),
@@ -246,7 +246,6 @@
 
 .pdf-canvas-viewer__hit[data-editable="true"]:hover {
   background: color-mix(in srgb, var(--color-brand) 6%, transparent);
-  border-radius: var(--radius-md);
   /* outline draws OUTSIDE the text — breathing room without covering it */
   outline: 1px solid var(--color-brand);
   outline-offset: var(--space-1);
@@ -254,23 +253,42 @@
   padding: var(--space-1);
 }
 
+/* Hover affordance — a small icon chip at the run's top-right corner. Icons
+   are lucide SVGs inlined as backgrounds so they match the app's icon set
+   and render identically everywhere. pointer-events:none keeps the chip
+   from eating clicks aimed at the text beneath it. */
 .pdf-canvas-viewer__hit[data-editable="true"]:hover::after {
-  content: "✎";
+  content: "";
   position: absolute;
-  top: calc(var(--space-1) * -0.75);
-  right: calc(var(--space-1) * -0.75);
-  transform: none;
-  font-size: 9px;
-  line-height: 1;
-  color: var(--color-text-on-brand);
-  background: var(--color-brand);
-  padding: calc(var(--space-1) / 4);
-  border-radius: var(--radius-md);
-  font-family: var(--font-body);
-  font-weight: 600;
-  letter-spacing: 0;
-  text-rendering: optimizeLegibility;
+  bottom: calc(100% - var(--space-1));
+  right: calc(-1 * var(--space-1));
+  width: 20px;
+  height: 20px;
+  background-color: var(--color-brand);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z'/%3E%3Cpath d='m15 5 4 4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 12px 12px;
+  border-radius: var(--radius-xs);
   box-shadow: var(--shadow-1);
+  pointer-events: none;
+}
+
+/* The alternate phone opens its explain/hide card, not an editor — its
+   chip swaps the pencil for a help icon. */
+.pdf-canvas-viewer__hit[data-role="alternate"][data-editable="true"]:hover::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E");
+}
+
+/* Skill chips print as pills — a rectangular ring crosses their rounded
+   ends. A pill-shaped run (hit box grown to the chip's dimensions in
+   PdfCanvasViewer.tsx) highlights as a pill-shaped tint instead, with no
+   outline to cross the chip's own border. */
+.pdf-canvas-viewer__hit[data-shape="pill"][data-editable="true"]:hover {
+  border-radius: var(--radius-full);
+  padding: 0;
+  outline: none;
+  background: color-mix(in srgb, var(--color-brand) 12%, transparent);
 }
 
 .pdf-canvas-viewer__hit:focus-visible {

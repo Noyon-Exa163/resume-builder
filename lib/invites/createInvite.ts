@@ -12,11 +12,13 @@ export interface CreatedInvite {
   id: string;
   token: string;
   expiresAt: string;
+  isAdmin: boolean;
 }
 
 export async function createInviteToken(
   email: string,
   invitedByUserId: string,
+  isAdmin = false,
 ): Promise<CreatedInvite> {
   await sql`
     DELETE FROM invite_tokens
@@ -28,11 +30,11 @@ export async function createInviteToken(
   const expiresAt = new Date(Date.now() + INVITE_EXPIRY_MS).toISOString();
 
   await sql`
-    INSERT INTO invite_tokens (id, email, invited_by, token, expires_at)
-    VALUES (${id}, ${email}, ${invitedByUserId}, ${token}, ${expiresAt})
+    INSERT INTO invite_tokens (id, email, invited_by, token, expires_at, is_admin)
+    VALUES (${id}, ${email}, ${invitedByUserId}, ${token}, ${expiresAt}, ${isAdmin})
   `;
 
-  return { id, token, expiresAt };
+  return { id, token, expiresAt, isAdmin };
 }
 
 export function inviteUrl(token: string): string {

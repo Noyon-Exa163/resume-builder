@@ -81,10 +81,20 @@
   color: var(--color-brand);
 }
 
+/* Theme toggle row — carries the bottom-of-sidebar push (margin-top:auto)
+   so the toggle and the account menu below it hug the sidebar's foot.
+   The pill centers on the sidebar's x-axis as a freestanding control. */
+.app-nav__theme-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  padding: var(--space-4) var(--space-2) var(--space-2);
+}
+
 .app-nav__user {
   display: flex;
   flex-direction: column;
-  margin-top: auto;
   padding: var(--space-4) var(--space-2) 0;
   border-top: 1px solid var(--color-border);
 }

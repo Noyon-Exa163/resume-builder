@@ -35,10 +35,19 @@ export function createUserSessionToken(
   return `${payload}.${sign(payload)}`;
 }
 
+let lastToken: string | null = null;
+let lastResult: { userId: string; sessionVersion: number } | null = null;
+
 export function verifyUserSessionToken(
   token: string | undefined,
 ): { userId: string; sessionVersion: number } | null {
   if (!token) return null;
+
+  // Return cached result if the same token was already verified in this request
+  if (lastToken === token && lastResult !== null) {
+    return lastResult;
+  }
+
   const [userId, version, expiresAt, signature] = token.split(".");
   if (!userId || !version || !expiresAt || !signature) return null;
 
@@ -52,5 +61,8 @@ export function verifyUserSessionToken(
 
   const sessionVersion = Number.parseInt(version, 10);
   if (!Number.isFinite(sessionVersion)) return null;
+
+  lastToken = token;
+  lastResult = { userId, sessionVersion };
   return { userId, sessionVersion };
 }

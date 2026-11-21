@@ -1,0 +1,373 @@
+.dashboard {
+  /* Shared content-column width — every content page (dashboard, settings)
+     uses the same 1000px canvas. */
+  max-width: 1000px;
+  margin: 0;
+  padding: var(--space-8) var(--space-6) var(--space-6) var(--space-24);
+  min-height: 100%;
+  background-color: var(--color-surface-thumb);
+}
+
+/* Below desktop there is no sidebar — reset the wide left indent. */
+@media (max-width: 1023px) {
+  .dashboard {
+    padding-left: var(--space-6);
+  }
+}
+
+.dashboard__toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.dashboard__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.dashboard__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dashboard__sort {
+  width: 240px;
+  margin-left: auto;
+}
+
+.dashboard__owner-filter {
+  width: 240px;
+}
+
+/* Same footprint as a 20px Avatar: a round tinted container around the icon. */
+.dashboard__owner-all-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-brand-subtle);
+  color: var(--color-brand);
+}
+
+.dashboard__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+  width: 240px;
+  height: 40px;
+  padding: 0 var(--space-3);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--duration-base) var(--ease-default);
+}
+
+.dashboard__search:focus-within {
+  border-color: var(--color-border-focus);
+}
+
+.dashboard__search-icon {
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
+}
+
+.dashboard__search-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.dashboard__search-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.dashboard__title {
+  font-family: var(--font-display);
+  font-weight: var(--font-display-weight);
+  font-size: 28px;
+  line-height: var(--leading-title);
+  letter-spacing: var(--tracking-heading);
+  text-wrap: balance;
+  color: var(--color-text-primary);
+}
+
+.dashboard__header-text {
+  min-width: 0;
+}
+
+.dashboard__subtitle {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: var(--leading-body);
+  color: var(--color-text-secondary);
+  margin: var(--space-1) 0 0;
+}
+
+.dashboard__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 55vh;
+  text-align: center;
+  padding-top: var(--space-4);
+}
+
+.dashboard__empty-actions {
+  margin-top: 0;
+}
+
+/* The title field uses the shared Input component (components/ui/Input);
+   only the dialog's own footer layout lives here. */
+.rename-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.dashboard__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-6);
+  list-style: none;
+}
+
+/* Card — thumbnail-first: an inset preview well, a title row with a kebab
+   menu, and a hairline-separated footer with meta + owner identity. */
+.resume-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  padding: var(--space-3);
+  transition:
+    box-shadow var(--duration-base) var(--ease-default),
+    transform var(--duration-base) var(--ease-default);
+}
+
+@media (hover: hover) {
+  .resume-card:hover {
+    box-shadow: var(--shadow-2);
+    transform: translateY(-2px);
+  }
+}
+
+.resume-card__preview-link {
+  display: block;
+  border-radius: var(--radius-md);
+}
+
+.resume-card__preview-link:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.resume-card__body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-1) var(--space-2);
+}
+
+.resume-card__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  line-height: var(--leading-ui);
+  letter-spacing: var(--tracking-none);
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.resume-card__title:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* The one border the card needs: a hairline separating the identity
+   footer from the title row. */
+.resume-card__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-1) var(--space-1);
+  border-top: 1px solid var(--color-border);
+}
+
+.resume-card__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: var(--leading-caption);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.resume-card__meta svg {
+  flex-shrink: 0;
+}
+
+.resume-card__badge {
+  flex-shrink: 0;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: var(--leading-caption);
+  letter-spacing: var(--tracking-none);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  cursor: default;
+}
+
+.resume-card__badge--editor {
+  background-color: var(--color-brand-subtle);
+  color: var(--color-brand);
+}
+
+.resume-card__badge--viewer {
+  background-color: var(--color-surface-inset);
+  color: var(--color-text-secondary);
+}
+
+.resume-card__badge--admin {
+  background-color: var(--color-info-subtle);
+  color: var(--color-info-text);
+}
+
+/* Owner chip — pushed to the footer's right edge. The UserTooltip wraps it
+   in .tooltip-trigger, so the push lands on that wrapper; the bare chip
+   rule covers the skeleton, which has no tooltip. */
+.resume-card__footer > .tooltip-trigger,
+.resume-card__owner {
+  margin-left: auto;
+  min-width: 0;
+}
+
+.resume-card__footer > .tooltip-trigger {
+  flex-shrink: 0;
+}
+
+.resume-card__owner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.resume-card__owner-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+/* iOS Safari zooms the page when a field under 16px takes focus. */
+@media (pointer: coarse) {
+  .dashboard__search-input {
+    font-size: 16px;
+  }
+
+  .dashboard__search {
+    height: var(--size-touch-target);
+  }
+}
+
+/* sm — phone */
+@media (max-width: 639px) {
+  .dashboard {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .dashboard__toolbar {
+    margin-bottom: var(--space-6);
+  }
+
+  .dashboard__title {
+    font-size: 24px;
+  }
+
+  .dashboard__search {
+    flex: 1 1 100%;
+    width: auto;
+  }
+
+  .dashboard__owner-filter,
+  .dashboard__sort {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  .dashboard__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .resume-card {
+    padding: var(--space-2);
+  }
+
+  .resume-card__body {
+    padding: var(--space-2) var(--space-1) var(--space-1);
+  }
+
+  .resume-card__title {
+    font-size: 14px;
+  }
+
+  .resume-card__footer {
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-1) 0;
+  }
+
+  .resume-card__meta {
+    font-size: 11px;
+  }
+
+  /* A long "Shared • Editor" badge truncates instead of pushing the owner
+     chip out of a narrow card. */
+  .resume-card__badge {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Avatar only — the name doesn't fit a half-column card. */
+  .resume-card__owner-name {
+    display: none;
+  }
+}

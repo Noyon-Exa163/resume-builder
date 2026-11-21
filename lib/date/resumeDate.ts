@@ -51,8 +51,12 @@ const RANGE_SEPARATOR = " – ";
 const ONGOING_LABEL = "Present";
 const MAX_INPUT_DIGITS = 8;
 
-/** YYYY, YYYY-MM, YYYY-MM-DD, and full ISO timestamps. */
-const ISO_PATTERN = /^(\d{4})(?:-(\d{1,2}))?(?:-(\d{1,2}))?(?:[T ].*)?$/;
+/** YYYY, YYYY-MM, YYYY-MM-DD, and full ISO timestamps. The timestamp tail
+ *  must be a real time-of-day — a loose "space then anything" tail also
+ *  swallowed printed date ranges ("2018 - 2022"), which then parsed as
+ *  their first year and broke range-click resolution. */
+const ISO_PATTERN =
+  /^(\d{4})(?:-(\d{1,2}))?(?:-(\d{1,2}))?(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
 /** DD/MM/YYYY and MM/YYYY. Dots and dashes are accepted as separators too. */
 const SLASH_PATTERN = /^(?:(\d{1,2})[/.-])?(\d{1,2})[/.-](\d{4})$/;
 /** "Sep 2020", "September 2020", "07 Sep 2026" — what imports tend to produce. */

@@ -14,7 +14,7 @@
 
 .tooltip-popup {
   box-sizing: border-box;
-  max-width: 240px;
+  max-width: 320px;
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   background: var(--color-text-primary);
@@ -24,7 +24,7 @@
   font-weight: 500;
   line-height: var(--leading-caption);
   letter-spacing: var(--tracking-none);
-  white-space: nowrap;
+  white-space: normal;
   box-shadow: var(--shadow-2);
   transform-origin: var(--transform-origin);
   transition: opacity var(--duration-fast) var(--ease-default);

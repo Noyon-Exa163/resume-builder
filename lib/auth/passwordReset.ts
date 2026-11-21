@@ -91,35 +91,47 @@ export async function validateResetToken(token: string): Promise<ValidateTokenRe
 }
 
 /**
- * Marks the reset token as used (single-use).
+ * Atomically consumes a still-valid reset token and sets the new password —
+ * claim (used_at) + password update + stale-token cleanup run in one
+ * transaction, and the claim only matches unexpired, unconsumed tokens, so a
+ * token can never be applied twice even by concurrent submissions.
+ * Returns false when the token was already used, expired, or unknown.
  */
-export async function markResetTokenUsed(token: string): Promise<void> {
-  await sql`
-    UPDATE password_reset_tokens
-    SET used_at = now()
-    WHERE token = ${token}
-  `;
-}
-
-/** Sets a new password hash for the user and invalidates all their sessions. */
-export async function resetUserPassword(
-  userId: string,
+export async function consumeResetTokenAndSetPassword(
+  token: string,
   newPassword: string,
-): Promise<void> {
+): Promise<boolean> {
   const { hashPassword } = await import("@/lib/auth/password");
   const passwordHash = hashPassword(newPassword);
 
-  await sql`
-    UPDATE users
-    SET password_hash = ${passwordHash},
-        session_version = session_version + 1
-    WHERE id = ${userId}
-  `;
+  return sql.begin(async (tx) => {
+    const claimed = (await tx`
+      UPDATE password_reset_tokens
+      SET used_at = now()
+      WHERE token = ${token}
+        AND used_at IS NULL
+        AND expires_at > now()
+      RETURNING user_id
+    `) as Array<{ user_id: string }>;
 
-  await sql`
-    DELETE FROM password_reset_tokens
-    WHERE user_id = ${userId} AND used_at IS NULL
-  `;
+    const userId = claimed[0]?.user_id;
+    if (!userId) return false;
+
+    await tx`
+      UPDATE users
+      SET password_hash = ${passwordHash},
+          session_version = session_version + 1
+      WHERE id = ${userId}
+    `;
+
+    // Any other outstanding tokens for this user are stale now.
+    await tx`
+      DELETE FROM password_reset_tokens
+      WHERE user_id = ${userId} AND used_at IS NULL
+    `;
+
+    return true;
+  });
 }
 
 function passwordResetEmailHtml({ resetUrl }: { resetUrl: string }): string {

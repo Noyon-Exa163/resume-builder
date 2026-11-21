@@ -8,10 +8,16 @@
   padding: var(--space-8) var(--space-6) var(--space-6) var(--space-24);
 }
 
-/* Below desktop there is no sidebar — reset the wide left indent. */
+/* Below desktop there is no sidebar — reset the wide left indent, and the
+   narrowed left column would get too tight, so stack the Settings card
+   back under the provider cards. */
 @media (max-width: 1023px) {
   .ai-settings-page {
     padding-left: var(--space-6);
+  }
+
+  .ai-settings-page__layout {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -53,11 +59,11 @@
   min-width: 0;
 }
 
-/* Stacked full-width cards, like the account page — the defaults card
-   follows the provider cards instead of floating beside them. */
+/* Provider cards fill a narrower left column so the Settings card fits
+   beside them, pinned to the top of the right column. */
 .ai-settings-page__layout {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: var(--space-4);
   align-items: start;
 }

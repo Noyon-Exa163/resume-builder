@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
 import { avatarFromColumns } from "@/lib/avatar";
@@ -28,7 +29,12 @@ import {
  */
 
 function requireAdmin(user: Awaited<ReturnType<typeof getCurrentUser>>) {
-  if (!user || user.role !== "admin") {
+  // 401 for no session at all, 403 for a signed-in non-admin — keeps client
+  // handling and auth monitoring consistent with the rest of the API.
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+  if (user.role !== "admin") {
     return NextResponse.json(
       { error: "Admin access required." },
       { status: 403 },
@@ -37,28 +43,42 @@ function requireAdmin(user: Awaited<ReturnType<typeof getCurrentUser>>) {
   return null;
 }
 
-export async function GET() {
-  const user = await getCurrentUser();
-  const denied = requireAdmin(user);
-  if (denied) return denied;
+// Cached: the admin users list (photos included) is read on every /users
+// visit and changes only through this file's POST and [id]'s DELETE — both
+// revalidate the "users" tag. Auth runs per request outside the cached fn.
+const getAdminUsers = unstable_cache(
+  async () => {
+    const rows = await sql`
+      SELECT id, email, name, is_admin, created_at, avatar_hue, avatar_expression, photo_data_url
+      FROM users ORDER BY created_at ASC
+    `;
 
-  const rows = await sql`
-    SELECT id, email, name, is_admin, created_at, avatar_hue, avatar_expression
-    FROM users ORDER BY created_at ASC
-  `;
-
-  return NextResponse.json(
-    (rows as Array<{ id: string; email: string; name: string | null; is_admin: boolean; created_at: string; avatar_hue: number | null; avatar_expression: string | null }>).map(
+    return (
+      rows as Array<{ id: string; email: string; name: string | null; is_admin: boolean; created_at: string; avatar_hue: number | null; avatar_expression: string | null; photo_data_url: string | null }>).map(
       (r) => ({
         id: r.id,
         email: r.email,
         name: r.name,
         isAdmin: r.is_admin,
         createdAt: r.created_at,
-        avatar: avatarFromColumns(r.avatar_hue, r.avatar_expression),
+        avatar: avatarFromColumns(
+          r.avatar_hue,
+          r.avatar_expression,
+          r.photo_data_url,
+        ),
       }),
-    ),
-  );
+    );
+  },
+  ["admin-users"],
+  { revalidate: 60, tags: ["users"] },
+);
+
+export async function GET() {
+  const user = await getCurrentUser();
+  const denied = requireAdmin(user);
+  if (denied) return denied;
+
+  return NextResponse.json(await getAdminUsers());
 }
 
 export async function POST(request: Request) {
@@ -138,10 +158,25 @@ export async function POST(request: Request) {
     const id = createId();
     const passwordHash = hashPassword(password);
 
-    await sql`
-      INSERT INTO users (id, name, email, password_hash, is_admin)
-      VALUES (${id}, ${name.trim()}, ${normalizedEmail}, ${passwordHash}, ${isAdmin})
-    `;
+    try {
+      await sql`
+        INSERT INTO users (id, name, email, password_hash, is_admin)
+        VALUES (${id}, ${name.trim()}, ${normalizedEmail}, ${passwordHash}, ${isAdmin})
+      `;
+    } catch (error) {
+      // Lost a race with a concurrent signup for the same email.
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        (error as { code?: string }).code === "23505"
+      ) {
+        return NextResponse.json(
+          { error: "A user with that email already exists." },
+          { status: 409 },
+        );
+      }
+      throw error;
+    }
 
     const delivery = await sendEmail({
       to: normalizedEmail,
@@ -155,6 +190,8 @@ export async function POST(request: Request) {
         loginUrl: `${baseUrl}/login`,
       }),
     });
+
+    revalidateTag("users", { expire: 0 });
 
     return NextResponse.json(
       {

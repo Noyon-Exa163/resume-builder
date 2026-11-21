@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CircleCheck, History, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui";
-import { formatDateTime } from "@/lib/utils/formatDateTime";
+import { formatDateTime } from "@/lib/date/formatDateTime";
 import "./SaveStatusButton.css";
 
 /** How long the success check stays before returning to the history icon. */

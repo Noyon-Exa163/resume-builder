@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { recordResumeActivity } from "@/lib/db/resumeActivity";
 import { canManageAllResumes, resolveResumeAccess } from "@/lib/auth/permissions";
 import { ResumeDataSchema } from "@/lib/schema/resume";
+import { revalidateResumeCaches } from "@/lib/db/resumeQueries";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -164,6 +165,14 @@ export async function PUT(request: Request, { params }: RouteParams) {
       action: "edited",
       snapshot: resume,
     });
+    revalidateResumeCaches();
+  }
+
+  // updated.length === 0 means the permission guard filtered the update out
+  // (share revoked between the check above and this write) — report it
+  // instead of acknowledging a save that never happened.
+  if (updated.length === 0) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   return NextResponse.json(resume);
@@ -195,5 +204,6 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  revalidateResumeCaches();
   return NextResponse.json({ success: true, id });
 }

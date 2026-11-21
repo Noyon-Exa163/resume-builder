@@ -27,6 +27,7 @@ export default function InviteOnboardingPage() {
   const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false);
   /** The invited email, from token validation — seeds avatar previews. */
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteIsAdmin, setInviteIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validated, setValidated] = useState<boolean | null>(null);
@@ -49,6 +50,7 @@ export default function InviteOnboardingPage() {
         if (data.valid) {
           setValidated(true);
           setInviteEmail(data.email ?? "");
+          setInviteIsAdmin(data.isAdmin ?? false);
           setError(null);
         } else {
           setValidated(false);
@@ -108,6 +110,7 @@ export default function InviteOnboardingPage() {
                 password,
                 avatarHue: avatar.hue,
                 avatarExpression: avatar.expression,
+                isAdmin: inviteIsAdmin,
               }),
             })
               .then(async (res) => {
@@ -183,6 +186,14 @@ export default function InviteOnboardingPage() {
               minLength={8}
             />
           </div>
+          {inviteIsAdmin && (
+            <div className="onboarding-field">
+              <span className="onboarding-admin-badge">Admin access</span>
+              <p className="onboarding-admin-note">
+                This invite grants administrator privileges.
+              </p>
+            </div>
+          )}
           <Button
             type="submit"
             variant="primary"

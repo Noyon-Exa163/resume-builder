@@ -8,9 +8,12 @@ import {
   Button,
   EmptyState,
   Skeleton,
+  TabsField,
   useToast,
 } from "@/components/ui";
-import { formatDateTime } from "@/lib/utils/formatDateTime";
+import { formatDateTime } from "@/lib/date/formatDateTime";
+import { usePagedList } from "@/lib/utils/usePagedList";
+import { LoadMoreFooter } from "@/components/common/LoadMoreFooter";
 import "./PendingInvitesList.css";
 
 export interface InviteRecord {
@@ -57,6 +60,7 @@ export function PendingInvitesList({
   const [error, setError] = useState("");
   const [busyEmail, setBusyEmail] = useState<string | null>(null);
   const [localRefresh, setLocalRefresh] = useState(0);
+  const [inviteFilter, setInviteFilter] = useState("all");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -136,23 +140,36 @@ export function PendingInvitesList({
     (invite) => invite.status !== "accepted",
   );
 
+  // Active selector bucket (All | Outstanding), independent of anything else
+  // — lets the empty states distinguish "nothing outstanding" from "no
+  // invites at all".
+  const bucket = inviteFilter === "outstanding" ? outstanding : invites;
+  // "Load More" paging over the active bucket.
+  const { visible: visibleInvites, visibleCount, loadMore } = usePagedList(
+    bucket,
+    8,
+  );
+
   return (
     <section className="pending-invites">
-      <div className="pending-invites__header">
-        <div className="pending-invites__headline">
-          <h2 className="pending-invites__title">Email Invites</h2>
-          <p className="pending-invites__subtitle">
-            Outstanding and past invitations sent to teammates.
-          </p>
-        </div>
+      <div className="pending-invites__toolbar">
+        <TabsField
+          className="tabs--filter"
+          value={inviteFilter}
+          onValueChange={setInviteFilter}
+          tabs={[
+            { value: "all", label: "All", content: null },
+            { value: "outstanding", label: "Outstanding", content: null },
+          ]}
+        />
         {isLoading ? (
           <Skeleton width={64} height={13} />
         ) : (
-          <span className="pending-invites__count">
-            {outstanding.length === 0
-              ? "No outstanding invites"
-              : `${outstanding.length} outstanding`}
-          </span>
+          <p className="pending-invites__live-count" aria-live="polite">
+            {inviteFilter === "outstanding"
+              ? `${bucket.length} outstanding`
+              : `${bucket.length} invite${bucket.length !== 1 ? "s" : ""}`}
+          </p>
         )}
       </div>
 
@@ -171,14 +188,22 @@ export function PendingInvitesList({
               </div>
             </div>
           ))
-        ) : invites.length === 0 ? (
-          <EmptyState
-            icon={MailQuestion}
-            title="No invites sent yet."
-            description='Use "Invite by Email" to add teammates without creating passwords by hand.'
-          />
+        ) : bucket.length === 0 ? (
+          inviteFilter === "outstanding" ? (
+            <EmptyState
+              icon={MailQuestion}
+              title="No outstanding invites."
+              description="Every invitation has been accepted."
+            />
+          ) : (
+            <EmptyState
+              icon={MailQuestion}
+              title="No invites sent yet."
+              description='Use "Invite by Email" to add teammates without creating passwords by hand.'
+            />
+          )
         ) : (
-          invites.map((invite) => {
+          visibleInvites.map((invite) => {
             const isBusy = busyEmail === invite.email;
             return (
               <div
@@ -259,6 +284,14 @@ export function PendingInvitesList({
             );
           })
         )}
+
+        <LoadMoreFooter
+          visible={visibleCount}
+          total={bucket.length}
+          pageSize={8}
+          itemLabel="invites"
+          onLoadMore={loadMore}
+        />
       </div>
     </section>
   );

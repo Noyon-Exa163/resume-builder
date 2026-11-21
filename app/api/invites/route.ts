@@ -6,7 +6,12 @@ import { inviteEmailHtml, inviteEmailText } from "@/lib/email/invite";
 import { createInviteToken, inviteUrl } from "@/lib/invites/createInvite";
 
 function requireAdmin(user: Awaited<ReturnType<typeof getCurrentUser>>) {
-  if (!user || user.role !== "admin") {
+  // 401 for no session at all, 403 for a signed-in non-admin — keeps client
+  // handling and auth monitoring consistent with the rest of the API.
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+  if (user.role !== "admin") {
     return NextResponse.json(
       { error: "Admin access required." },
       { status: 403 },
@@ -35,7 +40,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const { email } = body as { email?: unknown };
+  const { email, isAdmin } = body as {
+    email?: unknown;
+    isAdmin?: unknown;
+  };
 
   if (typeof email !== "string" || email.trim().length === 0) {
     return NextResponse.json(
@@ -53,6 +61,9 @@ export async function POST(request: Request) {
     );
   }
 
+  // Only existing admins can invite someone as admin.
+  const requestedIsAdmin = typeof isAdmin === "boolean" ? isAdmin : false;
+
   // Reject if the user already exists
   const existingUser = await sql`
     SELECT id FROM users WHERE email = ${normalizedEmail}
@@ -66,7 +77,7 @@ export async function POST(request: Request) {
 
   // Revoke any existing unexpired invite for this email, then create the
   // fresh token (shared with the admin-create flow).
-  const invite = await createInviteToken(normalizedEmail, user.id);
+  const invite = await createInviteToken(normalizedEmail, user.id, requestedIsAdmin);
 
   // Send the invite email
   const link = inviteUrl(invite.token);
@@ -87,6 +98,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     id: invite.id,
     email: normalizedEmail,
+    isAdmin: invite.isAdmin,
     expiresAt: invite.expiresAt,
     inviteUrl: link,
     delivered: delivery.sent,

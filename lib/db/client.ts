@@ -41,15 +41,20 @@ const globalForSql = globalThis as unknown as {
 if (!globalForSql.__resume_builder_sql) {
   globalForSql.__resume_builder_sql = postgres(getDatabaseUrl(), {
     // Serverless-safe pool settings (Netlify + Neon):
-    // - small, short-lived pools — each function instance gets its own
-    //   pool, and instances scale with traffic;
+    // - small, short-lived pools — each function instance gets its own pool,
+    //   and instances scale with traffic, so `max` is the PER-INSTANCE cap:
+    //   a handful of concurrent instances must not exhaust Neon's pooled
+    //   endpoint (its own connection ceiling is the real limit);
+    // - short idle timeouts so cold instances release their connections
+    //   quickly instead of pinning them between rare invocations;
     // - prepare: false — Neon's pooled endpoint runs PgBouncer in
     //   transaction mode, which cannot serve named prepared statements;
     //   disabling them avoids intermittent "prepared statement does not
     //   exist" failures in production. The local dev cost is negligible.
     max: 5,
     idle_timeout: 20,
-    max_lifetime: 60 * 30,
+    max_lifetime: 60 * 10,
+    connect_timeout: 10,
     prepare: false,
   });
 }

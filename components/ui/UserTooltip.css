@@ -22,18 +22,25 @@
 .user-tooltip__identity {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .user-tooltip__name {
   font-size: 13px;
   font-weight: 600;
   color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-tooltip__email {
   font-size: 12px;
   font-weight: 400;
   color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-tooltip__caption {

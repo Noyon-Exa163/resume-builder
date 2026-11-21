@@ -7,6 +7,7 @@ import type {
   ResumeAccessEntry,
   ResumeAccessLevel,
 } from "@/lib/storage/api/resumeAccess";
+import { revalidateTag, unstable_cache } from "next/cache";
 
 interface ResumeAccessRow {
   id: string;
@@ -24,19 +25,22 @@ interface ResumeAccessRow {
  * db/migrations/0003_resume_shares.sql), newest-updated first. The protected
  * Super Admin also receives every resume in the system with access "admin".
  *
- * Section bodies are zeroed out in the query itself: dashboard cards only
- * render the header/summary crop (components/dashboard/ResumeCardPreview.tsx
- * and lib/export/resumeThumbnail.ts already drop sections client-side for
- * the same reason), so there's no reason to ship or JSON-parse that part of
- * the document for a list view — the editor's single-resume route
- * (app/api/resumes/[id]/route.ts) still returns sections in full.
+ * Two slimming passes keep the payload small:
+ * - Section bodies are zeroed out in the query itself: dashboard cards only
+ *   render the header/summary crop (components/dashboard/ResumeCardPreview.tsx
+ *   and lib/export/resumeThumbnail.ts already drop sections client-side for
+ *   the same reason), so there's no reason to ship or JSON-parse that part of
+ *   the document for a list view — the editor's single-resume route
+ *   (app/api/resumes/[id]/route.ts) still returns sections in full.
+ * - Owner avatar photos are fetched once per distinct owner in a second
+ *   query instead of repeating the same base64 blob on every row they own.
  *
  * Shared by the dashboard's server render (app/page.tsx) and
  * GET /api/resumes so the query and the slimming live in exactly one place.
  */
-export async function listResumesForUser(
+const listResumesForUserUncached = async (
   user: CurrentUser,
-): Promise<ResumeAccessEntry[]> {
+): Promise<ResumeAccessEntry[]> => {
   const manageAll = canManageAllResumes(user.email);
 
   const rows = (await sql`
@@ -57,6 +61,19 @@ export async function listResumesForUser(
       OR rs.shared_with_user_id = ${user.id}
     ORDER BY r.updated_at DESC
   `) as ResumeAccessRow[];
+
+  const ownerIds = [
+    ...new Set(rows.map((row) => row.owner_id)),
+  ];
+  const ownerPhotos =
+    ownerIds.length > 0
+      ? (await sql`
+          SELECT id, photo_data_url FROM users WHERE id = ANY(${ownerIds})
+        `) as Array<{ id: string; photo_data_url: string | null }>
+      : [];
+  const photoByOwnerId = new Map(
+    ownerPhotos.map((p) => [p.id, p.photo_data_url]),
+  );
 
   const entries: ResumeAccessEntry[] = [];
   for (const row of rows) {
@@ -80,17 +97,41 @@ export async function listResumesForUser(
       ownerAvatar: avatarFromColumns(
         row.owner_avatar_hue,
         row.owner_avatar_expression,
+        photoByOwnerId.get(row.owner_id) ?? null,
       ),
     });
   }
 
   return entries;
+};
+
+export const listResumesForUser = unstable_cache(
+  listResumesForUserUncached,
+  ["resumes"],
+  { revalidate: 60, tags: ["resumes"] },
+);
+
+/**
+ * Mutation routes call this after any write to resumes or resume_shares.
+ * Without it the 60s list cache would serve a dashboard missing freshly
+ * created resumes (or still listing unshared/deleted ones) until the
+ * revalidate window elapsed. `{ expire: 0 }` (not the stale-while-revalidate
+ * "max" profile) because the very next render must see the write — e.g.
+ * creating a resume and landing back on the dashboard has to list it.
+ */
+export function revalidateResumeCaches(): void {
+  revalidateTag("resumes", { expire: 0 });
 }
 
 /**
  * `user`'s access to one resume (owner, shared user or Super Admin), or null
  * when the resume doesn't exist or they have no relationship to it — callers
  * answer both with the same 404 so existence isn't leaked.
+ *
+ * Deliberately NOT cached: this is an authorization decision. A cached level
+ * lets a revoked viewer/editor keep access until the revalidate window
+ * closes (and tag invalidation doesn't reach every server instance), so
+ * every read runs the cheap single-row query fresh.
  */
 export async function getResumeAccessLevel(
   user: CurrentUser,

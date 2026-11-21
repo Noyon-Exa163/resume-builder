@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import AppShell from "@/components/common/AppShell";
 import AiSettingsPageClient from "./AiSettingsPageClient";
 
 /**
@@ -14,9 +13,5 @@ export default async function AiSettingsPage() {
     redirect("/");
   }
 
-  return (
-    <AppShell>
-      <AiSettingsPageClient />
-    </AppShell>
-  );
+  return <AiSettingsPageClient />;
 }

@@ -27,7 +27,14 @@ export interface EditableField {
  * the canvas (personal info, summary, section titles, entry fields, bullets,
  * tags) — everything a template prints as text.
  */
+let lastFieldData: ResumeData | null = null;
+let lastFieldResult: EditableField[] | null = null;
+
 function collectEditableFields(data: ResumeData): EditableField[] {
+  if (lastFieldData === data && lastFieldResult !== null) {
+    return lastFieldResult;
+  }
+
   const fields: EditableField[] = [];
 
   const pi = data.personalInfo;
@@ -116,6 +123,8 @@ function collectEditableFields(data: ResumeData): EditableField[] {
     });
   });
 
+  lastFieldData = data;
+  lastFieldResult = fields;
   return fields;
 }
 
@@ -173,6 +182,20 @@ function contains(clicked: string, value: string): boolean {
   return digitsOnly(value).includes(clickedDigits);
 }
 
+/** Separators that join a printed date range ("Aug 2024 – Aug 2025",
+ *  "2024 to 2025"). Spaces on both sides, so a stored-style "2024-08"
+ *  survives the split intact. */
+const DATE_RANGE_SPLIT = /\s+[–—-]\s+|\s+to\s+/i;
+
+/** Splits a printed date range into its segments ("Aug 2025 - Present" →
+ *  ["Aug 2025", "Present"]). */
+function splitDateRange(text: string): string[] {
+  return text
+    .split(DATE_RANGE_SPLIT)
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
+
 /**
  * Searches ResumeData for a field matching the clicked text. Templates may
  * transform values before printing (e.g. an uppercase name), so all
@@ -202,6 +225,22 @@ export function findFieldByText(
         squash(f.currentValue) === squashedClick,
     );
     if (title) return title;
+  }
+
+  // A printed date range ("Aug 2025 - Present") must resolve through the
+  // date logic — its segments plus the click position pick start vs end
+  // date. The reverse-contains fallback below would otherwise claim the
+  // whole range for whichever date value it contains (a "Present" end
+  // date), making every click on the range open the end date.
+  const rangeSegments = splitDateRange(clickedText);
+  if (
+    rangeSegments.length >= 2 &&
+    (parseResumeDate(rangeSegments[0]) ||
+      parseResumeDate(rangeSegments[rangeSegments.length - 1]) ||
+      /^present$/i.test(rangeSegments[rangeSegments.length - 1]))
+  ) {
+    const byDate = findFieldByDate(data, clickedText, fields, xHint);
+    if (byDate) return byDate;
   }
 
   // Reverse-contains fallback: a clicked line can contain several fields
@@ -318,16 +357,15 @@ function findFieldByDate(
     );
   };
 
-  // A lone printed date.
-  const wholeMatches = matchesFor(clickedText);
+  // A lone printed date. A range-shaped click is never one — "2018 - 2022"
+  // would otherwise parse as its first year and resolve to the start date
+  // before the range logic below can pick a half by click position.
+  const wholeMatches =
+    splitDateRange(clickedText).length >= 2 ? [] : matchesFor(clickedText);
   if (wholeMatches.length > 0) return wholeMatches[0];
 
-  // A printed range "Aug 2024 – Aug 2025". Split on separators that carry
-  // spaces on both sides, so a stored-style "2024-08" survives intact.
-  const segments = clickedText
-    .split(/\s+[–—-]\s+|\s+to\s+/i)
-    .map((segment) => segment.trim())
-    .filter(Boolean);
+  // A printed range "Aug 2024 – Aug 2025".
+  const segments = splitDateRange(clickedText);
   if (segments.length >= 2) {
     // Find all date fields matching either segment by parsed value.
     const startMatches = matchesFor(segments[0]);
@@ -349,11 +387,28 @@ function findFieldByDate(
 
       // If a segment doesn't parse as a date (e.g. "Present"), still offer
       // the corresponding date field so clicking on it edits that field.
+      // The other segment scopes WHICH entry: a start match identifies the
+      // entry, so its own end date wins; a "Present"-valued end date (an
+      // isCurrent entry) is preferred over the first end date on the
+      // resume; the first end date is the final fallback.
       const startField =
         preferStartMatches[0] ??
         dateFields.find((f) => f.field.endsWith(".startDate"));
+      const startEntryPrefixes = new Set(
+        startMatches.map((f) => f.field.replace(/\.startDate$/, ".")),
+      );
       const endField =
         preferEndMatches[0] ??
+        dateFields.find(
+          (f) =>
+            f.field.endsWith(".endDate") &&
+            startEntryPrefixes.has(f.field.replace(/\.endDate$/, ".")),
+        ) ??
+        dateFields.find(
+          (f) =>
+            f.field.endsWith(".endDate") &&
+            /^present$/i.test(f.currentValue.trim()),
+        ) ??
         dateFields.find((f) => f.field.endsWith(".endDate"));
 
       if (preferEnd && endField) {

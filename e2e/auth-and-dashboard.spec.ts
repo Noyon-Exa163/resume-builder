@@ -50,7 +50,7 @@ test.describe("auth and dashboard smoke", () => {
   test("unauthenticated / redirects to login", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/login/);
-    await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
   });
 
   test("login, create resume, preview, list, logout", async ({ page }) => {
@@ -71,16 +71,10 @@ test.describe("auth and dashboard smoke", () => {
     ).toBeVisible();
     await expect(page.getByRole("link", { name: "Account" })).toBeVisible();
     // The account section mounts in two passes (shell, then user data once
-    // the profile fetch resolves) — interacting before it settles races the
-    // menu open against a sidebar re-render that closes it again.
+    // the profile fetch resolves) — wait for the identity before relying
+    // on anything inside the sidebar's account block.
     const sidebar = page.getByRole("complementary");
     await expect(sidebar.getByText(email)).toBeVisible();
-    // Log Out lives inside the account menu dropdown — open it first,
-    // assert, then close it again so later menu clicks aren't toggles.
-    // The menu renders in a Base UI portal (outside the sidebar node).
-    await sidebar.getByRole("button", { name: "Account menu" }).click();
-    await expect(page.getByRole("menuitem", { name: "Log Out" })).toBeVisible();
-    await page.keyboard.press("Escape");
 
     await page.getByRole("button", { name: "New Resume" }).click();
     const newResumeDialog = page.getByRole("dialog", {
@@ -124,15 +118,16 @@ test.describe("auth and dashboard smoke", () => {
     await page.getByRole("button", { name: "Back to Resumes" }).click();
     await page.waitForURL((url) => url.pathname === "/");
     await expect(
-      page.locator(`a.resume-card__link[href="/editor/${resumeId}"]`),
+      page.locator(`a.resume-card__preview-link[href="/editor/${resumeId}"]`),
     ).toBeVisible();
 
     // Back on a freshly mounted dashboard — wait for the identity to settle
-    // again before opening the account menu to log out.
+    // again, then log out via the sidebar's Log Out button.
     await expect(sidebar.getByText(email)).toBeVisible();
-    await sidebar.getByRole("button", { name: "Account menu" }).click();
-    await page.getByRole("menuitem", { name: "Log Out" }).click();
+    await sidebar.getByRole("button", { name: "Log Out" }).click();
     await page.waitForURL(/\/login/);
-    await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Welcome back" }),
+    ).toBeVisible();
   });
 });

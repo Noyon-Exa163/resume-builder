@@ -5,44 +5,22 @@
   margin-top: var(--space-6);
 }
 
-.pending-invites__header {
+/* Selector row — All | Outstanding plus a live bucket count, mirroring the
+   users list's toolbar. */
+.pending-invites__toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-4);
-  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-4);
 }
 
-.pending-invites__headline {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
-}
-
-.pending-invites__title {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 700;
-  line-height: var(--leading-heading);
-  letter-spacing: var(--tracking-subtitle);
-  color: var(--color-text-primary);
-  margin: 0;
-}
-
-.pending-invites__subtitle {
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--color-text-tertiary);
-  margin: 0;
-}
-
-.pending-invites__count {
+.pending-invites__live-count {
   font-family: var(--font-body);
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-text-secondary);
-  white-space: nowrap;
+  line-height: var(--leading-ui);
+  color: var(--color-text-tertiary);
+  margin: 0;
 }
 
 .pending-invites__error {

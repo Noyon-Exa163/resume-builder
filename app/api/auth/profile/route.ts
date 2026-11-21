@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
-import { isAvatarExpressionKey, isAvatarHue } from "@/lib/avatar";
+import {
+  isAvatarExpressionKey,
+  isAvatarHue,
+  isAvatarPhotoDataUrl,
+} from "@/lib/avatar";
 
 /**
  * PATCH /api/auth/profile — update the logged-in user's profile. Accepts
- * `name` and/or `avatar: { hue, expression }` (each null to reset to the
- * email-derived default); omitted fields are left untouched.
+ * `name` and/or `avatar: { hue, expression, photoDataUrl }` (each null to
+ * reset; photoDataUrl null clears an uploaded photo so the generated avatar
+ * shows again); omitted fields are left untouched.
  */
 export async function PATCH(request: Request) {
   const user = await getCurrentUser();
@@ -36,7 +42,11 @@ export async function PATCH(request: Request) {
 
   const { name, avatar } = body as {
     name?: unknown;
-    avatar?: { hue?: unknown; expression?: unknown } | null;
+    avatar?: {
+      hue?: unknown;
+      expression?: unknown;
+      photoDataUrl?: unknown;
+    } | null;
   };
 
   // Validate everything before writing so a bad field can't leave a
@@ -65,16 +75,41 @@ export async function PATCH(request: Request) {
     );
   }
 
+  // Uploaded photo: null clears it (generated avatar shows again), a valid
+  // data-URL string sets it, undefined leaves the stored photo untouched.
+  if (
+    avatar != null &&
+    avatar.photoDataUrl !== undefined &&
+    avatar.photoDataUrl !== null &&
+    !isAvatarPhotoDataUrl(avatar.photoDataUrl)
+  ) {
+    return NextResponse.json(
+      { error: "Choose a JPG, PNG, or WebP image under 150 KB." },
+      { status: 400 },
+    );
+  }
+
   if (trimmedName !== undefined) {
     await sql`UPDATE users SET name = ${trimmedName} WHERE id = ${user.id}`;
   }
-  if (avatar !== undefined) {
-    await sql`
-      UPDATE users
-      SET avatar_hue = ${hue}, avatar_expression = ${expression}
-      WHERE id = ${user.id}
-    `;
+  if (avatar != null) {
+    if (avatar.photoDataUrl === undefined) {
+      await sql`
+        UPDATE users
+        SET avatar_hue = ${hue}, avatar_expression = ${expression}
+        WHERE id = ${user.id}
+      `;
+    } else {
+      await sql`
+        UPDATE users
+        SET avatar_hue = ${hue}, avatar_expression = ${expression},
+          photo_data_url = ${avatar.photoDataUrl}
+        WHERE id = ${user.id}
+      `;
+    }
   }
 
+  // Name/avatar changes surface in the cached admin users list.
+  revalidateTag("users", { expire: 0 });
   return NextResponse.json({ ok: true });
 }

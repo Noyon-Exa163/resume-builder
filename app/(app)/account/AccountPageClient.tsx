@@ -3,19 +3,26 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Avatar, Badge, Input, Button, ActionDialog, useToast } from "@/components/ui";
+import { StatCard } from "@/components/common/StatCard";
 import {
   Calendar,
+  FileText,
   KeyRound,
-  Mail,
   Pencil,
-  Shield,
   Smile,
-  User,
+  Users,
 } from "lucide-react";
 import AvatarPickerDialog from "@/components/settings/AvatarPickerDialog";
 import type { AvatarPreferences } from "@/lib/avatar";
 import { formatDisplayDate } from "@/lib/date";
 import "./page.css";
+
+export interface AccountStats {
+  /** Resumes this account created. */
+  owned: number;
+  /** Resumes shared into this account by someone else. */
+  shared: number;
+}
 
 interface AccountPageClientProps {
   name: string;
@@ -24,6 +31,8 @@ interface AccountPageClientProps {
   /** ISO timestamp the account was created — shown as "Member Since". */
   memberSince: string;
   avatar: AvatarPreferences;
+  /** Server-derived counts; null (fetch failed) hides the stat strip. */
+  stats: AccountStats | null;
 }
 
 export default function AccountPageClient({
@@ -32,8 +41,15 @@ export default function AccountPageClient({
   role,
   memberSince,
   avatar,
+  stats,
 }: AccountPageClientProps) {
   const router = useRouter();
+
+  const memberSinceLabel = formatDisplayDate(memberSince);
+  // Tile value uses the compact month-year ("Nov 2026") so it fits the
+  // narrow stat strip; the full date stays in Account Details. The day-prefix
+  // strip is a no-op for formatDisplayDate shapes without a day.
+  const memberSinceTileValue = memberSinceLabel.replace(/^\d{1,2}\s+/, "");
 
   const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState(name);
@@ -180,14 +196,15 @@ export default function AccountPageClient({
         </p>
       </header>
 
-      <div className="account-page__grid">
+      <div className="account-page__layout">
         <section className="account-card account-profile" aria-label="Profile">
           <div className="account-profile__avatar-wrap">
             <Avatar
               name={email}
-              size={88}
+              size={96}
               hue={avatar.hue}
               expression={avatar.expression}
+              photoDataUrl={avatar.photoDataUrl}
               followPointer
               bare
             />
@@ -229,66 +246,65 @@ export default function AccountPageClient({
           </div>
         </section>
 
-        <section className="account-card account-details" aria-label="Account Details">
-          <h2 className="account-details__title">Account Details</h2>
-          <dl className="account-details__list">
-            <div className="account-details__row">
-              <dt className="account-details__label">
-                <span className="account-details__label-icon">
-                  <User size={14} aria-hidden="true" />
-                </span>
-                Name
-              </dt>
-              <dd className="account-details__value">
-                <span className="account-details__value-text">{name}</span>
-                <Button
-                  variant="tertiary"
-                  size="s"
-                  iconOnly
-                  aria-label="Edit Name"
-                  onClick={() => handleNameDialogChange(true)}
-                >
-                  <Pencil size={14} />
-                </Button>
-              </dd>
+        <div className="account-page__main">
+          {stats && (
+            <div className="stat-grid">
+              <StatCard icon={FileText} label="Resumes Owned" value={stats.owned} />
+              <StatCard icon={Users} label="Shared With You" value={stats.shared} />
+              <StatCard
+                icon={Calendar}
+                label="Member Since"
+                value={memberSinceTileValue}
+              />
             </div>
-            <div className="account-details__row">
-              <dt className="account-details__label">
-                <span className="account-details__label-icon">
-                  <Mail size={14} aria-hidden="true" />
-                </span>
-                Email
-              </dt>
-              <dd className="account-details__value">
-                <span className="account-details__value-text">{email}</span>
-              </dd>
-            </div>
-            <div className="account-details__row">
-              <dt className="account-details__label">
-                <span className="account-details__label-icon">
-                  <Shield size={14} aria-hidden="true" />
-                </span>
-                Role
-              </dt>
-              <dd className="account-details__value">
-                <Badge variant={role === "admin" ? "default" : "secondary"}>
-                  {role === "admin" ? "Admin" : "Member"}
-                </Badge>
-              </dd>
-            </div>
-            <div className="account-details__row">
-              <dt className="account-details__label">
-                <span className="account-details__label-icon">
-                  <Calendar size={14} aria-hidden="true" />
-                </span>
-                Member Since
-              </dt>
-              <dd className="account-details__value">
-                {formatDisplayDate(memberSince)}
-              </dd>
-            </div>
-          </dl>
-        </section>
+          )}
+
+          <section
+            className="account-card account-details"
+            aria-label="Account Details"
+          >
+            <h2 className="account-details__title">Account Details</h2>
+            <dl className="account-details__list">
+              <div className="account-details__row">
+                <dt className="account-details__label">Name</dt>
+                <dd className="account-details__value">
+                  <span className="account-details__value-text">{name}</span>
+                  <Button
+                    variant="tertiary"
+                    size="s"
+                    iconOnly
+                    aria-label="Edit Name"
+                    onClick={() => handleNameDialogChange(true)}
+                  >
+                    <Pencil size={14} />
+                  </Button>
+                </dd>
+              </div>
+              <div className="account-details__row">
+                <dt className="account-details__label">Email</dt>
+                <dd className="account-details__value">
+                  <span className="account-details__value-text">{email}</span>
+                </dd>
+              </div>
+              <div className="account-details__row">
+                <dt className="account-details__label">Role</dt>
+                <dd className="account-details__value">
+                  <Badge variant={role === "admin" ? "default" : "secondary"}>
+                    {role === "admin" ? "Admin" : "Member"}
+                  </Badge>
+                </dd>
+              </div>
+              <div className="account-details__row">
+                <dt className="account-details__label">Member Since</dt>
+                <dd className="account-details__value">
+                  <span className="account-details__value-text">
+                    {memberSinceLabel}
+                  </span>
+                </dd>
+              </div>
+            </dl>
+          </section>
+        </div>
       </div>
 
       <AvatarPickerDialog

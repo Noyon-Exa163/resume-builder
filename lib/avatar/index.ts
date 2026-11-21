@@ -45,6 +45,12 @@ export const AVATAR_EXPRESSION_KEYS = Object.keys(
 export interface AvatarPreferences {
   hue: number | null;
   expression: AvatarExpressionKey | null;
+  /**
+   * Uploaded profile photo as a data URL (Account page picker). Overrides
+   * the generated avatar everywhere; null/absent falls back to
+   * hue + expression.
+   */
+  photoDataUrl?: string | null;
 }
 
 export function isAvatarExpressionKey(
@@ -83,14 +89,32 @@ export function getAvatarBodyColor(hue: number) {
   return AVATAR_COLORS.find((color) => color.hue === hue)?.head;
 }
 
+/**
+ * Max stored photo size. The client downscales uploads to a 256px JPEG
+ * (typically 10–30 KB); this only guards against oversized or garbage
+ * strings reaching the database and API payloads.
+ */
+const AVATAR_PHOTO_MAX_LENGTH = 200_000;
+
+/** True for a data-URL image string within the stored-size cap. */
+export function isAvatarPhotoDataUrl(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.startsWith("data:image/") &&
+    value.length <= AVATAR_PHOTO_MAX_LENGTH
+  );
+}
+
 /** Builds preferences from the nullable `users.avatar_*` columns. */
 export function avatarFromColumns(
   hue: number | null,
   expression: string | null,
+  photoDataUrl: string | null = null,
 ): AvatarPreferences {
   return {
     hue: isAvatarHue(hue) ? hue : null,
     expression: isAvatarExpressionKey(expression) ? expression : null,
+    photoDataUrl: isAvatarPhotoDataUrl(photoDataUrl) ? photoDataUrl : null,
   };
 }
 

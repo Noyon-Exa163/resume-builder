@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import "./page.css";
 import type { ResumeData } from "@/lib/schema/resume";
-import { createBlankResume, normalizeAndValidate } from "@/lib/schema/normalize";
+import { normalizeAndValidate } from "@/lib/schema/normalize";
+import { createId } from "@/lib/utils/ids";
 import { resumeRepository } from "@/lib/storage/api/resumeRepository";
 import { deleteResumeThumbnails } from "@/lib/export/resumeThumbnail";
 import { aiChatRepository } from "@/lib/storage/aiChat/aiChatRepository";
@@ -13,12 +14,14 @@ import {
 } from "@/lib/storage/api/resumeAccess";
 import { ResumeCardPreview } from "@/components/dashboard/ResumeCardPreview";
 import { StatCard } from "@/components/common/StatCard";
+import { LoadMoreFooter } from "@/components/common/LoadMoreFooter";
+import { usePagedList } from "@/lib/utils/usePagedList";
 import { NewResumeDialog } from "@/components/dashboard/NewResumeDialog";
 import { ShareDialog } from "@/components/common/ShareDialog";
 import { formatDisplayDate } from "@/lib/date";
-import { formatDateTime } from "@/lib/utils/formatDateTime";
+import { formatDateTime } from "@/lib/date/formatDateTime";
 import { toTitleCase } from "@/lib/schema/personalInfo";
-import { EmptyState, ActionDialog, ActionMenu, Avatar, Button, DialogPopup, DialogRoot, GroupedSelect, Input, SelectField, Tooltip, UserTooltip, useToast } from "@/components/ui";
+import { EmptyState, ActionDialog, ActionMenu, Avatar, Button, DialogPopup, DialogRoot, GroupedSelect, Input, SelectField, UserTooltip, useToast } from "@/components/ui";
 import { toPdfBlob } from "@/lib/export/toPdfBlob";
 import { buildExportFilename } from "@/lib/export/filename";
 import { triggerDownload } from "@/lib/export/triggerDownload";
@@ -28,10 +31,10 @@ import {
   Edit,
   FilePlus,
   FileText,
-  Loader2,
   MoreVertical,
   Search,
   Share2,
+  SquarePen,
   Trash2,
   User,
   Users,
@@ -76,7 +79,6 @@ export default function DashboardClient({
   const [shareTarget, setShareTarget] = useState<ResumeData | null>(null);
   const [renameTarget, setRenameTarget] = useState<ResumeData | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // One option per distinct creator, alphabetical by display name.
@@ -126,6 +128,13 @@ export default function DashboardClient({
     );
   }, [entries, searchQuery, activeOwnerFilter, sortField, sortDirection]);
 
+  // "Load More" paging over the filtered list — search/filter/sort above
+  // still see everything; only the DOM is windowed (9 per page).
+  const { visible: visibleEntries, visibleCount, loadMore } = usePagedList(
+    filteredEntries,
+    9,
+  );
+
   // Summary strip above the grid — derived, never stored.
   const stats = useMemo(() => {
     const createdByYou = entries.filter((entry) => entry.access === "owner").length;
@@ -137,7 +146,6 @@ export default function DashboardClient({
   }, [entries]);
 
   async function handleDownload(resume: ResumeData) {
-    setDownloadingId(resume.meta.id);
     try {
       // The dashboard list is loaded with `sections` stripped (see
       // listResumesForUser) — fetch the full resume so the PDF isn't just
@@ -149,8 +157,6 @@ export default function DashboardClient({
       triggerDownload(blob, `${name}.pdf`);
     } catch (err) {
       console.error("PDF download failed:", err);
-    } finally {
-      setDownloadingId(null);
     }
   }
 
@@ -176,23 +182,23 @@ export default function DashboardClient({
       console.error(`Resume ${resume.meta.id} no longer exists.`);
       return;
     }
-    const copy = createBlankResume();
-    copy.meta.title = `Copy of ${full.meta.title}`;
-    copy.meta.templateId = full.meta.templateId;
-    copy.meta.pageSize = full.meta.pageSize;
-    copy.meta.nameCasing = full.meta.nameCasing;
-    copy.meta.accentColor = full.meta.accentColor;
-    copy.meta.alternatePhoneVisible = full.meta.alternatePhoneVisible;
-    copy.personalInfo = full.personalInfo;
-    copy.summary = full.summary;
-    copy.sections = full.sections;
-
-    const normalized = normalizeAndValidate(copy);
-    await resumeRepository.set(normalized.meta.id, normalized);
+    // Spread the whole document and only override identity/title/timestamps,
+    // so meta fields added later are carried into duplicates automatically.
+    const copy = normalizeAndValidate({
+      ...full,
+      meta: {
+        ...full.meta,
+        id: createId(),
+        title: `Copy of ${full.meta.title}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    });
+    await resumeRepository.set(copy.meta.id, copy);
     setEntries((prev) => [
       ...prev,
       {
-        resume: normalized,
+        resume: copy,
         access: "owner",
         ownerEmail: "",
         ownerName: "",
@@ -375,151 +381,116 @@ export default function DashboardClient({
       )}
 
       {filteredEntries.length > 0 && (
-        <ul className="dashboard__list">
-          {filteredEntries.map(({ resume, access, ownerEmail, ownerName, ownerAvatar }) => (
+        <>
+          <ul className="dashboard__list">
+          {visibleEntries.map(({ resume, access, ownerEmail, ownerName, ownerAvatar }) => (
             <li key={resume.meta.id} className="resume-card">
               <a
                 href={`/editor/${resume.meta.id}`}
-                className="resume-card__link"
+                className="resume-card__preview-link"
+                aria-label={`Open ${resume.meta.title}`}
               >
                 <div className="resume-card__preview">
                   <ResumeCardPreview data={resume} />
                 </div>
-                <span className="resume-card__text">
-                  <span className="resume-card__title">
-                    {toTitleCase(resume.meta.title)}
-                  </span>
-                  <span className="resume-card__meta">
-                    Updated {formatDisplayDate(resume.meta.updatedAt)}
-                  </span>
-                </span>
               </a>
-              <div className="resume-card__actions">
-                <div className="resume-card__actions-group">
-                  <Tooltip label="Download PDF">
-                    <button
+              <div className="resume-card__body">
+                <a
+                  href={`/editor/${resume.meta.id}`}
+                  className="resume-card__title"
+                >
+                  {toTitleCase(resume.meta.title)}
+                </a>
+                <ActionMenu
+                  trigger={
+                    <Button
                       type="button"
-                      className="resume-card__icon-button resume-card__icon-button--download"
-                      aria-label={`Download ${resume.meta.title} as PDF`}
-                      disabled={downloadingId === resume.meta.id}
-                      onClick={() => void handleDownload(resume)}
+                      variant="tertiary"
+                      size="s"
+                      iconOnly
+                      aria-label={`More Actions for ${resume.meta.title}`}
                     >
-                      {downloadingId === resume.meta.id ? (
-                        <Loader2
-                          size={16}
-                          className="button__icon--spin"
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <Download size={16} aria-hidden="true" />
-                      )}
-                    </button>
-                  </Tooltip>
-                  {canManageResume(access) && (
-                    <span className="resume-card__inline-actions">
-                      <Tooltip label="Share">
-                        <button
-                          type="button"
-                          className="resume-card__icon-button resume-card__icon-button--share"
-                          aria-label={`Share ${resume.meta.title}`}
-                          onClick={() => setShareTarget(resume)}
-                        >
-                          <Share2 size={16} aria-hidden="true" />
-                        </button>
-                      </Tooltip>
+                      <MoreVertical size={16} />
+                    </Button>
+                  }
+                  items={[
+                    {
+                      label: "Download PDF",
+                      icon: Download,
+                      onSelect: () => void handleDownload(resume),
+                    },
+                    canManageResume(access) && {
+                      label: "Share",
+                      icon: Share2,
+                      onSelect: () => setShareTarget(resume),
+                    },
+                    canManageResume(access) && {
+                      label: "Duplicate",
+                      icon: Copy,
+                      onSelect: () => void handleDuplicate(resume),
+                    },
+                    canManageResume(access) && {
+                      label: "Rename",
+                      icon: Edit,
+                      onSelect: () => {
+                        setRenameTarget(resume);
+                        setRenameTitle(resume.meta.title);
+                      },
+                    },
+                    canManageResume(access) && {
+                      label: "Delete",
+                      icon: Trash2,
+                      isDestructive: true,
+                      onSelect: () => setDeleteTarget(resume),
+                    },
+                  ]}
+                />
+              </div>
+              <div className="resume-card__footer">
+                <span className="resume-card__meta">
+                  <SquarePen size={12} aria-hidden="true" />
+                  Updated {formatDisplayDate(resume.meta.updatedAt)}
+                </span>
+                {access !== "owner" && access !== "admin" && (
+                  <span
+                    className={`resume-card__badge resume-card__badge--${access}`}
+                  >
+                    {access === "editor" ? "Shared • Editor" : "Shared • Viewer"}
+                  </span>
+                )}
+                {access !== "owner" && (
+                  <UserTooltip
+                    title={access === "admin" ? "Created By" : "Shared By"}
+                    name={ownerName ?? ownerEmail.split("@")[0]}
+                    email={ownerEmail}
+                    avatar={ownerAvatar}
+                    caption={
+                      access === "admin"
+                        ? formatDateTime(resume.meta.createdAt)
+                        : undefined
+                    }
+                  >
+                    <span className="resume-card__owner">
+                      <Avatar name={ownerEmail} size={20} bare {...ownerAvatar} />
+                      <span className="resume-card__owner-name">
+                        {ownerName ?? ownerEmail.split("@")[0]}
+                      </span>
                     </span>
-                  )}
-                </div>
-                <div className="resume-card__actions-group resume-card__actions-group--end">
-                  {access !== "owner" && (
-                    <UserTooltip
-                      title={access === "admin" ? "Created By" : "Shared By"}
-                      name={ownerName ?? ownerEmail.split("@")[0]}
-                      email={ownerEmail}
-                      avatar={ownerAvatar}
-                      caption={
-                        access === "admin"
-                          ? formatDateTime(resume.meta.createdAt)
-                          : undefined
-                      }
-                    >
-                      {access === "admin" ? (
-                        <Avatar name={ownerEmail} size={24} bare {...ownerAvatar} />
-                      ) : (
-                        <span
-                          className={`resume-card__badge resume-card__badge--${access}`}
-                        >
-                          {access === "editor"
-                            ? "Shared • Editor"
-                            : "Shared • Viewer"}
-                        </span>
-                      )}
-                    </UserTooltip>
-                  )}
-                  {canManageResume(access) && (
-                    <span className="resume-card__inline-actions">
-                      <Tooltip label="Delete">
-                        <button
-                          type="button"
-                          className="resume-card__icon-button resume-card__icon-button--delete"
-                          aria-label={`Delete ${resume.meta.title}`}
-                          onClick={() => setDeleteTarget(resume)}
-                        >
-                          <Trash2 size={16} aria-hidden="true" />
-                        </button>
-                      </Tooltip>
-                    </span>
-                  )}
-                  {/* Phones: Share and Delete don't fit a two-column grid
-                      beside Download, so they collapse into one menu. */}
-                  {canManageResume(access) && (
-                    <span className="resume-card__menu">
-                      <ActionMenu
-                        trigger={
-                          <Button
-                            type="button"
-                            variant="tertiary"
-                            size="s"
-                            iconOnly
-                            aria-label={`More Actions for ${resume.meta.title}`}
-                          >
-                            <MoreVertical size={16} />
-                          </Button>
-                        }
-                        items={[
-                          {
-                            label: "Share",
-                            icon: Share2,
-                            onSelect: () => setShareTarget(resume),
-                          },
-                          {
-                            label: "Duplicate",
-                            icon: Copy,
-                            onSelect: () => void handleDuplicate(resume),
-                          },
-                          {
-                            label: "Rename",
-                            icon: Edit,
-                            onSelect: () => {
-                              setRenameTarget(resume);
-                              setRenameTitle(resume.meta.title);
-                            },
-                          },
-                          {
-                            label: "Delete",
-                            icon: Trash2,
-                            isDestructive: true,
-                            onSelect: () => setDeleteTarget(resume),
-                          },
-                        ]}
-                      />
-                    </span>
-                  )}
-                </div>
+                  </UserTooltip>
+                )}
               </div>
             </li>
           ))}
         </ul>
+
+          <LoadMoreFooter
+            visible={visibleCount}
+            total={filteredEntries.length}
+            pageSize={9}
+            itemLabel="resumes"
+            onLoadMore={loadMore}
+          />
+        </>
       )}
 
       <NewResumeDialog

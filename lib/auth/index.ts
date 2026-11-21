@@ -32,7 +32,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   if (!session) return null;
 
   const rows = await sql`
-    SELECT id, email, name, is_admin, avatar_hue, avatar_expression, session_version, created_at FROM users WHERE id = ${session.userId}
+    SELECT id, email, name, is_admin, avatar_hue, avatar_expression, photo_data_url, session_version, created_at FROM users WHERE id = ${session.userId}
   `;
   const row = rows[0] as
     | {
@@ -42,6 +42,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
         is_admin: boolean;
         avatar_hue: number | null;
         avatar_expression: string | null;
+        photo_data_url: string | null;
         session_version: number;
         created_at: string | Date;
       }
@@ -58,7 +59,11 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     email: row.email,
     name: row.name?.trim() || row.email.split("@")[0],
     role: row.is_admin ? "admin" : "user",
-    avatar: avatarFromColumns(row.avatar_hue, row.avatar_expression),
+    avatar: avatarFromColumns(
+      row.avatar_hue,
+      row.avatar_expression,
+      row.photo_data_url,
+    ),
     createdAt: new Date(row.created_at).toISOString(),
   };
 });

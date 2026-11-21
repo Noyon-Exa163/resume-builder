@@ -24,32 +24,48 @@ const VERSION_LIMIT = 5;
  * no background job: this runs whenever a resume is saved or its versions are
  * read, and dates each version by the author's last save, so the result is
  * the same whenever it happens to run. Each pending row is claimed by a
- * single DELETE ... RETURNING, so concurrent callers can't create it twice.
+ * single DELETE ... RETURNING, so concurrent callers can't create it twice,
+ * and the claim + prune run in one transaction so the prune can never drop
+ * rows a concurrent caller just inserted.
+ *
+ * The common case — no countdown has expired — exits after one cheap read
+ * instead of opening a write transaction; that keeps versions GETs read-only
+ * in the steady state.
  */
 async function materializeDueVersions(resumeId: string): Promise<void> {
-  await sql`
-    WITH due AS (
-      DELETE FROM resume_version_pending
-      WHERE resume_id = ${resumeId}::text
-        AND last_saved_at <= now() - make_interval(mins => ${VERSION_IDLE_MINUTES})
-      RETURNING user_id, snapshot, last_saved_at
-    ),
-    base AS (
-      SELECT COALESCE(MAX(number), 0) AS n
-      FROM resume_versions WHERE resume_id = ${resumeId}::text
-    )
-    INSERT INTO resume_versions (resume_id, number, user_id, snapshot, created_at)
-    SELECT ${resumeId}::text, base.n + ROW_NUMBER() OVER (ORDER BY due.last_saved_at),
-      due.user_id, due.snapshot, due.last_saved_at
-    FROM due CROSS JOIN base
-  `;
-  await sql`
-    DELETE FROM resume_versions
+  const due = (await sql`
+    SELECT 1 FROM resume_version_pending
     WHERE resume_id = ${resumeId}::text
-      AND number <= (
-        SELECT MAX(number) FROM resume_versions WHERE resume_id = ${resumeId}::text
-      ) - ${VERSION_LIMIT}
-  `;
+      AND last_saved_at <= now() - make_interval(mins => ${VERSION_IDLE_MINUTES})
+    LIMIT 1
+  `) as Array<unknown>;
+  if (due.length === 0) return;
+
+  await sql.begin(async (tx) => {
+    await tx`
+      WITH due AS (
+        DELETE FROM resume_version_pending
+        WHERE resume_id = ${resumeId}::text
+          AND last_saved_at <= now() - make_interval(mins => ${VERSION_IDLE_MINUTES})
+        RETURNING user_id, snapshot, last_saved_at
+      ),
+      base AS (
+        SELECT COALESCE(MAX(number), 0) AS n
+        FROM resume_versions WHERE resume_id = ${resumeId}::text
+      )
+      INSERT INTO resume_versions (resume_id, number, user_id, snapshot, created_at)
+      SELECT ${resumeId}::text, base.n + ROW_NUMBER() OVER (ORDER BY due.last_saved_at),
+        due.user_id, due.snapshot, due.last_saved_at
+      FROM due CROSS JOIN base
+    `;
+    await tx`
+      DELETE FROM resume_versions
+      WHERE resume_id = ${resumeId}::text
+        AND number <= (
+          SELECT MAX(number) FROM resume_versions WHERE resume_id = ${resumeId}::text
+        ) - ${VERSION_LIMIT}
+    `;
+  });
 }
 
 /**
@@ -85,6 +101,7 @@ interface VersionRow {
   user_name: string | null;
   avatar_hue: number | null;
   avatar_expression: string | null;
+  photo_data_url: string | null;
 }
 
 /** Newest-first versions for a resume. Callers must check access first. */
@@ -96,7 +113,7 @@ export async function listResumeVersions(
   const rows = (await sql`
     SELECT v.id, v.number, v.created_at, v.user_id,
       u.email AS user_email, u.name AS user_name,
-      u.avatar_hue, u.avatar_expression
+      u.avatar_hue, u.avatar_expression, u.photo_data_url
     FROM resume_versions v
     LEFT JOIN users u ON u.id = v.user_id
     WHERE v.resume_id = ${resumeId}
@@ -114,7 +131,11 @@ export async function listResumeVersions(
             id: row.user_id,
             name: row.user_name?.trim() || row.user_email.split("@")[0],
             email: row.user_email,
-            avatar: avatarFromColumns(row.avatar_hue, row.avatar_expression),
+            avatar: avatarFromColumns(
+              row.avatar_hue,
+              row.avatar_expression,
+              row.photo_data_url,
+            ),
           }
         : null,
   }));

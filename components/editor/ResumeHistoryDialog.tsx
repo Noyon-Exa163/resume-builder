@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { RotateCcw } from "lucide-react";
 import {
   ActionDialog,
@@ -19,7 +19,7 @@ import {
   type ResumeHistoryEntry,
   type ResumeVersionEntry,
 } from "@/lib/storage/api/resumeHistory";
-import { formatDateTime } from "@/lib/utils/formatDateTime";
+import { formatDateTime } from "@/lib/date/formatDateTime";
 import { VersionDownloadMenu } from "./VersionDownloadMenu";
 import "./ResumeHistoryDialog.css";
 
@@ -38,6 +38,20 @@ const ACTION_LABELS: Record<ResumeHistoryEntry["action"], string> = {
   edited: "Edited this resume",
 };
 
+interface TimelineLists {
+  history: ResumeHistoryEntry[] | null;
+  historyError: string;
+  versions: ResumeVersionEntry[] | null;
+  versionsError: string;
+}
+
+const EMPTY_LISTS: TimelineLists = {
+  history: null,
+  historyError: "",
+  versions: null,
+  versionsError: "",
+};
+
 /** Edits and saved versions of a resume, as two timelines of who and when. */
 export function ResumeHistoryDialog({
   resumeId,
@@ -46,17 +60,79 @@ export function ResumeHistoryDialog({
   canRestore,
   onRestore,
 }: ResumeHistoryDialogProps) {
+  const [lists, setLists] = useState<TimelineLists>(EMPTY_LISTS);
+  // Bumped on every open and after a restore — each value triggers one
+  // parallel fetch of both lists.
+  const [epoch, setEpoch] = useState(0);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+
+    void Promise.allSettled([
+      listResumeHistory(resumeId),
+      listResumeVersions(resumeId),
+    ]).then(([historyResult, versionsResult]) => {
+      if (cancelled) return;
+      setLists({
+        history:
+          historyResult.status === "fulfilled" ? historyResult.value : null,
+        historyError:
+          historyResult.status === "rejected"
+            ? historyResult.reason instanceof Error
+              ? historyResult.reason.message
+              : "Could not load the edit history."
+            : "",
+        versions:
+          versionsResult.status === "fulfilled" ? versionsResult.value : null,
+        versionsError:
+          versionsResult.status === "rejected"
+            ? versionsResult.reason instanceof Error
+              ? versionsResult.reason.message
+              : "Could not load the versions."
+            : "",
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, resumeId, epoch]);
+
+  /** Refetch both lists (after a restore changed them). */
+  const reload = useCallback(() => {
+    setLists(EMPTY_LISTS);
+    setEpoch((token) => token + 1);
+  }, []);
+
+  function handleOpenChange(next: boolean) {
+    if (next) {
+      // Fresh data per open — clears to skeletons and refetches. Event
+      // handler, so resetting state here is fine.
+      setLists(EMPTY_LISTS);
+      setEpoch((token) => token + 1);
+    }
+    onOpenChange(next);
+  }
+
   return (
-    <DialogRoot open={open} onOpenChange={onOpenChange}>
+    <DialogRoot open={open} onOpenChange={handleOpenChange}>
       <DialogPopup title="Edit History" className="history-dialog">
-        {/* Each panel mounts only while its tab is showing, so it loads fresh. */}
+        {/* Both lists load in parallel when the dialog opens. The tabs may
+            remount their panels, but the data lives here — switching tabs
+            renders instantly instead of refetching. */}
         <TabsField
           defaultValue="edits"
           tabs={[
             {
               value: "edits",
               label: "Edits",
-              content: <EditsTimeline resumeId={resumeId} />,
+              content: (
+                <EditsTimeline
+                  items={lists.history}
+                  error={lists.historyError}
+                />
+              ),
             },
             {
               value: "versions",
@@ -64,8 +140,11 @@ export function ResumeHistoryDialog({
               content: (
                 <VersionsTimeline
                   resumeId={resumeId}
+                  items={lists.versions}
+                  error={lists.versionsError}
                   canRestore={canRestore}
                   onRestore={onRestore}
+                  onRestored={reload}
                 />
               ),
             },
@@ -76,10 +155,17 @@ export function ResumeHistoryDialog({
   );
 }
 
-function EditsTimeline({ resumeId }: { resumeId: string }) {
+function EditsTimeline({
+  items,
+  error,
+}: {
+  items: ResumeHistoryEntry[] | null;
+  error: string;
+}) {
   return (
     <AsyncTimeline
-      load={() => listResumeHistory(resumeId)}
+      items={items}
+      error={error}
       emptyIllustration="/assets/spots/Calendar-empty.svg"
       emptyTitle="No edits yet"
       emptyDescription="Changes to this resume will appear here, along with who made them and when."
@@ -104,12 +190,19 @@ function EditsTimeline({ resumeId }: { resumeId: string }) {
 
 function VersionsTimeline({
   resumeId,
+  items,
+  error,
   canRestore,
   onRestore,
+  onRestored,
 }: {
   resumeId: string;
+  items: ResumeVersionEntry[] | null;
+  error: string;
   canRestore: boolean;
   onRestore: (versionId: string) => Promise<void>;
+  /** Called after a successful restore — both lists changed. */
+  onRestored: () => void;
 }) {
   const [restoreTarget, setRestoreTarget] = useState<ResumeVersionEntry | null>(
     null,
@@ -125,6 +218,7 @@ function VersionsTimeline({
     try {
       await onRestore(restoreTarget.id);
       setRestoreTarget(null);
+      onRestored();
     } catch (error) {
       setRestoreError(
         error instanceof Error
@@ -154,7 +248,8 @@ function VersionsTimeline({
         </p>
       )}
       <AsyncTimeline
-        load={() => listResumeVersions(resumeId)}
+        items={items}
+        error={error}
         emptyIllustration="/assets/spots/candidate.svg"
         emptyTitle="No versions yet"
         emptyDescription="A version is saved after 30 minutes without changes. The last 5 versions are kept."
@@ -226,45 +321,24 @@ function VersionsTimeline({
 }
 
 interface AsyncTimelineProps<T> {
-  load: () => Promise<T[]>;
+  /** Loaded list, or null while the fetch is in flight. */
+  items: T[] | null;
+  error: string;
   emptyIllustration: string;
   emptyTitle: string;
   emptyDescription: string;
   renderItem: (item: T) => ReactNode;
 }
 
-/** Loads a list once on mount and shows skeleton, error, empty or timeline. */
+/** Shows error, skeleton, empty or timeline for an already-loaded list. */
 function AsyncTimeline<T>({
-  load,
+  items,
+  error,
   emptyIllustration,
   emptyTitle,
   emptyDescription,
   renderItem,
 }: AsyncTimelineProps<T>) {
-  const [items, setItems] = useState<T[] | null>(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-
-    load()
-      .then((result) => {
-        if (!cancelled) setItems(result);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(
-          err instanceof Error ? err.message : "Could not load this list.",
-        );
-      });
-
-    return () => {
-      cancelled = true;
-    };
-    // Loads once when the panel mounts; `load` is a fresh closure every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   if (error) {
     return (
       <p className="history-dialog__message history-dialog__message--error">

@@ -29,6 +29,8 @@ export interface AvatarProps {
   hue?: number | null;
   /** Pose to hold; null or omitted is the default idle look. */
   expression?: AvatarExpressionKey | null;
+  /** Uploaded profile photo; overrides the generated avatar when set. */
+  photoDataUrl?: string | null;
 }
 
 type BlobProps = Pick<AvatarProps, "name" | "hue" | "expression"> & {
@@ -68,10 +70,25 @@ export default function Avatar({
   bare = false,
   hue,
   expression,
+  photoDataUrl,
 }: AvatarProps) {
   const classes = ["avatar", bare && "avatar--bare", className]
     .filter(Boolean)
     .join(" ");
+
+  // An uploaded photo overrides the generated avatar entirely — hue,
+  // expression, and pointer-following only apply to the blobatar fallback.
+  if (photoDataUrl) {
+    return (
+      <span className={classes} style={{ width: size, height: size }}>
+        {/* A data URL can't be optimized by next/image; it's already a
+            256px JPEG downscaled client-side. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="avatar__photo" src={photoDataUrl} alt={name} />
+      </span>
+    );
+  }
+
   const blobProps = { name, size, hue, expression };
 
   return (

@@ -12,6 +12,8 @@ import { findFieldByText, makeFieldUpdater } from "@/lib/editor/fieldMatch";
 import { useEditorStore } from "@/lib/store/editorStore";
 import type { ResumeData } from "@/lib/schema/resume";
 import { digitsOnly, isSystemAlternatePhone } from "@/lib/contact/system";
+import { resolveSkillIcon } from "@/lib/skillIcons/resolveSkillIcon";
+import { buildTextLines } from "@/lib/pdf/textLines";
 import { PreviewZoomToolbar } from "./PreviewZoomToolbar";
 import { InlineEditor } from "./InlineEditor";
 import { AlternatePhoneCard } from "./AlternatePhoneCard";
@@ -34,6 +36,10 @@ interface PdfCanvasViewerProps {
    *  fields (name, email, bullets, summary, …) for inline editing. Only
    *  LivePreviewPane supplies it; other viewers just render pages. */
   data?: ResumeData;
+  /** Whether clicking preview text may open the inline editor and write to
+   *  the draft. False (the default) renders no click affordances at all —
+   *  view-only access must never write to the store. */
+  editable?: boolean;
   appear?: boolean;
   className?: string;
   "aria-label"?: string;
@@ -64,6 +70,7 @@ const APPEAR_STAGGER_MAX_PAGES = 5;
 export function PdfCanvasViewer({
   blob,
   data,
+  editable = false,
   appear = false,
   className,
   "aria-label": ariaLabel,
@@ -110,6 +117,16 @@ export function PdfCanvasViewer({
     width: number;
   } | null>(null);
 
+  // The current draft travels in a ref: LivePreviewPane couples `data` and
+  // `blob` (a new draft produces a new blob), but keying the render effect
+  // on `data` made it re-run the whole pdfjs pipeline even when the blob was
+  // byte-identical. The effect keys on the blob instead and reads the draft
+  // through this ref when it builds the click overlays.
+  const dataRef = useRef(data);
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
   const handleHitClick = useCallback(
     (
       event: MouseEvent,
@@ -117,11 +134,12 @@ export function PdfCanvasViewer({
       target: HitTargetRect,
       xHint?: number,
     ) => {
-      if (!data) return;
+      const draft = dataRef.current;
+      if (!draft) return;
       const container = viewerRef.current;
       const containerRect = container?.getBoundingClientRect();
 
-      const field = findFieldByText(data, text, xHint);
+      const field = findFieldByText(draft, text, xHint);
       if (!field) return;
 
       const update = makeFieldUpdater(
@@ -132,7 +150,7 @@ export function PdfCanvasViewer({
           updateEntry: useEditorStore.getState().updateEntry,
         },
         field,
-        data,
+        draft,
       );
 
       // Size the editor wider than the clicked text so typing feels spacious
@@ -157,7 +175,7 @@ export function PdfCanvasViewer({
         update,
       });
     },
-    [data],
+    [],
   );
 
   useEffect(() => {
@@ -263,6 +281,9 @@ export function PdfCanvasViewer({
 
     void (async () => {
       try {
+        // View-only access gets bare pages: no hit windows, no click
+        // handlers, nothing that could write to the store.
+        const canEdit = editable && dataRef.current != null;
         const { nodes, pageCount: nextCount } = await renderPages(
           blob,
           {
@@ -272,9 +293,9 @@ export function PdfCanvasViewer({
           },
           () => isStale,
           shouldAppear,
-          handleHitClick,
-          data,
-          handleAlternateClick,
+          canEdit ? handleHitClick : undefined,
+          canEdit ? dataRef.current : undefined,
+          canEdit ? handleAlternateClick : undefined,
         );
         if (isStale || !pagesRef.current) return;
 
@@ -324,7 +345,7 @@ export function PdfCanvasViewer({
     return () => {
       isStale = true;
     };
-  }, [blob, paneMetrics, appear, data, mode, zoomPercent, handleHitClick, handleAlternateClick]);
+  }, [blob, paneMetrics, appear, editable, mode, zoomPercent, handleHitClick, handleAlternateClick]);
 
   const handleModeChange = useCallback((next: PreviewMode) => {
     setMode(next);
@@ -600,6 +621,26 @@ function playCrossfade({
  * display data, not a field) render without the interactive affordance and
  * never open an editor.
  */
+/** Skill chips print as fully-rounded pills — their box is reconstructed
+ *  around the label's baseline from measurements of the real default
+ *  template's rendered output (a rendered SkillList chip, border included):
+ *  the drawn chip spans 10.28pt above and 5.60pt below the unlifted
+ *  baseline, center +2.34pt. The template lifts the label by
+ *  SKILL_LABEL_OFFSET_TOP (0.735pt, Inter ascent/cap metrics in
+ *  templates/exabyting/tokens.ts), which raises the baseline the PDF
+ *  reports, so relative to that reported baseline the chip center sits
+ *  +2.34 − 0.735 ≈ 1.6pt above it and the chip half-height is 7.94pt; the
+ *  label sits 6.5pt (border + padding) from each chip edge, plus the icon
+ *  slot when the chip has an icon. SKILL_CHIP_INSET pulls the highlight a
+ *  hair inside the chip's own border so reconstruction error can never
+ *  push the hover tint across it. */
+const SKILL_CHIP_PAD_X = 6.5;
+const SKILL_CHIP_CENTER_ABOVE_BASELINE = 1.6;
+const SKILL_CHIP_HALF_HEIGHT = 7.94;
+const SKILL_ICON_SIZE = 8;
+const SKILL_ICON_GAP = 3;
+const SKILL_CHIP_INSET = 1.5;
+
 async function renderPages(
   blob: Blob,
   layout: RenderLayout,
@@ -676,14 +717,32 @@ async function renderPages(
       // Group the page's text into visual lines and lay one clickable
       // overlay over each — the line is the natural click unit, and a single
       // line of a wrapped bullet still matches its full field via substring
-      // matching in findFieldByText.
-      const textContent = await page.getTextContent();
+      // matching in findFieldByText. No click handler, no text extraction:
+      // a view-only preview renders bare pages.
+      const textContent = onHitClick ? await page.getTextContent() : null;
       const scale = cssWidth / unscaled.width;
-      const isEditableText =
+      const fieldForText =
         onHitClick && resumeData
-          ? (text: string) => findFieldByText(resumeData, text) !== null
-          : () => false;
-      for (const line of buildTextLines(textContent.items)) {
+          ? (text: string) => findFieldByText(resumeData, text)
+          : () => null;
+      // Labels the default template prints inside skill pills: every tag of
+      // a skills-section entry, plus an entry's title when it has no tags
+      // (an uncategorised skill collects into the same chip row). Matched on
+      // trimmed, lowercased run text — a joined tag line ("React · Node")
+      // equals no single label and keeps the plain rectangular hover.
+      const pillLabels = new Set<string>();
+      for (const section of resumeData?.sections ?? []) {
+        if (section.kind !== "skills") continue;
+        for (const entry of section.entries) {
+          for (const tag of entry.tags) {
+            if (tag.trim()) pillLabels.add(tag.trim().toLowerCase());
+          }
+          if (entry.tags.length === 0 && entry.title?.trim()) {
+            pillLabels.add(entry.title.trim().toLowerCase());
+          }
+        }
+      }
+      for (const line of buildTextLines(textContent?.items ?? [])) {
         // One hit window per TEXT RUN, not per line: the hover ring, the
         // tooltip, and the editing popover all then hug exactly the text
         // under the cursor — a contact row's email, mobile, and alternate
@@ -708,9 +767,51 @@ async function renderPages(
           // text-edited — but it still gets the ring and pointer: clicking
           // it opens the explain/hide card. Row labels stay fully inert.
           const alternate = isSystemAlternatePhone(digitsOnly(run.text));
-          const editable = isEditableText(run.text);
+          const matched = fieldForText(run.text);
+          const editable = matched !== null;
           overlay.dataset.editable = String(editable || alternate);
           if (alternate) overlay.dataset.role = "alternate";
+          // A chip label IS a pill: rebuild the chip's own box around the
+          // run's baseline — measured chip extent above/below the baseline,
+          // its horizontal padding (plus the icon slot when this section
+          // shows icons and the label resolves to one) — then inset it. The
+          // line band is NOT used: it is clamped against neighbouring lines,
+          // so its center is not the chip's center. Anchored on the baseline
+          // and inset, the hover tint fills the pill from inside and can't
+          // cross its border; edges round INWARD so subpixel error shrinks
+          // the box, never grows it.
+          if (matched && pillLabels.has(run.text.trim().toLowerCase())) {
+            overlay.dataset.shape = "pill";
+            const sectionMatch = /^sections\[(\d+)\]\./.exec(matched.field);
+            const section = sectionMatch
+              ? resumeData?.sections[Number(sectionMatch[1])]
+              : undefined;
+            const icon =
+              section?.showSkillIcons ? resolveSkillIcon(run.text) : undefined;
+            const iconExtra = icon
+              ? SKILL_ICON_SIZE * icon.widthRatio + SKILL_ICON_GAP
+              : 0;
+            const baselineY = (unscaled.height - run.baseline) * scale;
+            const chipCenterY =
+              baselineY - SKILL_CHIP_CENTER_ABOVE_BASELINE * scale;
+            const halfHeight = (SKILL_CHIP_HALF_HEIGHT - SKILL_CHIP_INSET) *
+              scale;
+            const top = Math.ceil(chipCenterY - halfHeight);
+            const bottom = Math.floor(chipCenterY + halfHeight);
+            const left = Math.ceil(
+              (run.x - SKILL_CHIP_PAD_X - iconExtra + SKILL_CHIP_INSET) *
+                scale,
+            );
+            const right = Math.floor(
+              (run.right + SKILL_CHIP_PAD_X - SKILL_CHIP_INSET) * scale,
+            );
+            if (right > left && bottom > top) {
+              overlay.style.left = `${left}px`;
+              overlay.style.width = `${right - left}px`;
+              overlay.style.top = `${top}px`;
+              overlay.style.height = `${bottom - top}px`;
+            }
+          }
 
           overlayInfo.set(overlay, { text: run.text, editable, alternate });
           slot.appendChild(overlay);
@@ -768,176 +869,6 @@ interface HitTargetRect {
 /** Smallest usable editing width for narrow runs (a date, a tag) — room
  *  for the caption row and the confirm/cancel buttons. */
 const INLINE_EDITOR_MIN_WIDTH = 260;
-
-/** Items whose baselines sit within this fraction of the taller glyph run
- *  are one visual line — kerning-level offsets won't split a line, a real
- *  line break will. */
-const LINE_Y_TOLERANCE = 0.4;
-
-/** Hit boxes hug the actual glyph band (ascent above the baseline,
- *  descent below) instead of a full font-height block anchored at the
- *  baseline — the old box hung empty headroom down over smaller lines. */
-const GLYPH_ASCENT = 0.75;
-const GLYPH_DESCENT = 0.25;
-
-interface PdfTextLine {
-  text: string;
-  /** Left edge and baseline (y-up) in unscaled PDF user-space units. */
-  x: number;
-  baselineY: number;
-  /** Max glyph-run height on the line. */
-  height: number;
-  /** Right edge, for the overlay width. */
-  right: number;
-  /** Hit-box vertical band (y-up), covering the glyphs (ascent→descent)
-   *  and clamped against neighbouring lines so boxes never overlap — a
-   *  tall line's box must not reach down over the smaller line below it. */
-  boxTop: number;
-  boxBottom: number;
-  /** The individual pdfjs runs on this line, left-to-right. A line often
-   *  prints several fields side by side (contact rows, entry headers), so
-   *  click resolution must be able to pick the run under the cursor rather
-   *  than matching the whole joined line. */
-  runs: Array<{ text: string; x: number; right: number }>;
-}
-
-interface TextRun {
-  str: string;
-  width: number;
-  height: number;
-  /** pdfjs transform [a, b, c, d, e, f] — e is x, f is the baseline (y-up). */
-  transform: number[];
-}
-
-/**
- * Groups pdfjs text items into visual lines. pdfjs emits one item per
- * printed run, so one line can arrive as several fragments (styled runs,
- * kerning splits) and a wrapped paragraph as several line boxes. Sorting by
- * baseline (PDF y is bottom-up) and bucketing runs whose baselines sit
- * within tolerance yields one entry per rendered line, whose combined text
- * is what findFieldByText matches clicked text against.
- */
-export function buildTextLines(items: readonly unknown[]): PdfTextLine[] {
-  const runs: TextRun[] = [];
-  for (const item of items) {
-    const candidate = item as Partial<TextRun> | null;
-    if (
-      candidate &&
-      typeof candidate.str === "string" &&
-      candidate.str.trim() &&
-      Array.isArray(candidate.transform) &&
-      candidate.transform.length >= 6
-    ) {
-      runs.push({
-        str: candidate.str,
-        width: typeof candidate.width === "number" ? candidate.width : 0,
-        height:
-          typeof candidate.height === "number" && candidate.height > 0
-            ? candidate.height
-            : 12,
-        transform: candidate.transform,
-      });
-    }
-  }
-  if (runs.length === 0) return [];
-
-  // Strict numeric sort — baseline descending (top of page first), x
-  // ascending as a tiebreak before bucketing below re-sorts each line.
-  const sorted = [...runs].sort(
-    (a, b) => b.transform[5] - a.transform[5] || a.transform[4] - b.transform[4],
-  );
-
-  const lines: PdfTextLine[] = [];
-  let bucket: TextRun[] = [];
-  let bucketBaseline = 0;
-  let bucketHeight = 0;
-
-  const flushBucket = () => {
-    if (bucket.length === 0) return;
-    bucket.sort((a, b) => a.transform[4] - b.transform[4]);
-    let text = "";
-    let x = Number.POSITIVE_INFINITY;
-    let right = Number.NEGATIVE_INFINITY;
-    let height = 0;
-    const runs: PdfTextLine["runs"] = [];
-    bucket.forEach((run, index) => {
-      const runX = run.transform[4];
-      if (index > 0) {
-        const previous = bucket[index - 1];
-        const gap = runX - (previous.transform[4] + previous.width);
-        // Fragments of the same word (kerning splits) join tight; distinct
-        // runs on one line (contact row, name + dates) get a space.
-        if (gap > run.height * 0.15) text += " ";
-      }
-      text += run.str;
-      x = Math.min(x, runX);
-      right = Math.max(right, runX + run.width);
-      height = Math.max(height, run.height);
-      runs.push({ text: run.str, x: runX, right: runX + run.width });
-    });
-    lines.push({
-      text,
-      x,
-      baselineY: bucketBaseline,
-      height,
-      right,
-      runs,
-      // Initial glyph band in y-up page space: ascent ABOVE the baseline
-      // (larger y) up to boxTop, descent BELOW (smaller y) down to
-      // boxBottom. The pairwise clamp after the loop trims band tops so
-      // neighbours never overlap visually or in hit-testing.
-      boxBottom: bucketBaseline - height * GLYPH_DESCENT,
-      boxTop: bucketBaseline + height * GLYPH_ASCENT,
-    });
-    bucket = [];
-  };
-
-  for (const run of sorted) {
-    const baseline = run.transform[5];
-    if (
-      bucket.length === 0 ||
-      Math.abs(baseline - bucketBaseline) <=
-        LINE_Y_TOLERANCE * Math.max(bucketHeight, run.height)
-    ) {
-      if (bucket.length === 0) {
-        bucketBaseline = baseline;
-        bucketHeight = run.height;
-      }
-      bucket.push(run);
-      bucketHeight = Math.max(bucketHeight, run.height);
-    } else {
-      flushBucket();
-      bucketBaseline = baseline;
-      bucketHeight = run.height;
-      bucket.push(run);
-    }
-  }
-  flushBucket();
-
-  // Boxes were built top-down (buckets follow the baseline-descending
-  // sort). Where two vertically-adjacent boxes overlap horizontally — the
-  // only case where one could steal the other's clicks — trim the lower
-  // box's visual top down to the upper box's visual bottom. Trimming into
-  // the ascender headroom is safe: glyph tops sit well below the band top,
-  // so the clickable band still covers every character.
-  for (let i = 1; i < lines.length; i += 1) {
-    const above = lines[i - 1];
-    const line = lines[i];
-    const horizontalOverlap = above.x < line.right && line.x < above.right;
-    if (!horizontalOverlap) continue;
-    if (line.boxTop > above.boxBottom) {
-      line.boxTop = above.boxBottom;
-    }
-    // Extremely tight leading can swallow more than the headroom — keep a
-    // minimum clickable band anchored at the baseline.
-    const minBand = line.height * 0.4;
-    if (line.boxTop - line.boxBottom < minBand) {
-      line.boxTop = line.boxBottom + minBand;
-    }
-  }
-
-  return lines;
-}
 
 /** Maps each per-run hit window to the text it covers and whether that
  *  text is an editable field or the fixed system alternate number. Entries

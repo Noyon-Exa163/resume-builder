@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
 import { isProtectedAdmin } from "@/lib/auth/constants";
@@ -37,5 +38,6 @@ export async function DELETE(
   }
 
   await sql`DELETE FROM users WHERE id = ${id}`;
+  revalidateTag("users", { expire: 0 });
   return NextResponse.json({ ok: true });
 }

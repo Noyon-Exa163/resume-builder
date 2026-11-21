@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  cachePageData,
+  readCachedPageData,
+} from "@/lib/utils/pageDataCache";
 import { CircleCheck, Loader2, PlugZap, Trash2 } from "lucide-react";
 import {
   Input,
@@ -83,26 +87,61 @@ function emptyProviders(): ProvidersState {
   }, {} as ProvidersState);
 }
 
+/** Maps a stored-settings payload onto the client's editable state. */
+function settingsStateFromResponse(data: AdminSettingsResponse) {
+  const providers = emptyProviders();
+  for (const id of PROVIDER_ORDER) {
+    const config = data.providers[id];
+    if (config) {
+      providers[id] = {
+        apiKey: config.apiKey,
+        model: config.model ?? "",
+        baseUrl: config.baseUrl ?? "",
+      };
+    }
+  }
+  return {
+    providers,
+    defaultProviderId: data.defaultProviderId ?? null,
+    defaultTemplateId: data.defaultTemplateId ?? "exabyting",
+    defaultChatModelId: resolveDefaultChatModelId(data.defaultChatModelId),
+  };
+}
+
+/** Repeat visits render the cached settings and refresh in the background. */
+const AI_SETTINGS_CACHE_KEY = "ai-settings";
+const AI_SETTINGS_MAX_AGE_MS = 5 * 60 * 1000;
+
 export default function AiSettingsPageClient() {
-  const [providers, setProviders] = useState<ProvidersState>(emptyProviders);
+  const cachedSettings = readCachedPageData<AdminSettingsResponse>(
+    AI_SETTINGS_CACHE_KEY,
+    AI_SETTINGS_MAX_AGE_MS,
+  );
+  const cachedState = cachedSettings
+    ? settingsStateFromResponse(cachedSettings)
+    : null;
+  const [providers, setProviders] = useState<ProvidersState>(
+    cachedState?.providers ?? emptyProviders(),
+  );
   // Snapshot of what's actually persisted server-side. Per-provider save/
   // remove reads other rows from here (not from `providers`) so saving one
   // row can never accidentally persist some other row's half-typed edits.
-  const [savedProviders, setSavedProviders] =
-    useState<ProvidersState>(emptyProviders);
+  const [savedProviders, setSavedProviders] = useState<ProvidersState>(
+    cachedState?.providers ?? emptyProviders(),
+  );
   const [defaultProviderId, setDefaultProviderId] = useState<string | null>(
-    null,
+    cachedState?.defaultProviderId ?? null,
   );
   const [defaultTemplateId, setDefaultTemplateId] = useState<string | null>(
-    null,
+    cachedState?.defaultTemplateId ?? null,
   );
   const [defaultChatModelId, setDefaultChatModelId] = useState(
-    DEFAULT_CHAT_MODEL_ID,
+    cachedState?.defaultChatModelId ?? DEFAULT_CHAT_MODEL_ID,
   );
   // Live cost estimates for the Default Model list — decoration only, so
   // the list still works (without prices) if they can't be loaded.
   const [modelEstimates, setModelEstimates] = useState<ChatModelEstimate[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(cachedSettings === null);
   const [savingProviderId, setSavingProviderId] = useState<AIProviderId | null>(
     null,
   );
@@ -131,24 +170,13 @@ export default function AiSettingsPageClient() {
       })
       .then((data: AdminSettingsResponse) => {
         if (ignore) return;
-        const loaded = emptyProviders();
-        for (const id of PROVIDER_ORDER) {
-          const config = data.providers[id];
-          if (config) {
-            loaded[id] = {
-              apiKey: config.apiKey,
-              model: config.model ?? "",
-              baseUrl: config.baseUrl ?? "",
-            };
-          }
-        }
-        setProviders(loaded);
-        setSavedProviders(loaded);
-        setDefaultProviderId(data.defaultProviderId ?? null);
-        setDefaultTemplateId(data.defaultTemplateId ?? "exabyting");
-        setDefaultChatModelId(
-          resolveDefaultChatModelId(data.defaultChatModelId),
-        );
+        const next = settingsStateFromResponse(data);
+        setProviders(next.providers);
+        setSavedProviders(next.providers);
+        setDefaultProviderId(next.defaultProviderId);
+        setDefaultTemplateId(next.defaultTemplateId);
+        setDefaultChatModelId(next.defaultChatModelId);
+        cachePageData(AI_SETTINGS_CACHE_KEY, data);
       })
       .catch((err: Error) => {
         if (!ignore) setError(err.message);

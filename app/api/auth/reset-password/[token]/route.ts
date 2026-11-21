@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   validateResetToken,
-  markResetTokenUsed,
-  resetUserPassword,
+  consumeResetTokenAndSetPassword,
 } from "@/lib/auth/passwordReset";
 
 /**
@@ -72,8 +71,16 @@ export async function POST(
     );
   }
 
-  await markResetTokenUsed(token);
-  await resetUserPassword(validation.userId!, password);
+  // Atomically claim the token and apply the new password. The claim can
+  // still lose to a concurrent submission of the same link — in that case
+  // the token is now consumed and the caller gets the already-used message.
+  const applied = await consumeResetTokenAndSetPassword(token, password);
+  if (!applied) {
+    return NextResponse.json(
+      { error: "This reset link has already been used. Request a new one." },
+      { status: 400 },
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }

@@ -31,7 +31,7 @@ import { createBlankResume } from "@/lib/schema/normalize";
 import { flagImportIssues } from "@/lib/import/errorFlagging";
 import { applyIssueFixes } from "@/lib/import/applyFixes";
 import { findFieldByText } from "@/lib/editor/fieldMatch";
-import { buildTextLines } from "@/components/editor/PdfCanvasViewer";
+import { buildTextLines } from "@/lib/pdf/textLines";
 import { buildChatPrompt } from "@/lib/ai/chatPrompt";
 
 const ITERATIONS = 10;

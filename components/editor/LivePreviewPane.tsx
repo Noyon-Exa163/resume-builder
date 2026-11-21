@@ -10,6 +10,9 @@ const DEBOUNCE_MS = 400;
 
 interface LivePreviewPaneProps {
   data: ResumeData;
+  /** Whether clicking preview text may edit the draft (inline editor).
+   *  False renders a purely visual preview — view-only access. */
+  editable?: boolean;
   onPageCountChange?: (pageCount: number) => void;
   /** Bump this after a completed AI/heuristic import lands in `data` — the
    *  next preview render plays a one-shot appear animation instead of
@@ -26,6 +29,7 @@ interface LivePreviewPaneProps {
  */
 export function LivePreviewPane({
   data,
+  editable = false,
   onPageCountChange,
   celebrateKey,
 }: LivePreviewPaneProps) {
@@ -78,6 +82,7 @@ export function LivePreviewPane({
     <PdfCanvasViewer
       blob={rendered.blob}
       data={draft.data}
+      editable={editable}
       appear={rendered.appear}
       className="live-preview-pane"
       aria-label="Live preview"

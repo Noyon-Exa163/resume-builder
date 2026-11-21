@@ -1,5 +1,6 @@
 import type { AvatarPreferences } from "@/lib/avatar";
 import type { ResumeData } from "@/lib/schema/resume";
+import { ApiError, apiFetch, apiFetchVoid } from "./apiFetch";
 
 export type ResumeAccessLevel = "owner" | "editor" | "viewer" | "admin";
 
@@ -35,14 +36,6 @@ export interface ResumeSharesState {
   shares: ResumeShare[];
 }
 
-async function readJsonOrThrow<T>(res: Response, fallback: string): Promise<T> {
-  if (!res.ok) {
-    const body = await res.json().catch(() => null);
-    throw new Error(body?.error || `${fallback} (status: ${res.status})`);
-  }
-  return (await res.json()) as T;
-}
-
 /**
  * Every resume the current user owns or has been shared, with per-resume
  * access level — the richer sibling of resumeRepository.list(), which stays
@@ -51,8 +44,9 @@ async function readJsonOrThrow<T>(res: Response, fallback: string): Promise<T> {
  * (full edit / share / delete, without taking ownership).
  */
 export async function listResumesWithAccess(): Promise<ResumeAccessEntry[]> {
-  const res = await fetch("/api/resumes", { method: "GET" });
-  return readJsonOrThrow<ResumeAccessEntry[]>(res, "Failed to list resumes");
+  return apiFetch<ResumeAccessEntry[]>("/api/resumes", {
+    fallbackError: "Failed to list resumes",
+  });
 }
 
 /**
@@ -66,25 +60,33 @@ export async function getResumeWithAccess(id: string): Promise<
   | { resume: ResumeData; access: ResumeAccessLevel; ownerEmail: string }
   | undefined
 > {
-  const res = await fetch(`/api/resumes/${encodeURIComponent(id)}`, {
-    method: "GET",
-  });
-  if (res.status === 404) return undefined;
-  return readJsonOrThrow(res, "Failed to load resume");
+  try {
+    return await apiFetch<{
+      resume: ResumeData;
+      access: ResumeAccessLevel;
+      ownerEmail: string;
+    }>(`/api/resumes/${encodeURIComponent(id)}`, {
+      fallbackError: "Failed to load resume",
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return undefined;
+    throw error;
+  }
 }
 
 /** Every other user in the system, for the Share dialog's people list. */
 export async function listShareableUsers(): Promise<ShareableUser[]> {
-  const res = await fetch("/api/users", { method: "GET" });
-  return readJsonOrThrow<ShareableUser[]>(res, "Failed to list users");
+  return apiFetch<ShareableUser[]>("/api/users", {
+    fallbackError: "Failed to list users",
+  });
 }
 
 /** Current share list for a resume, including who owns it. */
 export async function getResumeShares(id: string): Promise<ResumeSharesState> {
-  const res = await fetch(`/api/resumes/${encodeURIComponent(id)}/shares`, {
-    method: "GET",
-  });
-  return readJsonOrThrow(res, "Failed to load current shares");
+  return apiFetch<ResumeSharesState>(
+    `/api/resumes/${encodeURIComponent(id)}/shares`,
+    { fallbackError: "Failed to load current shares" },
+  );
 }
 
 /** Replaces a resume's entire share set. Owner-only server-side. */
@@ -92,10 +94,10 @@ export async function updateResumeShares(
   id: string,
   shares: Array<{ userId: string; permission: "viewer" | "editor" }>,
 ): Promise<void> {
-  const res = await fetch(`/api/resumes/${encodeURIComponent(id)}/shares`, {
+  await apiFetchVoid(`/api/resumes/${encodeURIComponent(id)}/shares`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ shares }),
+    fallbackError: "Failed to update sharing",
   });
-  await readJsonOrThrow(res, "Failed to update sharing");
 }

@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { listResumesForUser } from "@/lib/db/resumeQueries";
-import AppShell from "@/components/common/AppShell";
 import DashboardClient from "./DashboardClient";
 
 /**
@@ -20,9 +19,5 @@ export default async function DashboardPage() {
     b.resume.meta.updatedAt.localeCompare(a.resume.meta.updatedAt),
   );
 
-  return (
-    <AppShell>
-      <DashboardClient initialEntries={entries} />
-    </AppShell>
-  );
+  return <DashboardClient initialEntries={entries} />;
 }

@@ -17,7 +17,12 @@ import { cookies } from "next/headers";
 function requireAdmin(
   user: Awaited<ReturnType<typeof getCurrentUser>>,
 ): NextResponse | null {
-  if (!user || user.role !== "admin") {
+  // 401 for no session at all, 403 for a signed-in non-admin — keeps client
+  // handling and auth monitoring consistent with the rest of the API.
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+  if (user.role !== "admin") {
     return NextResponse.json(
       { error: "Admin access required." },
       { status: 403 },
@@ -34,7 +39,7 @@ export async function GET(
   const { token } = await params;
 
   const rows = await sql`
-    SELECT id, email, expires_at, used_at
+    SELECT id, email, expires_at, used_at, is_admin
     FROM invite_tokens
     WHERE token = ${token}
   `;
@@ -44,6 +49,7 @@ export async function GET(
         email: string;
         expires_at: string;
         used_at: string | null;
+        is_admin: boolean;
       }
     | undefined;
 
@@ -62,6 +68,7 @@ export async function GET(
   return NextResponse.json({
     valid: true,
     email: row.email,
+    isAdmin: row.is_admin,
     expiresAt: row.expires_at,
   });
 }
@@ -111,7 +118,7 @@ export async function POST(
     : null;
 
   const rows = await sql`
-    SELECT id, email, expires_at, used_at
+    SELECT id, email, expires_at, used_at, is_admin
     FROM invite_tokens
     WHERE token = ${token}
   `;
@@ -121,6 +128,7 @@ export async function POST(
         email: string;
         expires_at: string;
         used_at: string | null;
+        is_admin: boolean;
       }
     | undefined;
 
@@ -136,7 +144,8 @@ export async function POST(
     return NextResponse.json({ error: "This invite has expired." }, { status: 410 });
   }
 
-  // Check the email doesn't already have a user (race condition guard)
+  // Check the email doesn't already have a user (fast, friendly pre-check —
+  // the authoritative guard is the atomic claim + unique constraint below).
   const existingUser = await sql`
     SELECT id FROM users WHERE email = ${row.email}
   `;
@@ -150,24 +159,56 @@ export async function POST(
   const id = createId();
   const passwordHash = hashPassword(password);
 
-  const inserted = (await sql`
-    INSERT INTO users (id, name, email, password_hash, is_admin, avatar_hue, avatar_expression)
-    VALUES (${id}, ${name.trim()}, ${row.email}, ${passwordHash}, false, ${hue}, ${expression})
-    RETURNING session_version
-  `) as Array<{ session_version: number }>;
+  // Claim + create run in one transaction: the claim only matches an
+  // unconsumed, unexpired invite, so two concurrent redemptions can't both
+  // create the user, and a unique-violation (email registered moments ago)
+  // maps to 409 instead of an unhandled 500.
+  let sessionVersion: number | null;
+  try {
+    sessionVersion = await sql.begin(async (tx) => {
+      const claimed = (await tx`
+        UPDATE invite_tokens
+        SET used_at = now()
+        WHERE id = ${row.id} AND used_at IS NULL AND expires_at > now()
+        RETURNING email, is_admin
+      `) as Array<{ email: string; is_admin: boolean }>;
 
-  // Mark the invite as used
-  await sql`
-    UPDATE invite_tokens
-    SET used_at = now()
-    WHERE id = ${row.id}
-  `;
+      if (claimed.length === 0) {
+        // Lost a race — the invite was consumed or expired meanwhile.
+        return null;
+      }
+
+      const inserted = (await tx`
+        INSERT INTO users (id, name, email, password_hash, is_admin, avatar_hue, avatar_expression)
+        VALUES (${id}, ${name.trim()}, ${claimed[0].email}, ${passwordHash}, ${claimed[0].is_admin}, ${hue}, ${expression})
+        RETURNING session_version
+      `) as Array<{ session_version: number }>;
+
+      return inserted[0]?.session_version ?? 0;
+    });
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      (error as { code?: string }).code === "23505"
+    ) {
+      return NextResponse.json(
+        { error: "A user with that email already exists." },
+        { status: 409 },
+      );
+    }
+    throw error;
+  }
+
+  if (sessionVersion === null) {
+    return NextResponse.json(
+      { error: "This invite has already been used or has expired." },
+      { status: 410 },
+    );
+  }
 
   // Create a session for the new user
-  const sessionToken = createUserSessionToken(
-    id,
-    inserted[0]?.session_version ?? 0,
-  );
+  const sessionToken = createUserSessionToken(id, sessionVersion ?? 0);
   const cookieStore = await cookies();
   cookieStore.set(USER_SESSION_COOKIE, sessionToken, {
     httpOnly: true,

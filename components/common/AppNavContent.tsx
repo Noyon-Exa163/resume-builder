@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Avatar } from "@/components/ui";
 import type { AvatarPreferences } from "@/lib/avatar";
+import { ThemeToggle } from "./ThemeToggle";
 import {
   FileText,
   LogOut,
@@ -49,7 +50,7 @@ export function AppNavContent({ isAdmin, user, onNavigate }: AppNavContentProps)
     { href: "/", label: "Resumes", icon: FileText },
     ...(isAdmin
       ? [
-          { href: "/settings/users", label: "Users", icon: Users },
+          { href: "/users", label: "Users", icon: Users },
           { href: "/settings/ai", label: "AI Settings", icon: Sparkles },
         ]
       : []),
@@ -88,11 +89,17 @@ export function AppNavContent({ isAdmin, user, onNavigate }: AppNavContentProps)
         })}
       </nav>
 
+      {/* Theme toggle sits directly above the account menu, at the bottom
+          of the sidebar (and the mobile drawer, which shares this content). */}
+      <div className="app-nav__theme-row">
+        <ThemeToggle />
+      </div>
+
       {user && (
         <div className="app-nav__user">
           <div className="app-nav__user-row">
             <Link
-              href="/settings/account"
+              href="/account"
               className="app-nav__user-link"
               aria-label="Open Account Details"
             >

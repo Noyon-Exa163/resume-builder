@@ -3,9 +3,11 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: var(--space-24);
-  padding: var(--space-6) var(--space-6) 0;
-  background-color: var(--color-brand-light);
+  /* A bit taller than the original well — more of the resume header
+     shows without going back to a full cover-style card. */
+  height: calc(var(--space-24) + var(--space-6));
+  padding: var(--space-4) var(--space-4) 0;
+  background-color: var(--color-surface-inset);
   border-radius: var(--radius-md);
   overflow: hidden;
 }

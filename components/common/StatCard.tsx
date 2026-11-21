@@ -4,7 +4,8 @@ import "./StatCard.css";
 export interface StatCardProps {
   icon: LucideIcon;
   label: string;
-  value: number;
+  /** Numeric for counts; a preformatted string (e.g. a date) for text values. */
+  value: number | string;
 }
 
 /**

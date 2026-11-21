@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -72,6 +73,15 @@ const QaEnvelopeSchema = z.object({
   reply: z.string(),
 });
 
+// The cost list derives from OpenRouter's public pricing — a slow
+// third-party fetch on a cold instance. Cached server-side (the payload has
+// no keys or user data); prices move rarely, so a 6h revalidate is plenty.
+const getChatModelCosts = unstable_cache(
+  async () => estimateChatModelCosts(),
+  ["chat-model-costs"],
+  { revalidate: 60 * 60 * 6 },
+);
+
 /**
  * GET /api/import/ai-chat — which models the chat box may offer, each with
  * an estimated cost per resume import at OpenRouter's current prices. Empty
@@ -88,7 +98,7 @@ export async function GET() {
     return NextResponse.json({ models: [] });
   }
   return NextResponse.json({
-    models: await estimateChatModelCosts(),
+    models: await getChatModelCosts(),
     defaultModelId: resolved.result.defaultChatModelId,
   });
 }

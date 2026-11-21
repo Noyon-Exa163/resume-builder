@@ -10,7 +10,12 @@ import { AdminSettingsInputSchema } from "@/lib/storage/settings/types";
  */
 
 function requireAdmin(user: Awaited<ReturnType<typeof getCurrentUser>>) {
-  if (!user || user.role !== "admin") {
+  // 401 for no session at all, 403 for a signed-in non-admin — keeps client
+  // handling and auth monitoring consistent with the rest of the API.
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+  if (user.role !== "admin") {
     return NextResponse.json(
       { error: "Admin access required." },
       { status: 403 },

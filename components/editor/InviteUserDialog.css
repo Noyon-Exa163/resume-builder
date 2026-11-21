@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-4) 0;
+  padding: var(--space-4) 0 var(--space-1);
 }
 
 .invite-user-dialog__field {
@@ -27,8 +27,12 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
+}
+
+.invite-user-dialog__admin-row {
+  display: flex;
+  justify-content: flex-start;
+  gap: var(--space-2);
 }
 
 .invite-user-dialog__link-row {

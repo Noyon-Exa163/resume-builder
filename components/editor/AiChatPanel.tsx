@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  memo,
   useEffect,
   useRef,
   useState,
@@ -51,6 +52,7 @@ import {
 import { aiChatRepository } from "@/lib/storage/aiChat/aiChatRepository";
 import { pendingImportRepository } from "@/lib/storage/pendingImport/pendingImportRepository";
 import { createId } from "@/lib/utils/ids";
+import { useEditorStore } from "@/lib/store/editorStore";
 import { AiChatMessageBubble } from "./AiChatMessageBubble";
 import { AiModelPicker } from "./AiModelPicker";
 import "./AiChatPanel.css";
@@ -88,7 +90,10 @@ const ACCEPTED_EXTENSIONS = ACCEPTED_IMPORT_EXTENSIONS.join(",");
 const CHIP_NAME_MAX_LENGTH = 28;
 
 export interface AiChatPanelProps {
-  resume: ResumeData;
+  /** Only the id travels down as a prop: the current draft is read from the
+   *  editor store at send time, so typing in the editor (a new resume object
+   *  every keystroke) doesn't re-render the whole transcript. */
+  resumeId: string;
   onApply: (partial: DeepPartial<ResumeData>) => void;
   className?: string;
 }
@@ -124,7 +129,7 @@ function hasExistingContent(resume: ResumeData): boolean {
  * reply or an instruction that should also update the resume. History
  * persists per resume (lib/storage/aiChat/) so it survives a reload.
  */
-export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
+function AiChatPanelInner({ resumeId, onApply, className }: AiChatPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -175,7 +180,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
   useEffect(() => {
     let cancelled = false;
     aiChatRepository
-      .get(resume.meta.id)
+      .get(resumeId)
       .then((record) => {
         if (cancelled) return;
         setMessages(record?.messages ?? []);
@@ -188,7 +193,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
     return () => {
       cancelled = true;
     };
-  }, [resume.meta.id]);
+  }, [resumeId]);
 
   // Picks up a file/prompt handed off from the New Resume dialog. Consumed
   // (deleted) as soon as it's read so revisiting this resume later, or a
@@ -196,10 +201,10 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
   useEffect(() => {
     let cancelled = false;
     pendingImportRepository
-      .get(resume.meta.id)
+      .get(resumeId)
       .then((record) => {
         if (!record) return;
-        void pendingImportRepository.delete(resume.meta.id);
+        void pendingImportRepository.delete(resumeId);
         if (cancelled || (!record.file && !record.prompt)) return;
         if (record.file) setFile(record.file);
         if (record.prompt) setInstruction(record.prompt);
@@ -211,7 +216,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
     return () => {
       cancelled = true;
     };
-  }, [resume.meta.id]);
+  }, [resumeId]);
 
   // Fires once the hand-off above has actually committed file/instruction
   // into state (a ref, not another state flag, so there's no setState to
@@ -251,7 +256,7 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
   function commitMessages(next: ChatMessage[]) {
     setMessages(next);
     void aiChatRepository
-      .set(resume.meta.id, { messages: next, updatedAt: new Date().toISOString() })
+      .set(resumeId, { messages: next, updatedAt: new Date().toISOString() })
       .catch((error) => {
         console.error("Failed to persist AI chat history:", error);
       });
@@ -467,14 +472,24 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
     resetComposer();
 
     if (directResumeUpdate) {
-      handleDirectImport(resume, baseMessages, userMessage, directResumeUpdate);
+      const currentResume = useEditorStore.getState().resume;
+      if (!currentResume) return;
+      handleDirectImport(
+        currentResume,
+        baseMessages,
+        userMessage,
+        directResumeUpdate,
+      );
       setStatus("idle");
       setLoadingStage(null);
       return;
     }
 
+    const currentResume = useEditorStore.getState().resume;
+    if (!currentResume) return;
+
     await requestTurn({
-      currentResume: resume,
+      currentResume,
       baseMessages,
       userMessage,
       attachedFileText,
@@ -493,7 +508,8 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
       nextMessage?.role === "assistant" ? nextMessage : undefined;
     const currentResume = discardedAssistant?.appliedChange
       ? discardedAssistant.appliedChange.previousResume
-      : resume;
+      : useEditorStore.getState().resume;
+    if (!currentResume) return;
     if (discardedAssistant?.appliedChange) {
       onApply(discardedAssistant.appliedChange.previousResume);
     }
@@ -523,7 +539,8 @@ export function AiChatPanel({ resume, onApply, className }: AiChatPanelProps) {
 
     const currentResume = assistantMessage.appliedChange
       ? assistantMessage.appliedChange.previousResume
-      : resume;
+      : useEditorStore.getState().resume;
+    if (!currentResume) return;
     if (assistantMessage.appliedChange) {
       onApply(assistantMessage.appliedChange.previousResume);
     }
@@ -804,3 +821,6 @@ async function extractText(
   if (format === "docx") return extractDocxText(file);
   return extractMarkdownText(file);
 }
+
+const AiChatPanel = memo(AiChatPanelInner);
+export { AiChatPanel };

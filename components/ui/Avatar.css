@@ -16,3 +16,11 @@
   width: 100%;
   height: 100%;
 }
+
+/* Uploaded profile photo — covers the circle. The bare variant disables the
+   wrapper's overflow clipping, so the photo clips itself. */
+.avatar__photo {
+  display: block;
+  object-fit: cover;
+  border-radius: var(--radius-full);
+}

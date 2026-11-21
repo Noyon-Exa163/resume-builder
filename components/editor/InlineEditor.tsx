@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { Button } from "@/components/ui";
 import "./InlineEditor.css";
 
 interface InlineEditorProps {
@@ -102,20 +103,17 @@ export function InlineEditor({
         />
       </div>
       <footer className="inline-editor__footer">
-        <button
-          type="button"
-          className="inline-editor__button inline-editor__button--cancel"
-          onClick={onCancel}
-        >
+        <Button type="button" variant="secondary" size="s" onClick={onCancel}>
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="inline-editor__button inline-editor__button--confirm"
+          variant="primary"
+          size="s"
           onClick={handleConfirm}
         >
           Done
-        </button>
+        </Button>
       </footer>
     </div>
   );

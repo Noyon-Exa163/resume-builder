@@ -75,34 +75,36 @@ function sidebarWidthStyle(width: number): CSSProperties {
 export default function EditorPage() {
   const params = useParams<{ resumeId: string }>();
   const router = useRouter();
-  const {
-    resume,
-    isLoading,
-    hasLoaded,
-    isDirty,
-    isSaving,
-    lastSavedAt,
-    access,
-    ownerEmail,
-    load,
-    save,
-    importInto,
-    setTitle,
-    setTemplateId,
-    setAccentColor,
-    setShowAlternatePhone,
-    setNameCasing,
-    setPersonalInfo,
-    setSummary,
-    addSection,
-    updateSection,
-    removeSection,
-    reorderSections,
-    addEntry,
-    updateEntry,
-    removeEntry,
-    reorderEntries,
-  } = useEditorStore();
+  // Narrow per-field selectors — a single `useEditorStore()` destructure
+  // subscribes this whole page (all three tab panels included) to every
+  // keystroke, because each edit produces a new `resume` object. Actions
+  // are stable references, so their selectors never trigger re-renders.
+  const resume = useEditorStore((s) => s.resume);
+  const isLoading = useEditorStore((s) => s.isLoading);
+  const hasLoaded = useEditorStore((s) => s.hasLoaded);
+  const isDirty = useEditorStore((s) => s.isDirty);
+  const isSaving = useEditorStore((s) => s.isSaving);
+  const lastSavedAt = useEditorStore((s) => s.lastSavedAt);
+  const access = useEditorStore((s) => s.access);
+  const ownerEmail = useEditorStore((s) => s.ownerEmail);
+  const load = useEditorStore((s) => s.load);
+  const save = useEditorStore((s) => s.save);
+  const importInto = useEditorStore((s) => s.importInto);
+  const setTitle = useEditorStore((s) => s.setTitle);
+  const setTemplateId = useEditorStore((s) => s.setTemplateId);
+  const setAccentColor = useEditorStore((s) => s.setAccentColor);
+  const setShowAlternatePhone = useEditorStore((s) => s.setShowAlternatePhone);
+  const setNameCasing = useEditorStore((s) => s.setNameCasing);
+  const setPersonalInfo = useEditorStore((s) => s.setPersonalInfo);
+  const setSummary = useEditorStore((s) => s.setSummary);
+  const addSection = useEditorStore((s) => s.addSection);
+  const updateSection = useEditorStore((s) => s.updateSection);
+  const removeSection = useEditorStore((s) => s.removeSection);
+  const reorderSections = useEditorStore((s) => s.reorderSections);
+  const addEntry = useEditorStore((s) => s.addEntry);
+  const updateEntry = useEditorStore((s) => s.updateEntry);
+  const removeEntry = useEditorStore((s) => s.removeEntry);
+  const reorderEntries = useEditorStore((s) => s.reorderEntries);
 
   useEffect(() => {
     if (params.resumeId) void load(params.resumeId);
@@ -457,6 +459,7 @@ export default function EditorPage() {
       >
         <LivePreviewPane
           data={resume}
+          editable={!isReadOnly}
           onPageCountChange={setPageCount}
           celebrateKey={importCelebrateKey}
         />
@@ -495,7 +498,7 @@ export default function EditorPage() {
                   content: (
                     <AiChatPanel
                       key={resume.meta.id}
-                      resume={resume}
+                      resumeId={resume.meta.id}
                       onApply={handleImport}
                     />
                   ),

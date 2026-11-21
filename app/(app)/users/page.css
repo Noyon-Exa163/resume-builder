@@ -1,0 +1,348 @@
+/* Admin user management page */
+
+.users-page {
+  max-width: 1000px;
+  /* Left-anchored ~100px (--space-24) from the sidebar edge — same
+     content position as the account page. */
+  margin: 0;
+  padding: var(--space-8) var(--space-6) var(--space-6) var(--space-24);
+}
+
+/* Below desktop there is no sidebar — reset the indent. */
+@media (max-width: 1023px) {
+  .users-page {
+    padding-left: var(--space-6);
+  }
+}
+
+.users-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.users-page__header-text {
+  min-width: 0;
+}
+
+.users-page__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.users-page__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  line-height: var(--leading-title);
+  letter-spacing: var(--tracking-heading);
+  text-wrap: balance;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.users-page__subtitle {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: var(--leading-body);
+  color: var(--color-text-secondary);
+  margin: var(--space-1) 0 0;
+}
+
+.users-page__error {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.57;
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+/* Create user form (rendered inside a Dialog) */
+.users-page__create-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.users-page__create-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  align-items: stretch;
+}
+
+/* Users / Pending Invites tabs */
+.users-page__tabs {
+  min-width: 0;
+}
+
+/* Control row above the card grid — role selector with the live count at
+   its right, search on the far end, all on the same 40px sight line. The
+   grid itself is the surface, like the dashboard. */
+.users-page__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.users-page__toolbar-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 1;
+  min-width: 0;
+}
+
+/* Compact secondary role selector — sizing/panel-collapse live in the
+   shared `.tabs--filter` variant (Tabs.css). */
+
+/* Quiet live-updating result count — the tab already names the section. */
+.users-page__count {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: var(--leading-ui);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  margin: 0;
+}
+
+/* Inline search — same anatomy as the dashboard search field, sized to the
+   40px role-selector track so the control row reads as one line. */
+.users-page__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 0 280px;
+  height: 40px;
+  padding: 0 var(--space-3);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--duration-base) var(--ease-default);
+}
+
+.users-page__search:focus-within {
+  border-color: var(--color-border-focus);
+}
+
+.users-page__search-icon {
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
+}
+
+.users-page__search-input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.users-page__search-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* People-card grid — same convention as the dashboard resume grid. */
+.users-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-4);
+  list-style: none;
+}
+
+/* People card — padding lives on the inner sections so the role strip is
+   full-bleed without negative margins; overflow clips it to the radius. */
+.users-page__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+
+@media (hover: hover) {
+  .users-page__card:hover {
+    box-shadow: var(--shadow-2);
+  }
+}
+
+.users-page__card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-4) var(--space-5);
+  text-align: center;
+}
+
+.users-page__card-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.users-page__card-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: var(--leading-ui);
+  letter-spacing: var(--tracking-none);
+  color: var(--color-text-primary);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.users-page__card-email {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.users-page__card-joined {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: var(--leading-caption);
+  color: var(--color-text-tertiary);
+}
+
+/* Corner slot — kebab menu or protected-account lock. The menu portals to
+   the body, so the card's overflow clipping can't cut it off. */
+.users-page__card-corner {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  z-index: 1;
+  display: inline-flex;
+}
+
+.users-page__card-protected {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--color-text-disabled);
+}
+
+/* Full-bleed inset strip docked to the card bottom — margin-top:auto
+   keeps it pinned in equal-height grid cards. */
+.users-page__card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;
+  min-height: 40px;
+  padding: var(--space-3) var(--space-5);
+  background-color: var(--color-surface-inset);
+  border-top: 1px solid var(--color-border);
+}
+
+/* Overline role — text-transform does the uppercasing; the markup stays
+   Title Case per the design-guide casing rules. */
+.users-page__card-role {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: var(--leading-caption);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.users-page__card-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-brand-subtle);
+  color: var(--color-brand);
+}
+
+/* PendingInvitesList ships its own page-level top margin; the tab panel
+   already provides spacing. */
+.users-page .pending-invites {
+  margin-top: 0;
+}
+
+/* sm — phone */
+@media (max-width: 639px) {
+  .users-page {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .users-page__title {
+    font-size: 24px;
+  }
+
+  .users-page__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .users-page__header-actions .button {
+    flex: 1;
+  }
+
+  .users-page__toolbar {
+    flex-wrap: wrap;
+  }
+
+  .users-page__search {
+    flex: 1 1 100%;
+    order: 3;
+    height: var(--size-touch-target);
+  }
+
+  .users-page__search-input {
+    font-size: 16px; /* iOS Safari zooms fields under 16px on focus */
+  }
+
+  .users-page__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .users-page__card-body {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .users-page__card-footer {
+    padding: var(--space-3) var(--space-4);
+  }
+}
+
+/* Touch: 44px tab pills and kebab (page-scoped; Tabs/Button are shared). */
+@media (pointer: coarse) {
+  .users-page__tabs .tabs__tab {
+    min-height: var(--size-touch-target);
+  }
+}

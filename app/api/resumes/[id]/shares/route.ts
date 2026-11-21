@@ -3,6 +3,7 @@ import { z } from "zod";
 import { sql } from "@/lib/db/client";
 import { getCurrentUser } from "@/lib/auth";
 import { canManageAllResumes } from "@/lib/auth/permissions";
+import { revalidateResumeCaches } from "@/lib/db/resumeQueries";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -109,6 +110,22 @@ export async function PUT(request: Request, { params }: RouteParams) {
     permission,
   }));
 
+  // Every target must be a real user — an id for a deleted/never-existed
+  // account would otherwise violate the foreign key and abort the whole
+  // update as an unhandled 500.
+  if (shares.length > 0) {
+    const known = (await sql`
+      SELECT id FROM users WHERE id = ANY(${shares.map((s) => s.userId)})
+    `) as Array<{ id: string }>;
+    const knownIds = new Set(known.map((row) => row.id));
+    if (shares.some((share) => !knownIds.has(share.userId))) {
+      return NextResponse.json(
+        { error: "Share list includes a user that no longer exists." },
+        { status: 400 },
+      );
+    }
+  }
+
   await sql.begin(async (tx) => {
     await tx`DELETE FROM resume_shares WHERE resume_id = ${id}`;
     for (const share of shares) {
@@ -119,5 +136,6 @@ export async function PUT(request: Request, { params }: RouteParams) {
     }
   });
 
+  revalidateResumeCaches();
   return NextResponse.json({ success: true });
 }

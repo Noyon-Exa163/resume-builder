@@ -57,6 +57,9 @@
   letter-spacing: var(--tracking-title);
   color: var(--color-text-primary);
   font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* sm — phone: compact chips; icon drops, value scales down. */

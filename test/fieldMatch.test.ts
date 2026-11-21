@@ -48,6 +48,26 @@ function buildResume(): ResumeData {
             startDate: "2024-12",
             bullets: ["Kept the lights on."],
           },
+          {
+            // A current role: no stored end date, the template prints
+            // "Aug 2025 - Present" and the end date is the synthetic
+            // "Present" value.
+            id: "e1c",
+            title: "Lead Engineer",
+            startDate: "2025-08",
+            isCurrent: true,
+            bullets: [],
+            tags: [],
+          },
+          {
+            // Year-only precision — prints as "2018 – 2022".
+            id: "e1d",
+            title: "Analyst",
+            startDate: "2018",
+            endDate: "2022",
+            bullets: [],
+            tags: [],
+          },
         ],
       },
       {
@@ -219,6 +239,31 @@ describe("findFieldByText", () => {
     // not the end date.
     const field = findFieldByText(data, "Jan 2020 – Present", 0.2);
     expect(field?.field).toBe("sections[0].entries[0].startDate");
+  });
+
+  it("keeps a Present-valued range clickable per half", () => {
+    // When the end date itself holds "Present" (an isCurrent entry), the
+    // reverse-contains fallback used to claim the whole range click for it
+    // — clicking "Aug 2025" opened the end date. Both halves must resolve
+    // through the date logic instead.
+    const start = findFieldByText(data, "Aug 2025 - Present", 0.2);
+    expect(start?.field).toBe("sections[0].entries[2].startDate");
+    const end = findFieldByText(data, "Aug 2025 - Present", 0.85);
+    expect(end?.field).toBe("sections[0].entries[2].endDate");
+    expect(end?.currentValue).toBe("Present");
+  });
+
+  it("keeps a year-only range clickable per half", () => {
+    // "2018 – 2022": both halves are bare years, so neither is a longer
+    // reverse-contains match — the tie used to fall to the first field in
+    // declaration order (the start date) no matter which half was clicked.
+    const start = findFieldByText(data, "2018 – 2022", 0.15);
+    expect(start?.field).toBe("sections[0].entries[3].startDate");
+    const end = findFieldByText(data, "2018 – 2022", 0.85);
+    expect(end?.field).toBe("sections[0].entries[3].endDate");
+    // A hyphenated print ("2018 - 2022") splits the same way.
+    const hyphenEnd = findFieldByText(data, "2018 - 2022", 0.85);
+    expect(hyphenEnd?.field).toBe("sections[0].entries[3].endDate");
   });
 });
 

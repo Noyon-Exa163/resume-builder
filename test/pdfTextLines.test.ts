@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildTextLines } from "@/components/editor/PdfCanvasViewer";
+import { buildTextLines } from "@/lib/pdf/textLines";
 
 /** Builds a pdfjs-style text item. Baselines are y-up (bigger = higher). */
 function run(
@@ -121,8 +121,8 @@ describe("buildTextLines", () => {
     ]);
     expect(lines).toHaveLength(1);
     expect(lines[0].runs).toEqual([
-      { text: "ada@example.com", x: 72, right: 72 + 15 * 5 },
-      { text: "+880 1676 095 674", x: 180, right: 180 + 17 * 5 },
+      { text: "ada@example.com", x: 72, right: 72 + 15 * 5, baseline: 700 },
+      { text: "+880 1676 095 674", x: 180, right: 180 + 17 * 5, baseline: 700 },
     ]);
   });
 });

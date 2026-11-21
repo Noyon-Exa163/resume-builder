@@ -4,7 +4,10 @@ import { getCurrentUser } from "@/lib/auth";
 import { recordResumeActivity } from "@/lib/db/resumeActivity";
 import { canManageAllResumes } from "@/lib/auth/permissions";
 import { ResumeDataSchema } from "@/lib/schema/resume";
-import { listResumesForUser } from "@/lib/db/resumeQueries";
+import {
+  listResumesForUser,
+  revalidateResumeCaches,
+} from "@/lib/db/resumeQueries";
 
 /**
  * GET /api/resumes — every resume the current user owns or has been shared,
@@ -97,14 +100,20 @@ export async function POST(request: Request) {
     RETURNING id
   `) as Array<{ id: string }>;
 
-  if (written.length > 0) {
-    await recordResumeActivity({
-      resumeId,
-      userId: user.id,
-      action: existing.length > 0 ? "edited" : "created",
-      snapshot: resume,
-    });
+  // written.length === 0 means the resume existed but the permission guard
+  // filtered the update out (share revoked between the check above and this
+  // write) — report it instead of acknowledging a save that never happened.
+  if (written.length === 0) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  await recordResumeActivity({
+    resumeId,
+    userId: user.id,
+    action: existing.length > 0 ? "edited" : "created",
+    snapshot: resume,
+  });
+  revalidateResumeCaches();
 
   return NextResponse.json(resume, { status: existing.length > 0 ? 200 : 201 });
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { RotateCcw, Shuffle } from "lucide-react";
+import { useRef, useState } from "react";
+import { ImagePlus, RotateCcw, Shuffle, Trash2 } from "lucide-react";
 import { ActionDialog, Avatar, Button, Tooltip } from "@/components/ui";
 import {
   AVATAR_COLORS,
@@ -9,6 +9,10 @@ import {
   type AvatarExpressionKey,
   type AvatarPreferences,
 } from "@/lib/avatar";
+import {
+  AVATAR_PHOTO_ACCEPT,
+  fileToAvatarPhotoDataUrl,
+} from "@/lib/avatar/photoUpload";
 import "./AvatarPickerDialog.css";
 
 export interface AvatarPickerDialogProps {
@@ -41,10 +45,35 @@ export default function AvatarPickerDialog({
   onSave,
 }: AvatarPickerDialogProps) {
   const [draft, setDraft] = useState<AvatarPreferences>(value);
+  const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   function handleOpenChange(next: boolean) {
-    if (next) setDraft(value);
+    if (next) {
+      setDraft(value);
+      setPhotoError("");
+    }
     onOpenChange(next);
+  }
+
+  /** Downscales the picked file and stages it in the draft (null removes). */
+  async function handlePhotoFile(file: File | undefined) {
+    if (!file) return;
+    setPhotoError("");
+    setIsProcessingPhoto(true);
+    try {
+      const photoDataUrl = await fileToAvatarPhotoDataUrl(file);
+      setDraft((d) => ({ ...d, photoDataUrl }));
+    } catch (err) {
+      setPhotoError(
+        err instanceof Error ? err.message : "Could not read that image.",
+      );
+    } finally {
+      setIsProcessingPhoto(false);
+      // Let the same file be re-picked after a fix.
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
   }
 
   function handleRandomize() {
@@ -63,7 +92,9 @@ export default function AvatarPickerDialog({
             type="button"
             variant="tertiary"
             size="s"
-            onClick={() => setDraft({ hue: null, expression: null })}
+            onClick={() =>
+              setDraft((d) => ({ ...d, hue: null, expression: null }))
+            }
           >
             <RotateCcw size={16} />
             Reset
@@ -73,6 +104,7 @@ export default function AvatarPickerDialog({
             size={96}
             hue={draft.hue}
             expression={draft.expression}
+            photoDataUrl={draft.photoDataUrl}
             followPointer
             bare
           />
@@ -98,6 +130,61 @@ export default function AvatarPickerDialog({
     >
       <div className="avatar-picker">
         {error && <div className="avatar-picker__error">{error}</div>}
+
+        <div className="avatar-picker__field">
+          <span className="avatar-picker__label" id="avatar-photo-label">
+            Photo
+          </span>
+          <div className="avatar-picker__photo-row">
+            <Avatar
+              name={email}
+              size={64}
+              hue={draft.hue}
+              expression={draft.expression}
+              photoDataUrl={draft.photoDataUrl}
+              bare
+            />
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept={AVATAR_PHOTO_ACCEPT}
+              className="avatar-picker__photo-input"
+              aria-label="Upload Photo"
+              onChange={(e) => void handlePhotoFile(e.target.files?.[0])}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="s"
+              disabled={isProcessingPhoto}
+              onClick={() => photoInputRef.current?.click()}
+            >
+              <ImagePlus size={14} />
+              {isProcessingPhoto ? "Processing…" : "Upload Photo"}
+            </Button>
+            {draft.photoDataUrl && (
+              <Button
+                type="button"
+                variant="tertiary"
+                size="s"
+                onClick={() =>
+                  setDraft((d) => ({ ...d, photoDataUrl: null }))
+                }
+              >
+                <Trash2 size={14} />
+                Remove Photo
+              </Button>
+            )}
+          </div>
+          {photoError && (
+            <p className="avatar-picker__photo-error" role="alert">
+              {photoError}
+            </p>
+          )}
+          <span className="avatar-picker__photo-hint">
+            A photo overrides the generated avatar until you remove it.
+          </span>
+        </div>
 
         <div className="avatar-picker__field">
           <span className="avatar-picker__label" id="avatar-color-label">

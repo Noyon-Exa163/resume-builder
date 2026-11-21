@@ -5,7 +5,7 @@ import { Check, Copy, Mail, UserPlus } from "lucide-react";
 import { DialogRoot, DialogPopup } from "@/components/ui/Dialog";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { useToast } from "@/components/ui";
+import { SwitchField, useToast } from "@/components/ui";
 import "./InviteUserDialog.css";
 
 interface InviteResponse {
@@ -26,6 +26,7 @@ export function InviteUserDialog({
   onInviteSent,
 }: InviteUserDialogProps) {
   const [email, setEmail] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -74,7 +75,7 @@ export function InviteUserDialog({
     void fetch("/api/invites", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim() }),
+      body: JSON.stringify({ email: email.trim(), isAdmin }),
     })
       .then(async (res) => {
         const data = (await res.json()) as InviteResponse & { error?: string };
@@ -165,6 +166,14 @@ export function InviteUserDialog({
               required
             />
             {error && <p className="invite-user-dialog__error">{error}</p>}
+            <div className="invite-user-dialog__admin-row">
+              <SwitchField
+                checked={isAdmin}
+                onCheckedChange={setIsAdmin}
+                label="Admin access"
+                tooltip="Admins can manage all resumes, invite users, and change settings."
+              />
+            </div>
             <div className="invite-user-dialog__footer">
               <Button
                 type="button"

@@ -29,7 +29,11 @@ const TestConnectionRequestSchema = z.object({
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
-  if (!user || user.role !== "admin") {
+  // 401 for no session at all, 403 for a signed-in non-admin.
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+  if (user.role !== "admin") {
     return NextResponse.json(
       { error: "Admin access required." },
       { status: 403 },
@@ -56,6 +60,23 @@ export async function POST(request: Request) {
 
   const { providerId, apiKey, model, baseUrl } = parsed.data;
   const provider = getProvider(providerId as AIProviderId);
-  const result = await provider.testConnection(apiKey, model ?? "", baseUrl);
-  return NextResponse.json(result);
+
+  // Vendor calls fail in all the usual ways (bad key, network error, SDK
+  // throw) — wrap so the admin UI gets a structured message instead of an
+  // unhandled 500.
+  try {
+    const result = await provider.testConnection(apiKey, model ?? "", baseUrl);
+    return NextResponse.json(result);
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "The provider test failed with an unknown error.",
+      },
+      { status: 502 },
+    );
+  }
 }

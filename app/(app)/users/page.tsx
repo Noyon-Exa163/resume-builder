@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import AppShell from "@/components/common/AppShell";
 import UsersPageClient from "./UsersPageClient";
 
 /**
@@ -14,9 +13,5 @@ export default async function UsersPage() {
     redirect("/");
   }
 
-  return (
-    <AppShell>
-      <UsersPageClient />
-    </AppShell>
-  );
+  return <UsersPageClient />;
 }

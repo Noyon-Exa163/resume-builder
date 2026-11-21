@@ -8,7 +8,6 @@ import type {
 import { layoutForSection } from "@/lib/schema/resume";
 import {
   backfillMetaDefaults,
-  createBlankResume,
   dedupeResumeIds,
   normalizeAndValidate,
   type DeepPartial,
@@ -401,6 +400,13 @@ export const useEditorStore = create<EditorState>((set, get) => {
     async save() {
       const run = async () => {
         if (!get().resume || !get().isDirty) return;
+        // View-only access: the server rejects writes (404, to avoid
+        // leaking the resume's existence), so never send one. Local
+        // changes stay local and no save error can surface.
+        if (get().access === "viewer") {
+          set({ isDirty: false });
+          return;
+        }
         set({ isSaving: true });
         try {
           while (get().isDirty) {
@@ -442,5 +448,3 @@ export const useEditorStore = create<EditorState>((set, get) => {
     },
   };
 });
-
-export { createBlankResume };

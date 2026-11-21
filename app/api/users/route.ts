@@ -15,7 +15,7 @@ export async function GET() {
   }
 
   const rows = (await sql`
-    SELECT id, email, name, avatar_hue, avatar_expression
+    SELECT id, email, name, avatar_hue, avatar_expression, photo_data_url
     FROM users WHERE id != ${user.id} ORDER BY email ASC
   `) as Array<{
     id: string;
@@ -23,6 +23,7 @@ export async function GET() {
     name: string | null;
     avatar_hue: number | null;
     avatar_expression: string | null;
+    photo_data_url: string | null;
   }>;
 
   return NextResponse.json(
@@ -30,7 +31,11 @@ export async function GET() {
       id: row.id,
       email: row.email,
       name: row.name?.trim() || row.email.split("@")[0],
-      avatar: avatarFromColumns(row.avatar_hue, row.avatar_expression),
+      avatar: avatarFromColumns(
+        row.avatar_hue,
+        row.avatar_expression,
+        row.photo_data_url,
+      ),
     })),
   );
 }

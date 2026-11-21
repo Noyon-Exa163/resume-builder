@@ -39,7 +39,7 @@ export function AppTopBar({ isAdmin, user }: AppTopBarProps) {
       </Link>
       {user && (
         <Link
-          href="/settings/account"
+          href="/account"
           className="app-topbar__account"
           aria-label="Account"
         >
