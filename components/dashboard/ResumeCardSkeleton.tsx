@@ -1,5 +1,5 @@
 import { Skeleton } from "@/components/ui";
-import "@/app/(app)/page.css";
+import "@/app/(app)/(dashboard)/page.css";
 // The preview well's own styling (height, inset background, radius) lives
 // here — without it the skeleton card collapses to a bare text row.
 import "./ResumeCardPreview.css";

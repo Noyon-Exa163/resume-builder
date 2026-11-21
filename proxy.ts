@@ -26,12 +26,29 @@ function isPublicPath(pathname: string): boolean {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  const token = request.cookies.get("user_session")?.value;
+  const session = verifyUserSessionToken(token);
+
+  // Signed-in users don't need the auth pages — send them on their way (the
+  // next param if it's an in-app path, otherwise the dashboard). Checked
+  // BEFORE the public-path pass-through below: /login is public, but a
+  // signed-in visitor should still be bounced to the app. The real pages
+  // re-check access server-side as usual; this is just the cheap gate.
+  if (session && pathname === "/login") {
+    const requested = request.nextUrl.searchParams.get("next");
+    const target =
+      requested && requested.startsWith("/") && !requested.startsWith("/login")
+        ? requested
+        : "/";
+    const url = request.nextUrl.clone();
+    url.pathname = target;
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   if (isPublicPath(pathname)) {
     return NextResponse.next();
   }
-
-  const token = request.cookies.get("user_session")?.value;
-  const session = verifyUserSessionToken(token);
 
   if (session) {
     return NextResponse.next();
