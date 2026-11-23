@@ -1,7 +1,6 @@
 .dashboard {
-  /* Shared content-column width — every content page (dashboard, settings)
-     uses the same 1000px canvas. */
-  max-width: 1000px;
+  /* Shared content-column width — wider canvas on large screens. */
+  max-width: 1280px;
   margin: 0;
   padding: var(--space-8) var(--space-6) var(--space-6) var(--space-24);
   min-height: 100%;
@@ -224,12 +223,14 @@
   align-items: center;
   gap: var(--space-1);
   min-width: 0;
+  max-width: 110px;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--font-body);
   font-size: 12px;
   line-height: var(--leading-caption);
   color: var(--color-text-tertiary);
-  white-space: nowrap;
 }
 
 .resume-card__meta svg {
@@ -271,6 +272,7 @@
 .resume-card__owner {
   margin-left: auto;
   min-width: 0;
+  flex-shrink: 0;
 }
 
 .resume-card__footer > .tooltip-trigger {

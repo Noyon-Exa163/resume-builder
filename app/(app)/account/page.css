@@ -1,9 +1,8 @@
 /* Account settings page */
 
 .account-page {
-  /* Shared content-column width — every content page (dashboard, settings)
-     uses the same 1000px canvas. */
-  max-width: 1000px;
+  /* Shared content-column width — wider canvas on large screens. */
+  max-width: 1280px;
   /* Left-anchored ~100px (--space-24) from the sidebar edge — same
      content position and top gap as the other in-app pages. */
   margin: 0;
@@ -103,9 +102,8 @@
   margin: 0 0 var(--space-2);
 }
 
-/* Detail rows as inset tiles: quiet micro-label above the value, matching
-   the profile-page reference. Spacing between tiles comes from the list
-   gap, not borders. */
+/* Detail rows as horizontal strips separated by hairlines — each row is a
+   label above its value, separated from the next by a border. */
 .account-details__list {
   display: flex;
   flex-direction: column;
@@ -118,9 +116,11 @@
   flex-direction: column;
   gap: var(--space-1);
   padding: var(--space-3) var(--space-4);
-  background-color: var(--color-surface-inset);
-  border-radius: var(--radius-md);
   min-width: 0;
+}
+
+.account-details__row + .account-details__row {
+  border-top: 1px solid var(--color-border);
 }
 
 .account-details__label {

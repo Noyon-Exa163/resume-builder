@@ -8,6 +8,20 @@ interface AdminSettingsRow {
 }
 
 /**
+ * Short-lived instance-level cache for the settings read — AI settings sit
+ * in the remote database, and they're read on EVERY chat message and AI
+ * request. Admin settings change rarely, so 60 seconds of staleness trades
+ * nothing for a round trip saved on each of those calls. In-memory only:
+ * API keys must never be written to a shared/persistent cache.
+ */
+const SETTINGS_CACHE_TTL_MS = 60 * 1000;
+let cachedSettings: { data: AdminSettings; at: number } | null = null;
+
+function invalidateSettingsCache(): void {
+  cachedSettings = null;
+}
+
+/**
  * Postgres-backed settings store (db/migrations/0002_settings.sql) —
  * consistent with the rest of the app's persistence (users, resumes already
  * live in the same Neon database) and, unlike the Netlify Blobs store this
@@ -17,10 +31,15 @@ interface AdminSettingsRow {
  */
 export const postgresSettingsStore: SettingsStore = {
   async get() {
+    if (cachedSettings && Date.now() - cachedSettings.at <= SETTINGS_CACHE_TTL_MS) {
+      return cachedSettings.data;
+    }
     const rows = (await sql`
       SELECT data FROM admin_settings WHERE id = ${SETTINGS_ROW_ID}
     `) as AdminSettingsRow[];
-    return rows[0]?.data ?? DEFAULT_ADMIN_SETTINGS;
+    const data = rows[0]?.data ?? DEFAULT_ADMIN_SETTINGS;
+    cachedSettings = { data, at: Date.now() };
+    return data;
   },
   async set(settings) {
     // Bind the object itself — postgres.js serializes it to JSON for the
@@ -32,5 +51,6 @@ export const postgresSettingsStore: SettingsStore = {
       ON CONFLICT (id) DO UPDATE
       SET data = EXCLUDED.data, updated_at = now()
     `;
+    invalidateSettingsCache();
   },
 };

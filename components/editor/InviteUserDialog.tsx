@@ -87,10 +87,13 @@ export function InviteUserDialog({
         setIsLoading(false);
         if (data.inviteUrl && data.delivered === false) {
           // Created, but no email went out — surface the link instead.
+          // Still notify the parent: the invite exists and must show up in
+          // the page's pending-invites section right away.
           setPendingLink({
             inviteUrl: data.inviteUrl,
             deliveryError: data.deliveryError ?? null,
           });
+          onInviteSent();
           toast({
             type: "info",
             title: "Invite created successfully!",

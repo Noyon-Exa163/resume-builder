@@ -1,0 +1,7 @@
+# ExaResume is an authenticated app — every real page sits behind sign-in.
+# Crawlers may index the public auth pages only.
+User-agent: *
+Allow: /login
+Allow: /forgot-password
+Allow: /reset-password
+Disallow: /

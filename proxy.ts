@@ -15,6 +15,11 @@ const PUBLIC_PATHS = [
   "/api/auth",
   "/api/invites",
   "/invite",
+  // Crawler files — public/robots.txt must be readable by search engines
+  // without a session, or the site's robots audit (and indexing rules)
+  // breaks: requests for it were being redirected to /login.
+  "/robots.txt",
+  "/sitemap.xml",
 ];
 
 function isPublicPath(pathname: string): boolean {

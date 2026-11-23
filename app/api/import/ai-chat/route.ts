@@ -89,11 +89,15 @@ const getChatModelCosts = unstable_cache(
  * OpenRouter), which is the picker's signal to stay hidden. Never exposes keys.
  */
 export async function GET() {
-  const user = await getCurrentUser();
+  // Independent reads — run in parallel to save a round trip per request.
+  const [user, resolvedEither] = await Promise.all([
+    getCurrentUser(),
+    resolveConfiguredProvider(),
+  ]);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const resolved = await resolveConfiguredProvider();
+  const resolved = resolvedEither;
   if (!resolved.ok || !offersChatModelChoice(resolved.result.provider.id)) {
     return NextResponse.json({ models: [] });
   }
@@ -104,7 +108,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const user = await getCurrentUser();
+  // The provider settings don't depend on the user — resolve both in
+  // parallel so a chat turn doesn't pay two sequential database round trips.
+  const [user, resolvedEither] = await Promise.all([
+    getCurrentUser(),
+    resolveConfiguredProvider(),
+  ]);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -130,7 +139,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const resolved = await resolveConfiguredProvider();
+  const resolved = resolvedEither;
   if (!resolved.ok) {
     return NextResponse.json({ error: resolved.error }, { status: 422 });
   }

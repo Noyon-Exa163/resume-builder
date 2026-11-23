@@ -78,56 +78,33 @@
   align-items: stretch;
 }
 
-/* Users / Pending Invites tabs */
-.users-page__tabs {
-  min-width: 0;
-}
-
-/* Control row above the card grid — role selector with the live count at
-   its right, search on the far end, all on the same 40px sight line. The
-   grid itself is the surface, like the dashboard. */
-.users-page__toolbar {
+/* Control row above the stat strip — search on the left with the role
+   filter beside it on one 40px sight line, like the dashboard's filters. */
+.users-page__filters {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-3);
   margin-bottom: var(--space-5);
 }
 
-.users-page__toolbar-main {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  flex: 1;
-  min-width: 0;
+.users-page__role-filter {
+  width: 240px;
 }
 
-/* Compact secondary role selector — sizing/panel-collapse live in the
-   shared `.tabs--filter` variant (Tabs.css). */
-
-/* Quiet live-updating result count — the tab already names the section. */
-.users-page__count {
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 500;
-  line-height: var(--leading-ui);
-  color: var(--color-text-tertiary);
-  white-space: nowrap;
-  margin: 0;
-}
-
-/* Inline search — same anatomy as the dashboard search field, sized to the
-   40px role-selector track so the control row reads as one line. */
+/* Inline search — same footprint as the dashboard search field so both
+   pages' filter rows read identically. */
 .users-page__search {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  flex: 0 0 280px;
+  flex: 0 0 auto;
+  width: 240px;
   height: 40px;
   padding: 0 var(--space-3);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   transition: border-color var(--duration-base) var(--ease-default);
 }
 
@@ -146,13 +123,68 @@
   border: none;
   background: transparent;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-primary);
   outline: none;
 }
 
 .users-page__search-input::placeholder {
   color: var(--color-text-tertiary);
+}
+
+/* Wide desktop (≥1440px): stats and user cards share three flexible
+   tracks (both 3-across, same card width); the invites section card gets
+   a much wider fixed track starting at the stats row. The canvas widens
+   from the shared 1000px page column past the 1280px design-guide ceiling
+   so the users content column matches the resumes page's (~900px) while
+   the aside fits beside it — the wider users list was an explicit product
+   call. This tier starts at 1440 rather than the guide's lg (1023px)
+   because a 400px aside only leaves sane room for three card columns on
+   wide monitors — below it the invites flow beneath the grid at full
+   width, which is the "smaller screen" behavior. The main column keeps
+   its width whether or not the aside renders, so the grid never reshuffles
+   when the invites fetch lands. */
+/* Below 1440px the invites section stacks beneath the users grid — add a
+   vertical gap so the two sections don't run into each other. */
+.users-page__columns {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.users-page__main {
+  min-width: 0;
+}
+
+@media (min-width: 1440px) {
+  .users-page {
+    max-width: 1440px;
+  }
+
+  /* Three flexible card tracks for stats + user cards, then the wider
+     fixed track for the invites section card. */
+  .users-page__columns {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) 400px;
+    gap: var(--space-4);
+    align-items: start;
+  }
+
+  .users-page__main {
+    grid-column: 1 / 4;
+  }
+
+  .users-page__aside {
+    grid-column: 4;
+    min-width: 0;
+  }
+
+  /* Pin the card columns to the same three tracks the stat strip uses.
+     Two-class specificity so it outranks the auto-fill base rule further
+     down this file regardless of cascade order. */
+  .users-page__main .users-page__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 /* People-card grid — same convention as the dashboard resume grid. */
@@ -187,8 +219,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-6) var(--space-4) var(--space-5);
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-3) var(--space-4);
   text-align: center;
 }
 
@@ -224,10 +256,95 @@
   white-space: nowrap;
 }
 
+/* Email + copy button on one line; the email truncates so the button
+   always fits beside it. */
+.users-page__card-email-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.users-page__card-copy-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.users-page__card-copy-wrap .button {
+  width: 32px;
+  padding: 0;
+  height: 32px;
+}
+
+.users-page__card-copy-tooltip {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  padding: 2px var(--space-2);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
+  white-space: nowrap;
+}
+
 .users-page__card-joined {
   font-family: var(--font-body);
   font-size: 12px;
   line-height: var(--leading-caption);
+  color: var(--color-text-tertiary);
+}
+
+/* Resume stats strip — created / shared-with counts and the last activity
+   stamp, on an inset well so it reads as data rather than chrome. Tight
+   spacing: three stats must fit a ~296px grid card without truncating. */
+.users-page__card-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  width: 100%;
+  padding: var(--space-1);
+}
+
+.users-page__card-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: 0 var(--space-2);
+  height: 24px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-inset);
+  font-family: var(--font-body);
+  color: var(--color-text-secondary);
+}
+
+.users-page__card-stat-value {
+  font-weight: 600;
+  font-size: 13px;
+  line-height: var(--leading-caption);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.users-page__card-stat-label {
+  font-size: 11px;
+  line-height: var(--leading-caption);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.users-page__card-stat svg {
+  flex-shrink: 0;
   color: var(--color-text-tertiary);
 }
 
@@ -258,8 +375,8 @@
   justify-content: space-between;
   gap: var(--space-2);
   margin-top: auto;
-  min-height: 40px;
-  padding: var(--space-3) var(--space-5);
+  min-height: 32px;
+  padding: var(--space-2) var(--space-4);
   background-color: var(--color-surface-inset);
   border-top: 1px solid var(--color-border);
 }
@@ -313,18 +430,15 @@
     flex: 1;
   }
 
-  .users-page__toolbar {
-    flex-wrap: wrap;
-  }
-
   .users-page__search {
     flex: 1 1 100%;
-    order: 3;
-    height: var(--size-touch-target);
+    width: auto;
   }
 
-  .users-page__search-input {
-    font-size: 16px; /* iOS Safari zooms fields under 16px on focus */
+  .users-page__role-filter {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
   }
 
   .users-page__grid {
@@ -340,9 +454,13 @@
   }
 }
 
-/* Touch: 44px tab pills and kebab (page-scoped; Tabs/Button are shared). */
+/* Touch: 44px search field (page-scoped; Tabs/Button are shared). */
 @media (pointer: coarse) {
-  .users-page__tabs .tabs__tab {
-    min-height: var(--size-touch-target);
+  .users-page__search {
+    height: var(--size-touch-target);
+  }
+
+  .users-page__search-input {
+    font-size: 16px; /* iOS Safari zooms fields under 16px on focus */
   }
 }

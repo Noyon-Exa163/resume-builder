@@ -1,9 +1,9 @@
 /* Admin AI provider settings page */
 
 .ai-settings-page {
-  /* Left-anchored ~100px (--space-24) from the sidebar edge, in the same
-     760px content column as the account page. */
-  max-width: 1000px;
+  /* Left-anchored ~100px (--space-24) from the sidebar edge, wider content
+     column on large screens. */
+  max-width: 1280px;
   margin: 0;
   padding: var(--space-8) var(--space-6) var(--space-6) var(--space-24);
 }

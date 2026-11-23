@@ -46,15 +46,24 @@ function requireAdmin(user: Awaited<ReturnType<typeof getCurrentUser>>) {
 // Cached: the admin users list (photos included) is read on every /users
 // visit and changes only through this file's POST and [id]'s DELETE — both
 // revalidate the "users" tag. Auth runs per request outside the cached fn.
+// The resume counts and last-activity stamp ride the same cache, so they
+// trail resume edits by at most its 60s revalidate window.
 const getAdminUsers = unstable_cache(
   async () => {
     const rows = await sql`
-      SELECT id, email, name, is_admin, created_at, avatar_hue, avatar_expression, photo_data_url
-      FROM users ORDER BY created_at ASC
+      SELECT u.id, u.email, u.name, u.is_admin, u.created_at,
+             u.avatar_hue, u.avatar_expression, u.photo_data_url,
+             (SELECT count(*) FROM resumes r
+              WHERE r.user_id = u.id) AS resumes_created,
+             (SELECT count(*) FROM resume_shares s
+              WHERE s.shared_with_user_id = u.id) AS resumes_shared,
+             (SELECT max(h.saved_at) FROM resume_history h
+              WHERE h.user_id = u.id) AS last_activity_at
+      FROM users u ORDER BY u.created_at ASC
     `;
 
     return (
-      rows as Array<{ id: string; email: string; name: string | null; is_admin: boolean; created_at: string; avatar_hue: number | null; avatar_expression: string | null; photo_data_url: string | null }>).map(
+      rows as Array<{ id: string; email: string; name: string | null; is_admin: boolean; created_at: string; avatar_hue: number | null; avatar_expression: string | null; photo_data_url: string | null; resumes_created: number; resumes_shared: number; last_activity_at: string | Date | null }>).map(
       (r) => ({
         id: r.id,
         email: r.email,
@@ -66,6 +75,11 @@ const getAdminUsers = unstable_cache(
           r.avatar_expression,
           r.photo_data_url,
         ),
+        resumesCreated: Number(r.resumes_created),
+        resumesShared: Number(r.resumes_shared),
+        lastActivityAt: r.last_activity_at
+          ? new Date(r.last_activity_at).toISOString()
+          : null,
       }),
     );
   },

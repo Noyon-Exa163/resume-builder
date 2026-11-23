@@ -1,18 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MailQuestion, RotateCcw, Trash2 } from "lucide-react";
+import { Mail, MailQuestion, RotateCcw, Trash2, UserPlus } from "lucide-react";
 import {
   Avatar,
   Badge,
   Button,
   EmptyState,
+  SelectField,
   Skeleton,
-  TabsField,
   useToast,
+  type SelectOption,
 } from "@/components/ui";
 import { formatDateTime } from "@/lib/date/formatDateTime";
 import { usePagedList } from "@/lib/utils/usePagedList";
+import { cachePageData, readCachedPageData } from "@/lib/utils/pageDataCache";
 import { LoadMoreFooter } from "@/components/common/LoadMoreFooter";
 import "./PendingInvitesList.css";
 
@@ -41,15 +43,44 @@ const STATUS_LABEL: Record<InviteStatus, string> = {
   expired: "Expired",
 };
 
+const STATUS_FILTER_OUTSTANDING = "outstanding";
+const STATUS_FILTER_ACCEPTED = "accepted";
+const STATUS_FILTER_ALL = "all";
+
+const STATUS_FILTER_OPTIONS: SelectOption[] = [
+  {
+    value: STATUS_FILTER_OUTSTANDING,
+    label: "Outstanding",
+    icon: <MailQuestion size={14} aria-hidden="true" />,
+  },
+  {
+    value: STATUS_FILTER_ACCEPTED,
+    label: "Accepted",
+    icon: <UserPlus size={14} aria-hidden="true" />,
+  },
+  {
+    value: STATUS_FILTER_ALL,
+    label: "All",
+    icon: <Mail size={14} aria-hidden="true" />,
+  },
+];
+
 export interface PendingInvitesListProps {
   /** Bump to make the list refetch (e.g. after the invite dialog sends one). */
   refreshKey: number;
   onChanged: () => void;
 }
 
+/** Repeat visits render the cached list and refresh in the background. */
+const INVITES_CACHE_KEY = "invites:list";
+const INVITES_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
+
 /**
- * Admin view of every invite ever sent, with re-send and revoke for the ones
- * still outstanding. Accepted invites stay listed as history.
+ * Admin view of every invite ever sent, rendered as a card section beside
+ * the users grid (below it on smaller screens). Defaults to the All filter
+ * — outstanding (pending + expired) and accepted invite history are one
+ * switch away, and the pill counts whatever the active filter shows.
+ * Hidden entirely until at least one invite exists.
  */
 export function PendingInvitesList({
   refreshKey,
@@ -60,11 +91,26 @@ export function PendingInvitesList({
   const [error, setError] = useState("");
   const [busyEmail, setBusyEmail] = useState<string | null>(null);
   const [localRefresh, setLocalRefresh] = useState(0);
-  const [inviteFilter, setInviteFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState(STATUS_FILTER_ALL);
   const { toast } = useToast();
 
   useEffect(() => {
     let ignore = false;
+
+    // Repeat visit: paint the cached list instantly; the fetch below then
+    // refreshes it in the background. Runs post-hydration, so the server
+    // and client render the same first tree.
+    const cached = readCachedPageData<InviteRecord[]>(
+      INVITES_CACHE_KEY,
+      INVITES_CACHE_MAX_AGE_MS,
+    );
+    if (cached && !ignore) {
+      setInvites(
+        cached.map((row) => ({ ...row, status: statusOf(row, Date.now()) })),
+      );
+      setIsLoading(false);
+    }
+
     fetch("/api/invites")
       .then(async (res) => {
         if (!res.ok) {
@@ -75,8 +121,11 @@ export function PendingInvitesList({
       })
       .then((data) => {
         if (ignore) return;
-        setInvites(data.map((row) => ({ ...row, status: statusOf(row, Date.now()) })));
+        setInvites(
+          data.map((row) => ({ ...row, status: statusOf(row, Date.now()) })),
+        );
         setError("");
+        cachePageData(INVITES_CACHE_KEY, data);
       })
       .catch((err: Error) => {
         if (!ignore)
@@ -136,41 +185,45 @@ export function PendingInvitesList({
     }
   }
 
-  const outstanding = invites.filter(
-    (invite) => invite.status !== "accepted",
-  );
+  const outstanding = invites.filter((invite) => invite.status !== "accepted");
 
-  // Active selector bucket (All | Outstanding), independent of anything else
-  // — lets the empty states distinguish "nothing outstanding" from "no
-  // invites at all".
-  const bucket = inviteFilter === "outstanding" ? outstanding : invites;
+  // Active selector bucket, independent of anything else — lets the empty
+  // states distinguish "nothing outstanding" from "no invites at all".
+  const bucket =
+    statusFilter === STATUS_FILTER_ACCEPTED
+      ? invites.filter((invite) => invite.status === "accepted")
+      : statusFilter === STATUS_FILTER_ALL
+        ? invites
+        : outstanding;
   // "Load More" paging over the active bucket.
-  const { visible: visibleInvites, visibleCount, loadMore } = usePagedList(
-    bucket,
-    8,
-  );
+  const {
+    visible: visibleInvites,
+    visibleCount,
+    loadMore,
+  } = usePagedList(bucket, 8);
+
+  // Nobody has ever been invited — nothing to manage, no section at all.
+  if (!isLoading && invites.length === 0) return null;
 
   return (
-    <section className="pending-invites">
-      <div className="pending-invites__toolbar">
-        <TabsField
-          className="tabs--filter"
-          value={inviteFilter}
-          onValueChange={setInviteFilter}
-          tabs={[
-            { value: "all", label: "All", content: null },
-            { value: "outstanding", label: "Outstanding", content: null },
-          ]}
-        />
+    <section className="pending-invites" aria-label="Email Invites">
+      <div className="pending-invites__header">
+        <h2 className="pending-invites__title">Email Invites</h2>
         {isLoading ? (
-          <Skeleton width={64} height={13} />
+          <Skeleton width={28} height={18} radius="full" />
         ) : (
-          <p className="pending-invites__live-count" aria-live="polite">
-            {inviteFilter === "outstanding"
-              ? `${bucket.length} outstanding`
-              : `${bucket.length} invite${bucket.length !== 1 ? "s" : ""}`}
-          </p>
+          <span className="pending-invites__count" aria-live="polite">
+            {bucket.length}
+          </span>
         )}
+        <SelectField
+          className="pending-invites__filter"
+          size="s"
+          ariaLabel="Filter Invites by Status"
+          options={STATUS_FILTER_OPTIONS}
+          value={statusFilter}
+          onValueChange={(next) => setStatusFilter(next ?? STATUS_FILTER_ALL)}
+        />
       </div>
 
       {error && <div className="pending-invites__error">{error}</div>}
@@ -189,11 +242,17 @@ export function PendingInvitesList({
             </div>
           ))
         ) : bucket.length === 0 ? (
-          inviteFilter === "outstanding" ? (
+          statusFilter === STATUS_FILTER_OUTSTANDING ? (
             <EmptyState
               icon={MailQuestion}
               title="No outstanding invites."
               description="Every invitation has been accepted."
+            />
+          ) : statusFilter === STATUS_FILTER_ACCEPTED ? (
+            <EmptyState
+              icon={UserPlus}
+              title="No accepted invites yet."
+              description="Accepted invitations appear here as history."
             />
           ) : (
             <EmptyState
@@ -223,15 +282,12 @@ export function PendingInvitesList({
                         {invite.email}
                       </span>
                       <span className="pending-invites__meta">
-                        Invited by {invite.invitedBy || "an admin"} ·
-                        Invited {formatDateTime(invite.createdAt)} ·
-                        {invite.status !== "accepted"
-                          ? `${invite.status === "expired" ? "expired" : "expires"} ${formatDateTime(invite.expiresAt)}`
-                          : `Accepted ${formatDateTime(invite.usedAt ?? invite.createdAt)}`}
+                        Invited by {invite.invitedBy || "an admin"} · Invited{" "}
+                        {formatDateTime(invite.createdAt)}
                       </span>
                     </div>
                   </div>
-                  <div className="pending-invites__right">
+                  <div className="pending-invites__actions-group">
                     <Badge
                       variant={
                         invite.status === "pending"
