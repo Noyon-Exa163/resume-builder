@@ -113,35 +113,32 @@ const AI_SETTINGS_CACHE_KEY = "ai-settings";
 const AI_SETTINGS_MAX_AGE_MS = 5 * 60 * 1000;
 
 export default function AiSettingsPageClient() {
-  const cachedSettings = readCachedPageData<AdminSettingsResponse>(
-    AI_SETTINGS_CACHE_KEY,
-    AI_SETTINGS_MAX_AGE_MS,
-  );
-  const cachedState = cachedSettings
-    ? settingsStateFromResponse(cachedSettings)
-    : null;
-  const [providers, setProviders] = useState<ProvidersState>(
-    cachedState?.providers ?? emptyProviders(),
-  );
+  // Stale-while-revalidate: a repeat visit paints the cached settings
+  // instantly and refreshes in the background (see lib/utils/pageDataCache.ts).
+  // The cache is read in the mount effect below rather than during render —
+  // sessionStorage doesn't exist during SSR, so reading while rendering would
+  // hydrate a different tree than the server rendered (hydration mismatch in
+  // devtools). Same pattern as UsersPageClient.
+  const [providers, setProviders] = useState<ProvidersState>(emptyProviders());
   // Snapshot of what's actually persisted server-side. Per-provider save/
   // remove reads other rows from here (not from `providers`) so saving one
   // row can never accidentally persist some other row's half-typed edits.
   const [savedProviders, setSavedProviders] = useState<ProvidersState>(
-    cachedState?.providers ?? emptyProviders(),
+    emptyProviders(),
   );
   const [defaultProviderId, setDefaultProviderId] = useState<string | null>(
-    cachedState?.defaultProviderId ?? null,
+    null,
   );
   const [defaultTemplateId, setDefaultTemplateId] = useState<string | null>(
-    cachedState?.defaultTemplateId ?? null,
+    null,
   );
   const [defaultChatModelId, setDefaultChatModelId] = useState(
-    cachedState?.defaultChatModelId ?? DEFAULT_CHAT_MODEL_ID,
+    DEFAULT_CHAT_MODEL_ID,
   );
   // Live cost estimates for the Default Model list — decoration only, so
   // the list still works (without prices) if they can't be loaded.
   const [modelEstimates, setModelEstimates] = useState<ChatModelEstimate[]>([]);
-  const [isLoading, setIsLoading] = useState(cachedSettings === null);
+  const [isLoading, setIsLoading] = useState(true);
   const [savingProviderId, setSavingProviderId] = useState<AIProviderId | null>(
     null,
   );
@@ -160,6 +157,28 @@ export default function AiSettingsPageClient() {
   useEffect(() => {
     let ignore = false;
 
+    /** Applies a settings payload (cached or fetched) to the form state. */
+    function applySettings(data: AdminSettingsResponse) {
+      const next = settingsStateFromResponse(data);
+      setProviders(next.providers);
+      setSavedProviders(next.providers);
+      setDefaultProviderId(next.defaultProviderId);
+      setDefaultTemplateId(next.defaultTemplateId);
+      setDefaultChatModelId(next.defaultChatModelId);
+    }
+
+    // Repeat visit: paint the cached settings instantly; the fetch below
+    // then refreshes them in the background. Runs post-hydration, so the
+    // server and client render the same first tree.
+    const cached = readCachedPageData<AdminSettingsResponse>(
+      AI_SETTINGS_CACHE_KEY,
+      AI_SETTINGS_MAX_AGE_MS,
+    );
+    if (cached && !ignore) {
+      applySettings(cached);
+      setIsLoading(false);
+    }
+
     fetch("/api/settings")
       .then(async (res) => {
         if (!res.ok) {
@@ -170,12 +189,7 @@ export default function AiSettingsPageClient() {
       })
       .then((data: AdminSettingsResponse) => {
         if (ignore) return;
-        const next = settingsStateFromResponse(data);
-        setProviders(next.providers);
-        setSavedProviders(next.providers);
-        setDefaultProviderId(next.defaultProviderId);
-        setDefaultTemplateId(next.defaultTemplateId);
-        setDefaultChatModelId(next.defaultChatModelId);
+        applySettings(data);
         cachePageData(AI_SETTINGS_CACHE_KEY, data);
       })
       .catch((err: Error) => {

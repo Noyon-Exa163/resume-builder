@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isUserSessionCurrent } from "@/lib/auth";
 import { verifyUserSessionToken } from "@/lib/auth/userSession";
 
 /**
@@ -28,7 +29,7 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const token = request.cookies.get("user_session")?.value;
@@ -39,16 +40,33 @@ export function proxy(request: NextRequest) {
   // BEFORE the public-path pass-through below: /login is public, but a
   // signed-in visitor should still be bounced to the app. The real pages
   // re-check access server-side as usual; this is just the cheap gate.
+  //
+  // The bounce double-checks the DB, though: a token can verify by HMAC and
+  // expiry while its session is long dead server-side (logout on another
+  // device, password change, deleted account — all bump session_version).
+  // Bouncing on such a token ping-pongs forever — this redirect sends the
+  // visitor to `next`, whose page rejects them straight back to /login, and
+  // only clearing cookies could break the cycle. A stale token therefore
+  // falls through to the login form like any signed-out visitor; the dead
+  // cookie simply rides along until it expires or the next logout clears it.
+  // The DB check only ever runs for /login requests, so the cheap gate stays
+  // cheap on app routes.
   if (session && pathname === "/login") {
-    const requested = request.nextUrl.searchParams.get("next");
-    const target =
-      requested && requested.startsWith("/") && !requested.startsWith("/login")
-        ? requested
-        : "/";
-    const url = request.nextUrl.clone();
-    url.pathname = target;
-    url.search = "";
-    return NextResponse.redirect(url);
+    const isCurrent = await isUserSessionCurrent(
+      session.userId,
+      session.sessionVersion,
+    );
+    if (isCurrent) {
+      const requested = request.nextUrl.searchParams.get("next");
+      const target =
+        requested && requested.startsWith("/") && !requested.startsWith("/login")
+          ? requested
+          : "/";
+      const url = request.nextUrl.clone();
+      url.pathname = target;
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
   }
 
   if (isPublicPath(pathname)) {

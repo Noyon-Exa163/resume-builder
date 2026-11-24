@@ -1,24 +1,19 @@
 /* Account settings page */
 
 .account-page {
-  /* Shared content-column width — wider canvas on large screens. */
-  max-width: 1280px;
-  /* Left-anchored ~100px (--space-24) from the sidebar edge — same
-     content position and top gap as the other in-app pages. */
-  margin: 0;
-  padding: var(--space-8) var(--space-6) var(--space-6) var(--space-24);
+  /* Shared app content column — same 1000px canvas as the dashboard,
+     users, and AI settings pages, centered in the content area. */
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-6);
 }
 
-/* Below desktop there is no sidebar (AppTopBar takes over), so the wide
-   left indent would be meaningless — and the fixed identity column would
-   squeeze the content, so the page stacks instead. */
-@media (max-width: 1023px) {
+/* Wide desktop — all four pages share this tier: once 1440px of content
+   area fits beside the 240px sidebar (≥1680px viewport), the canvas
+   widens so every page keeps the identical content width. */
+@media (min-width: 1680px) {
   .account-page {
-    padding-left: var(--space-6);
-  }
-
-  .account-page__layout {
-    grid-template-columns: 1fr;
+    max-width: 1440px;
   }
 }
 
@@ -55,6 +50,15 @@
   align-items: start;
 }
 
+/* Below desktop the fixed identity column would squeeze the content,
+   so the page stacks instead. Declared after the base rule — equal
+   specificity, so source order decides the cascade. */
+@media (max-width: 1023px) {
+  .account-page__layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 .account-page__main {
   display: flex;
   flex-direction: column;
@@ -68,13 +72,19 @@
   margin-bottom: 0;
 }
 
-/* The right column is much narrower than the dashboard's full-width strip,
-   so the tiles stack icon / label / value vertically — the horizontal
-   layout would truncate every label and the date value. */
-.account-page .stat-card {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
+/* The stat tiles use the shared horizontal StatCard layout (icon chip
+   beside the label/value column) — same as the dashboard strip. */
+
+/* Narrow canvases (viewport < 1240px, where the 1000px canvas cap stops
+   applying and the right column tightens): the horizontal tiles would
+   clip their labels and the date value, so the tiles stack icon / label
+   / value vertically there instead. */
+@media (max-width: 1239px) {
+  .account-page .stat-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
 }
 
 .account-card {

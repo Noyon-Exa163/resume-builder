@@ -1,23 +1,19 @@
 /* Admin AI provider settings page */
 
 .ai-settings-page {
-  /* Left-anchored ~100px (--space-24) from the sidebar edge, wider content
-     column on large screens. */
-  max-width: 1280px;
-  margin: 0;
-  padding: var(--space-8) var(--space-6) var(--space-6) var(--space-24);
+  /* Shared app content column — same 1000px canvas as the dashboard,
+     users, and account pages, centered in the content area. */
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-6);
 }
 
-/* Below desktop there is no sidebar — reset the wide left indent, and the
-   narrowed left column would get too tight, so stack the Settings card
-   back under the provider cards. */
-@media (max-width: 1023px) {
+/* Wide desktop — all four pages share this tier: once 1440px of content
+   area fits beside the 240px sidebar (≥1680px viewport), the canvas
+   widens so every page keeps the identical content width. */
+@media (min-width: 1680px) {
   .ai-settings-page {
-    padding-left: var(--space-6);
-  }
-
-  .ai-settings-page__layout {
-    grid-template-columns: 1fr;
+    max-width: 1440px;
   }
 }
 
@@ -59,13 +55,24 @@
   min-width: 0;
 }
 
-/* Provider cards fill a narrower left column so the Settings card fits
-   beside them, pinned to the top of the right column. */
+/* The Settings card mirrors the users page's Email Invites aside: a 400px
+   fixed track pinned to the top right, beside the provider cards. The
+   pair holds from tablet-lg (≥768px) up — laptops included — so the
+   layout matches the large screen everywhere it can fit; below that the
+   card stacks beneath the providers, with the stacked-section gap
+   matching the users page's stacked rhythm. */
 .ai-settings-page__layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
   align-items: start;
+}
+
+@media (min-width: 768px) {
+  .ai-settings-page__layout {
+    grid-template-columns: minmax(0, 1fr) 400px;
+    gap: var(--space-4);
+  }
 }
 
 .ai-settings-page__provider {

@@ -67,3 +67,25 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     createdAt: new Date(row.created_at).toISOString(),
   };
 });
+
+/**
+ * Confirms a token's session_version still matches the user's column.
+ *
+ * proxy.ts's /login bounce runs this as a second check: verifyUserSessionToken
+ * only proves the token's HMAC and expiry, while a logout on another device,
+ * a password change, or account deletion bump users.session_version and kill
+ * the session server-side. Trusting the token alone there once bounced
+ * stale-cookie visitors straight back to the app, whose pages sent them right
+ * back to /login — an infinite /login ⇄ app redirect loop that only clearing
+ * cookies could break.
+ */
+export async function isUserSessionCurrent(
+  userId: string,
+  sessionVersion: number,
+): Promise<boolean> {
+  const rows = await sql`
+    SELECT session_version FROM users WHERE id = ${userId}
+  `;
+  const row = rows[0] as { session_version: number } | undefined;
+  return row !== undefined && row.session_version === sessionVersion;
+}

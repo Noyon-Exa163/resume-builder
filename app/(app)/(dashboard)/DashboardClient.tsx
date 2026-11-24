@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./page.css";
 import type { ResumeData } from "@/lib/schema/resume";
 import { normalizeAndValidate } from "@/lib/schema/normalize";
@@ -14,7 +14,6 @@ import {
 } from "@/lib/storage/api/resumeAccess";
 import { ResumeCardPreview } from "@/components/dashboard/ResumeCardPreview";
 import { StatCard } from "@/components/common/StatCard";
-import { LoadMoreFooter } from "@/components/common/LoadMoreFooter";
 import { usePagedList } from "@/lib/utils/usePagedList";
 import { NewResumeDialog } from "@/components/dashboard/NewResumeDialog";
 import { ShareDialog } from "@/components/common/ShareDialog";
@@ -41,6 +40,11 @@ import {
   X,
 } from "lucide-react";
 const ALL_OWNERS = "all";
+
+/** Infinite-scroll page size — search/filter/sort still see everything;
+ *  only the rendered DOM is windowed. Twelve tiles the four-column grid
+ *  exactly (three full rows per page). */
+const RESUMES_PAGE_SIZE = 12;
 
 const SORT_FIELD_OPTIONS = [
   { value: "created", label: "Date Created" },
@@ -128,12 +132,37 @@ export default function DashboardClient({
     );
   }, [entries, searchQuery, activeOwnerFilter, sortField, sortDirection]);
 
-  // "Load More" paging over the filtered list — search/filter/sort above
-  // still see everything; only the DOM is windowed (9 per page).
-  const { visible: visibleEntries, visibleCount, loadMore } = usePagedList(
-    filteredEntries,
-    9,
-  );
+  // Paged rendering over the filtered list, appended by infinite scroll.
+  const {
+    visible: visibleEntries,
+    visibleCount,
+    hasMore,
+    loadMore,
+  } = usePagedList(filteredEntries, RESUMES_PAGE_SIZE);
+
+  // Infinite scroll: a 1px sentinel sits below the count line; when it
+  // nears the viewport the next page appends automatically. `visibleCount`
+  // is a dep so a sentinel that never leaves the viewport (few results on
+  // a tall screen) keeps loading pages until the list runs out.
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreRef = useRef(loadMore);
+  useEffect(() => {
+    loadMoreRef.current = loadMore;
+  });
+  useEffect(() => {
+    if (!hasMore) return;
+    const element = sentinelRef.current;
+    if (!element) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) loadMoreRef.current();
+      },
+      // Start loading before the sentinel actually scrolls into view.
+      { rootMargin: "240px" },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [hasMore, visibleCount]);
 
   // Summary strip above the grid — derived, never stored.
   const stats = useMemo(() => {
@@ -458,23 +487,29 @@ export default function DashboardClient({
                     {access === "editor" ? "Shared • Editor" : "Shared • Viewer"}
                   </span>
                 )}
-                {access !== "owner" && (
+                {/* Every card credits its creator (or, on shared cards, the
+                    sharer) — avatar only; the name, email, and creation
+                    timestamp live in the hover card. The identity is missing
+                    on a just-duplicated card until the next server load, so
+                    the chip is skipped then. */}
+                {ownerEmail && (
                   <UserTooltip
-                    title={access === "admin" ? "Created By" : "Shared By"}
+                    title={
+                      access === "editor" || access === "viewer"
+                        ? "Shared By"
+                        : "Created By"
+                    }
                     name={ownerName ?? ownerEmail.split("@")[0]}
                     email={ownerEmail}
                     avatar={ownerAvatar}
                     caption={
-                      access === "admin"
-                        ? formatDateTime(resume.meta.createdAt)
-                        : undefined
+                      access === "editor" || access === "viewer"
+                        ? undefined
+                        : formatDateTime(resume.meta.createdAt)
                     }
                   >
                     <span className="resume-card__owner">
                       <Avatar name={ownerEmail} size={20} bare {...ownerAvatar} />
-                      <span className="resume-card__owner-name">
-                        {ownerName ?? ownerEmail.split("@")[0]}
-                      </span>
                     </span>
                   </UserTooltip>
                 )}
@@ -483,12 +518,15 @@ export default function DashboardClient({
           ))}
         </ul>
 
-          <LoadMoreFooter
-            visible={visibleCount}
-            total={filteredEntries.length}
-            pageSize={9}
-            itemLabel="resumes"
-            onLoadMore={loadMore}
+          {filteredEntries.length > RESUMES_PAGE_SIZE && (
+            <p className="dashboard__count" aria-live="polite">
+              {`Showing ${visibleCount} of ${filteredEntries.length} resumes`}
+            </p>
+          )}
+          <div
+            className="dashboard__sentinel"
+            ref={sentinelRef}
+            aria-hidden="true"
           />
         </>
       )}

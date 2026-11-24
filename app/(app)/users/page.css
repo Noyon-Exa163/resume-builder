@@ -1,18 +1,11 @@
 /* Admin user management page */
 
 .users-page {
+  /* Shared app content column — the dashboard, AI settings, and account
+     pages use this same 1000px canvas, centered in the content area. */
   max-width: 1000px;
-  /* Left-anchored ~100px (--space-24) from the sidebar edge — same
-     content position as the account page. */
-  margin: 0;
-  padding: var(--space-8) var(--space-6) var(--space-6) var(--space-24);
-}
-
-/* Below desktop there is no sidebar — reset the indent. */
-@media (max-width: 1023px) {
-  .users-page {
-    padding-left: var(--space-6);
-  }
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-6);
 }
 
 .users-page__header {
@@ -132,20 +125,24 @@
   color: var(--color-text-tertiary);
 }
 
-/* Wide desktop (≥1440px): stats and user cards share three flexible
+/* Wide desktop (≥1680px): stats and user cards share three flexible
    tracks (both 3-across, same card width); the invites section card gets
    a much wider fixed track starting at the stats row. The canvas widens
    from the shared 1000px page column past the 1280px design-guide ceiling
-   so the users content column matches the resumes page's (~900px) while
-   the aside fits beside it — the wider users list was an explicit product
-   call. This tier starts at 1440 rather than the guide's lg (1023px)
-   because a 400px aside only leaves sane room for three card columns on
-   wide monitors — below it the invites flow beneath the grid at full
-   width, which is the "smaller screen" behavior. The main column keeps
-   its width whether or not the aside renders, so the grid never reshuffles
-   when the invites fetch lands. */
-/* Below 1440px the invites section stacks beneath the users grid — add a
-   vertical gap so the two sections don't run into each other. */
+   so the main column fits beside the 400px invites aside — the wider
+   users list was an explicit product call, and the dashboard, AI
+   settings, and account pages share this same tier so all four canvases
+   stay identical. The tier is keyed to the viewport minus the 240px
+   sidebar (i.e. when 1440px of content area is actually available), not
+   to 1440 itself — at in-between widths the 1440px canvas can't fit
+   beside the sidebar and the page would run full-bleed while every other
+   page sits centered. Below the tier the invites flow beneath the grid
+   at full width, which is the "smaller screen" behavior. The main column
+   keeps its width whether or not the aside renders, so the grid never
+   reshuffles when the invites fetch lands. */
+/* Below the wide tier the invites section stacks beneath the users
+   grid — add a vertical gap so the two sections don't run into each
+   other. */
 .users-page__columns {
   display: flex;
   flex-direction: column;
@@ -156,7 +153,7 @@
   min-width: 0;
 }
 
-@media (min-width: 1440px) {
+@media (min-width: 1680px) {
   .users-page {
     max-width: 1440px;
   }

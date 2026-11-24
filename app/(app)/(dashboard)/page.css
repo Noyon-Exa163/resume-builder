@@ -1,16 +1,19 @@
 .dashboard {
-  /* Shared content-column width — wider canvas on large screens. */
-  max-width: 1280px;
-  margin: 0;
-  padding: var(--space-8) var(--space-6) var(--space-6) var(--space-24);
+  /* Shared app content column — same 1000px canvas as the users, AI
+     settings, and account pages, centered in the content area. */
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-6);
   min-height: 100%;
   background-color: var(--color-surface-thumb);
 }
 
-/* Below desktop there is no sidebar — reset the wide left indent. */
-@media (max-width: 1023px) {
+/* Wide desktop — all four pages share this tier: once 1440px of content
+   area fits beside the 240px sidebar (≥1680px viewport), the canvas
+   widens so every page keeps the identical content width. */
+@media (min-width: 1680px) {
   .dashboard {
-    padding-left: var(--space-6);
+    max-width: 1440px;
   }
 }
 
@@ -143,9 +146,47 @@
 
 .dashboard__list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: var(--space-6);
+  /* Laptops: three cards per row. The count is fixed so cards scale with
+     the canvas instead of squeezing into more, skinnier tracks. Rows keep
+     the roomier gap; the column gap is two steps tighter. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-6) var(--space-5);
   list-style: none;
+}
+
+/* Wide-desktop tier (≥1680px, where the 1440px canvas sits beside the
+   sidebar): four cards per row — the maximum for this grid, with room to
+   spare at ~330px per card. */
+@media (min-width: 1680px) {
+  .dashboard__list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Tablets (no sidebar, canvas tracks the viewport): width-driven columns,
+   two or three depending on width. */
+@media (max-width: 1023px) {
+  .dashboard__list {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+/* Infinite-scroll footer — a live count plus the 1px sentinel the
+   IntersectionObserver watches. Loading starts before the sentinel
+   reaches the viewport (rootMargin in DashboardClient), so pages append
+   without the bottom ever showing a spinner. */
+.dashboard__count {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: var(--leading-ui);
+  color: var(--color-text-tertiary);
+  text-align: center;
+  margin: var(--space-5) 0 0;
+}
+
+.dashboard__sentinel {
+  height: 1px;
 }
 
 /* Card — thumbnail-first: an inset preview well, a title row with a kebab
@@ -279,21 +320,11 @@
   flex-shrink: 0;
 }
 
+/* Avatar-only chip — the person's name and email live in the UserTooltip
+   hover card instead of the card itself. */
 .resume-card__owner {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-}
-
-.resume-card__owner-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
 }
 
 /* iOS Safari zooms the page when a field under 16px takes focus. */
@@ -367,9 +398,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+}
 
-  /* Avatar only — the name doesn't fit a half-column card. */
-  .resume-card__owner-name {
-    display: none;
+/* Extra-small phones (<480px, below large-phone sizes): one full-width
+   column per card — 2-up tiles get too skimpy at these widths. Declared
+   after the sm block so it wins the cascade on the widths where both
+   apply. */
+@media (max-width: 479px) {
+  .dashboard__list {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
